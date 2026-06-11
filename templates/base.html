@@ -16,25 +16,55 @@
       }
     }
   </script>
+  <style>
+    :root{
+      --green:    #044635;
+      --orange:   #F17B0D;
+      --dark:     #464646;
+      --mid:      #646464;
+      --cream:    #FFFCF1;
+      --white:    #ffffff;
+      --border:   #e5e7eb;
+      --shadow:   0 4px 24px rgba(4,70,53,.10);
+      --radius:   14px;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
   <!-- ── NAVBAR ── -->
-  <nav class="bg-gray-900 text-white px-6 py-3 flex items-center justify-between shadow-lg">
-    <a href="/" class="text-xl font-bold tracking-wide">
-      🛒 SuperShop <span class="text-blue-400">Bangladesh</span>
+  <nav class="bg-[#044635] text-white px-8 py-4 flex justify-between">
+
+    <a href="/" class="font-bold text-2xl">
+        🛒 SuperShop
     </a>
-    <div class="flex gap-2 text-sm">
-      <a href="/"          class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Dashboard</a>
-      <a href="/branches"  class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Branches</a>
-      <a href="/products"  class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Products</a>
-      <a href="/sales"     class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Sales</a>
-      <a href="/customers" class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Customers</a>
-      <a href="/inventory" class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Inventory</a>
-      <a href="/docs"      class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 transition"
-         target="_blank">API Docs ↗</a>
+
+    <div class="flex gap-3">
+
+        {% if role %}
+
+            <a href="/products">Products</a>
+            <a href="/sales">Sales</a>
+            <a href="/inventory">Inventory</a>
+            <a href="/branches">Branches</a>
+
+            <a href="/auth/logout"
+               class="bg-[#F17B0D] px-4 py-2 rounded-lg">
+               Logout
+            </a>
+
+        {% else %}
+
+            <a href="/auth/login"
+               class="bg-[#F17B0D] px-4 py-2 rounded-lg">
+               Login
+            </a>
+
+        {% endif %}
+
     </div>
-  </nav>
+
+</nav>
 
   <!-- ── PAGE CONTENT ── -->
   <main class="max-w-7xl mx-auto px-6 py-8">

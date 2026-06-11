@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperShop BD – Sign In</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Brand tokens from color sheet ── */
+    :root {
+      --green:    #044635;
+      --orange:   #F17B0D;
+      --dark:     #464646;
+      --mid:      #646464;
+      --cream:    #FFFCF1;
+      --white:    #ffffff;
+      --border:   #e5e7eb;
+      --shadow:   0 4px 24px rgba(4,70,53,.10);
+      --radius:   14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--green);
+      color: #fff;
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar-logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -.3px;
+    }
+    .topbar-logo span { color: var(--orange); }
+
+    /* ── Hero split layout ── */
+    .hero {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 52px);
+    }
+
+    /* LEFT — brand panel */
+    .hero-left {
+      background: var(--green);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 56px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-left::before {
+      content: '';
+      position: absolute;
+      width: 380px; height: 380px;
+      background: rgba(241,123,13,.12);
+      border-radius: 50%;
+      top: -80px; right: -80px;
+    }
+    .hero-left::after {
+      content: '';
+      position: absolute;
+      width: 240px; height: 240px;
+      background: rgba(255,255,255,.05);
+      border-radius: 50%;
+      bottom: 40px; left: -40px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(241,123,13,.20);
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      width: fit-content;
+    }
+    .hero-heading {
+      font-size: 40px;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .hero-heading span { color: var(--orange); }
+    .hero-sub {
+      font-size: 15px;
+      color: rgba(255,255,255,.65);
+      line-height: 1.6;
+      max-width: 340px;
+      margin-bottom: 40px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 32px;
+    }
+    .stat-item { }
+    .stat-num {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--orange);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,.5);
+      margin-top: 2px;
+    }
+
+    /* RIGHT — auth panel */
+    .hero-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 40px;
+    }
+    .auth-box {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .auth-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+    .auth-sub {
+      font-size: 13px;
+      color: var(--mid);
+      margin-bottom: 28px;
+    }
+
+    /* ── Role selector ── */
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .role-btn {
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      border-radius: 10px;
+      padding: 14px 8px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .18s;
+      position: relative;
+    }
+    .role-btn:hover {
+      border-color: var(--green);
+      background: rgba(4,70,53,.03);
+    }
+    .role-btn.active {
+      border-color: var(--green);
+      background: rgba(4,70,53,.06);
+    }
+    .role-btn.active::after {
+      content: '✓';
+      position: absolute;
+      top: 6px; right: 8px;
+      font-size: 11px;
+      color: var(--green);
+      font-weight: 700;
+    }
+    .role-icon {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+    .role-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--dark);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .role-desc {
+      font-size: 10px;
+      color: var(--mid);
+      margin-top: 2px;
+    }
+
+    /* ── Form ── */
+    .form-section { display: none; }
+    .form-section.visible { display: block; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--dark);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .form-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--dark);
+      background: var(--cream);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-input:focus {
+      border-color: var(--green);
+      background: var(--white);
+    }
+    .form-input::placeholder { color: #b0b0b0; }
+
+    .input-hint {
+      font-size: 11px;
+      color: var(--mid);
+      margin-top: 4px;
+    }
+
+    /* ── Submit button ── */
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      margin-top: 6px;
+    }
+    .btn-submit:hover { background: #033828; transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: var(--mid);
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Register link ── */
+    .register-row {
+      text-align: center;
+      font-size: 13px;
+      color: var(--mid);
+      margin-top: 16px;
+    }
+    .register-row a {
+      color: var(--orange);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .register-row a:hover { text-decoration: underline; }
+
+    /* ── Alert ── */
+    .alert {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .alert.error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+
+    /* ── Registration modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 18px;
+      font-size: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--mid);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 4px;
+    }
+    .modal-sub {
+      font-size: 13px;
+      color: var(--mid);
+      margin-bottom: 24px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-left { padding: 40px 28px; display: none; }
+      .hero-right { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="topbar-logo">🛒 SuperShop <span>Bangladesh</span></span>
+  </div>
+
+  <!-- Hero split -->
+  <div class="hero">
+
+    <!-- LEFT: Brand panel -->
+    <div class="hero-left">
+      <div class="hero-badge">Multi-City Retail Chain</div>
+      <h1 class="hero-heading">
+        Your Shopping,<br>
+        <span>Redefined.</span>
+      </h1>
+      <p class="hero-sub">
+        From Dhanmondi to Chattogram — shop in-store or online,
+        track your orders, and earn rewards with every purchase.
+      </p>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-num">8</div>
+          <div class="stat-label">Active Branches</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">20+</div>
+          <div class="stat-label">Products</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">6</div>
+          <div class="stat-label">Cities</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Auth panel -->
+    <div class="hero-right">
+      <div class="auth-box">
+        <p class="auth-title">Welcome back</p>
+        <p class="auth-sub">Choose your account type to continue</p>
+
+        <!-- Role selector -->
+        <div class="role-grid" id="roleGrid">
+          <div class="role-btn" onclick="selectRole('admin')" id="btn-admin">
+            <div class="role-icon">🔐</div>
+            <div class="role-name">Admin</div>
+            <div class="role-desc">Head office</div>
+          </div>
+          <div class="role-btn" onclick="selectRole('employee')" id="btn-employee">
+            <div class="role-icon">🏪</div>
+            <div class="role-name">Employee</div>
+            <div class="role-desc">Branch staff</div>
+          </div>
+          <div class="role-btn" onclick="selectRole('customer')" id="btn-customer">
+            <div class="role-icon">🛍️</div>
+            <div class="role-name">Customer</div>
+            <div class="role-desc">Shopper</div>
+          </div>
+        </div>
+
+        <!-- Error alert -->
+        <div class="alert" id="alertBox"></div>
+
+        <!-- ADMIN form -->
+        <form class="form-section" id="form-admin"
+              action="/auth/admin/login" method="POST">
+          <div class="form-group">
+            <label class="form-label">Admin ID</label>
+            <input class="form-input" type="text" name="admin_id"
+                   placeholder="ADM-001" required autocomplete="username">
+            <p class="input-hint">Format: ADM-XXX</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" type="password" name="password"
+                   placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-submit">Sign in as Admin →</button>
+        </form>
+
+        <!-- EMPLOYEE form -->
+        <form class="form-section" id="form-employee"
+              action="/auth/employee/login" method="POST">
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input class="form-input" type="tel" name="phone"
+                   placeholder="01711-XXXXXX" required autocomplete="username">
+            <p class="input-hint">Use the phone registered with your branch</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" type="password" name="password"
+                   placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-submit">Sign in as Employee →</button>
+        </form>
+
+        <!-- CUSTOMER form -->
+        <form class="form-section" id="form-customer"
+              action="/auth/customer/login" method="POST">
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input class="form-input" type="tel" name="phone"
+                   placeholder="01711-XXXXXX" required autocomplete="username">
+            <p class="input-hint">Use your registered mobile number</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" type="password" name="password"
+                   placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-submit">Sign in →</button>
+          <div class="divider">or</div>
+          <div class="register-row">
+            New customer?
+            <a href="#" onclick="openRegisterModal(); return false;">Create account</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CUSTOMER REGISTRATION MODAL ══ -->
+  <div class="modal-overlay" id="registerModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeRegisterModal()">✕</button>
+      <p class="modal-title">Create Customer Account</p>
+      <p class="modal-sub">Fill in your details to register</p>
+
+      <form action="/auth/customer/register" method="POST">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-input" type="text" name="cust_name"
+                 placeholder="Rahim Uddin" required>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input class="form-input" type="tel" name="phone"
+                   placeholder="01711-000001" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select class="form-input" name="gender">
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" name="email"
+                 placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <input class="form-input" type="text" name="address"
+                 placeholder="House, Road, Area, City">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" name="password"
+                 placeholder="Min. 6 characters" required minlength="6">
+        </div>
+        <button type="submit" class="btn-submit">Create Account →</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function selectRole(role) {
+      // highlight selected button
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('btn-' + role).classList.add('active');
+
+      // show correct form
+      document.querySelectorAll('.form-section').forEach(f => f.classList.remove('visible'));
+      document.getElementById('form-' + role).classList.add('visible');
+
+      // clear any error
+      document.getElementById('alertBox').className = 'alert';
+    }
+
+    function openRegisterModal() {
+      document.getElementById('registerModal').classList.add('open');
+    }
+    function closeRegisterModal() {
+      document.getElementById('registerModal').classList.remove('open');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('registerModal').addEventListener('click', function(e) {
+      if (e.target === this) closeRegisterModal();
+    });
+
+    // Auto-select customer if URL has ?role=customer etc.
+    const urlRole = new URLSearchParams(location.search).get('role');
+    if (urlRole) selectRole(urlRole);
+
+    // Show error from query param (Flask would redirect with ?error=...)
+    const err = new URLSearchParams(location.search).get('error');
+    if (err) {
+      const box = document.getElementById('alertBox');
+      box.textContent = decodeURIComponent(err);
+      box.classList.add('error');
+    }
+  </script>
+</body>
+</html>

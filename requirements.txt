@@ -1,6 +1,18 @@
+# Web framework
 fastapi
 uvicorn
-psycopg2-binary
-python-dotenv
+
+# Templates & static files
 jinja2
 aiofiles
+
+# Database
+psycopg2-binary
+
+# Environment variables
+python-dotenv
+
+# Forms & authentication
+python-multipart
+bcrypt
+itsdangerous
