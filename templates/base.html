@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperShop BD – {% block title %}{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#1e3a5f', light: '#2563eb' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- ── NAVBAR ── -->
+  <nav class="bg-gray-900 text-white px-6 py-3 flex items-center justify-between shadow-lg">
+    <a href="/" class="text-xl font-bold tracking-wide">
+      🛒 SuperShop <span class="text-blue-400">Bangladesh</span>
+    </a>
+    <div class="flex gap-2 text-sm">
+      <a href="/"          class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Dashboard</a>
+      <a href="/branches"  class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Branches</a>
+      <a href="/products"  class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Products</a>
+      <a href="/sales"     class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Sales</a>
+      <a href="/customers" class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Customers</a>
+      <a href="/inventory" class="px-3 py-1.5 rounded hover:bg-gray-700 transition">Inventory</a>
+      <a href="/docs"      class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 transition"
+         target="_blank">API Docs ↗</a>
+    </div>
+  </nav>
+
+  <!-- ── PAGE CONTENT ── -->
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── FOOTER ── -->
+  <footer class="text-center text-gray-400 text-xs py-6 mt-8 border-t border-gray-200">
+    SuperShop Bangladesh · CSE-2201 Lab Project · University of Dhaka 2025
+  </footer>
+
+</body>
+</html>

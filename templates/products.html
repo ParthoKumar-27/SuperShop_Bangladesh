@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Products</h1>
+  <input id="searchBox" type="text" placeholder="Search products..."
+    class="border border-gray-300 rounded-lg px-4 py-2 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400 w-64">
+</div>
+
+<div class="bg-white rounded-xl shadow overflow-x-auto">
+  <table class="w-full text-sm" id="productTable">
+    <thead class="bg-gray-800 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">ID</th>
+        <th class="px-4 py-3 text-left">Name</th>
+        <th class="px-4 py-3 text-left">Brand</th>
+        <th class="px-4 py-3 text-left">Category</th>
+        <th class="px-4 py-3 text-left">Supplier</th>
+        <th class="px-4 py-3 text-right">Price (BDT)</th>
+        <th class="px-4 py-3 text-center">Unit</th>
+        <th class="px-4 py-3 text-center">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100" id="productBody">
+      {% for p in products %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-mono text-blue-600 text-xs">{{ p.product_id }}</td>
+        <td class="px-4 py-3 font-medium">{{ p.product_name }}</td>
+        <td class="px-4 py-3 text-gray-500">{{ p.brand or '—' }}</td>
+        <td class="px-4 py-3">
+          <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">
+            {{ p.cat_name or '—' }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ p.supplier_name or '—' }}</td>
+        <td class="px-4 py-3 text-right font-semibold">{{ "%.2f"|format(p.unit_price) }}</td>
+        <td class="px-4 py-3 text-center text-gray-500">{{ p.unit }}</td>
+        <td class="px-4 py-3 text-center">
+          {% if p.is_active == 'Y' %}
+            <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">Active</span>
+          {% else %}
+            <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">Inactive</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  document.getElementById('searchBox').addEventListener('input', function () {
+    const term = this.value.toLowerCase();
+    document.querySelectorAll('#productBody tr').forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

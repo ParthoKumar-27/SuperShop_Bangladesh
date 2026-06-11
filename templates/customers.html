@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Customers</h1>
+  <input id="searchBox" type="text" placeholder="Search by name, phone..."
+    class="border border-gray-300 rounded-lg px-4 py-2 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400 w-64">
+</div>
+
+<div class="bg-white rounded-xl shadow overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-800 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">ID</th>
+        <th class="px-4 py-3 text-left">Name</th>
+        <th class="px-4 py-3 text-left">Email</th>
+        <th class="px-4 py-3 text-left">Phone</th>
+        <th class="px-4 py-3 text-center">Gender</th>
+        <th class="px-4 py-3 text-center">Membership</th>
+        <th class="px-4 py-3 text-right">Points</th>
+        <th class="px-4 py-3 text-left">Joined</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100" id="custBody">
+      {% for c in customers %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-mono text-blue-600 text-xs">{{ c.cust_id }}</td>
+        <td class="px-4 py-3 font-medium">{{ c.cust_name }}</td>
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ c.email }}</td>
+        <td class="px-4 py-3 text-gray-500">{{ c.phone }}</td>
+        <td class="px-4 py-3 text-center">
+          {{ '👨' if c.gender == 'M' else '👩' }}
+        </td>
+        <td class="px-4 py-3 text-center">
+          {% set tier_colors = {
+            'PLATINUM': 'bg-indigo-100 text-indigo-800',
+            'GOLD':     'bg-yellow-100 text-yellow-800',
+            'SILVER':   'bg-gray-200 text-gray-700',
+            'REGULAR':  'bg-green-100 text-green-700'
+          } %}
+          <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                       {{ tier_colors.get(c.membership_type, 'bg-gray-100') }}">
+            {{ c.membership_type }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right font-semibold text-blue-700">
+          {{ "{:,}".format(c.loyalty_points) }}
+        </td>
+        <td class="px-4 py-3 text-gray-400 text-xs">{{ c.join_date }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  document.getElementById('searchBox').addEventListener('input', function () {
+    const term = this.value.toLowerCase();
+    document.querySelectorAll('#custBody tr').forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}
