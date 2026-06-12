@@ -1,0 +1,144 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Discounts{% endblock %}
+
+{% block content %}
+
+<h1 class="page-heading">Discount Management</h1>
+<p class="page-subheading">
+  View and manage all promotional discounts.
+</p>
+
+<div class="filter-bar">
+  <div class="filter-input-wrap">
+    <i class="fas fa-search"></i>
+    <input
+      type="text"
+      class="filter-input"
+      id="discountSearch"
+      placeholder="Search discount..."
+    />
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3
+      style="
+        color: var(--green);
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          background: var(--orange);
+          border-radius: 50%;
+          display: inline-block;
+        "
+      ></span>
+      All discounts
+    </h3>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table class="data-table" id="discountTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Value</th>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for d in discounts %}
+        <tr>
+          <td>{{ d.discount_id }}</td>
+
+          <td>
+            <strong>{{ d.discount_name }}</strong>
+          </td>
+
+          <td>
+            {% if d.discount_type == 'PERCENT' %}
+            <span class="badge badge-blue">
+              {{ d.discount_type }}
+            </span>
+            {% else %}
+            <span class="badge badge-orange">
+              {{ d.discount_type }}
+            </span>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if d.discount_type == 'PERCENT' %}
+              {{ d.discount_value }}%
+            {% else %}
+              ৳{{ d.discount_value }}
+            {% endif %}
+          </td>
+
+          <td>{{ d.product_name or '-' }}</td>
+          <td>{{ d.cat_name or '-' }}</td>
+
+          <td>{{ d.start_date }}</td>
+          <td>{{ d.end_date }}</td>
+
+          <td>
+            {% if d.status == 'ACTIVE' %}
+            <span class="badge badge-green">
+              Active
+            </span>
+
+            {% elif d.status == 'UPCOMING' %}
+            <span class="badge badge-yellow">
+              Upcoming
+            </span>
+
+            {% else %}
+            <span class="badge badge-red">
+              Expired
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document
+  .getElementById("discountSearch")
+  .addEventListener("keyup", function () {
+
+    let value = this.value.toLowerCase();
+
+    document
+      .querySelectorAll("#discountTable tbody tr")
+      .forEach(row => {
+        row.style.display =
+          row.innerText.toLowerCase().includes(value)
+            ? ""
+            : "none";
+      });
+  });
+</script>
+{% endblock %}

@@ -442,3 +442,83 @@ def inventory_page(request: Request, session=Depends(require_employee)):
         "user_name": session.get("user_name"),
         "role":      session.get("role"),
     })
+
+@app.get("/admin/dashboard/inventory", response_class=HTMLResponse)
+def admin_inventory(request: Request, session=Depends(require_admin)):
+
+    inventory = query("""
+        SELECT bi.inv_id,
+               b.branch_name,
+               p.product_name,
+               bi.quantity,
+               bi.reorder_level,
+               bi.shelf_location,
+               TO_CHAR(bi.last_restocked, 'DD Mon YYYY') AS last_restocked,
+               CASE
+                   WHEN bi.quantity <= bi.reorder_level
+                   THEN 'LOW'
+                   ELSE 'OK'
+               END AS stock_status
+        FROM branch_inventory bi
+        JOIN branch b USING(branch_id)
+        JOIN product p USING(product_id)
+        ORDER BY b.branch_name, p.product_name
+    """)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/inventory.html",
+        {
+            "inventory": inventory,
+            "user_name": session.get("user_name"),
+            "role": "ADMIN",
+        }
+    )
+
+@app.get("/discounts", response_class=HTMLResponse)
+def discounts_page(request: Request, session=Depends(require_admin)):
+
+    discounts = query("""
+        SELECT
+            d.discount_id,
+            d.discount_name,
+            d.discount_type,
+            d.discount_value,
+
+            p.product_name,
+            c.cat_name,
+
+            TO_CHAR(d.start_date,'DD Mon YYYY') AS start_date,
+            TO_CHAR(d.end_date,'DD Mon YYYY')   AS end_date,
+
+            CASE
+                WHEN CURRENT_DATE BETWEEN d.start_date
+                                     AND d.end_date
+                    THEN 'ACTIVE'
+
+                WHEN CURRENT_DATE < d.start_date
+                    THEN 'UPCOMING'
+
+                ELSE 'EXPIRED'
+            END AS status
+
+        FROM discount d
+
+        LEFT JOIN product p
+            ON d.product_id = p.product_id
+
+        LEFT JOIN category c
+            ON d.cat_id = c.cat_id
+
+        ORDER BY d.start_date DESC
+    """)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/discounts.html",
+        {
+            "discounts": discounts,
+            "user_name": session.get("user_name"),
+            "role": "ADMIN",
+        }
+    )

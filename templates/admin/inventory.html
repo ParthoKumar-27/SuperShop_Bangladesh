@@ -1,0 +1,112 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">Inventory Management</div>
+<div class="page-subheading">
+  Monitor stock levels across branches
+</div>
+
+<div class="filter-bar">
+  <div class="filter-input-wrap">
+    <i class="fas fa-search"></i>
+    <input
+      type="text"
+      id="inventorySearch"
+      class="filter-input"
+      placeholder="Search inventory..."
+    />
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3
+      style="
+        color: var(--green);
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          background: var(--orange);
+          border-radius: 50%;
+          display: inline-block;
+        "
+      ></span>
+      Inventory Records
+    </h3>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <table class="data-table" id="inventoryTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Branch</th>
+          <th>Product</th>
+          <th>Quantity</th>
+          <th>Reorder Level</th>
+          <th>Shelf</th>
+          <th>Last Restocked</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for i in inventory %}
+        <tr>
+          <td>{{ i.inv_id }}</td>
+          <td>{{ i.branch_name }}</td>
+          <td>{{ i.product_name }}</td>
+          <td>{{ i.quantity }}</td>
+          <td>{{ i.reorder_level }}</td>
+          <td>{{ i.shelf_location }}</td>
+          <td>{{ i.last_restocked }}</td>
+
+          <td>
+            {% if i.stock_status == 'LOW' %}
+            <span class="badge badge-red">
+              <i class="fas fa-exclamation-circle"></i>
+              Low Stock
+            </span>
+            {% else %}
+            <span class="badge badge-green">
+              <i class="fas fa-check-circle"></i>
+              In Stock
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const searchInput = document.getElementById("inventorySearch");
+
+searchInput.addEventListener("keyup", function () {
+  const filter = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#inventoryTable tbody tr");
+
+  rows.forEach(row => {
+    row.style.display = row.innerText.toLowerCase().includes(filter)
+      ? ""
+      : "none";
+  });
+});
+</script>
+{% endblock %}
