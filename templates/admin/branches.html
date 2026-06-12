@@ -1,0 +1,113 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Branches{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">Branches</div>
+<p class="page-subheading">
+    Manage all SuperShop branches across Bangladesh.
+</p>
+
+<div style="
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:16px;
+">
+
+    {% for b in branches %}
+    <div class="card branch-card"
+     style="
+        overflow:hidden;
+        border-top:5px solid
+        {{ '#22c55e' if b.is_active == 'Y' else '#d1d5db' }};
+     ">
+
+        <div style="padding:14px 16px;">
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:flex-start;
+                margin-bottom:12px;
+            ">
+                <div>
+                    <h3 style="
+                        font-size:18px;
+                        font-weight:700;
+                        color:var(--dark);
+                    ">
+                        {{ b.branch_name }}
+                    </h3>
+
+                    <p style="
+                        font-size:12px;
+                        color:#3b82f6;
+                        margin-top:4px;
+                        font-family:monospace;
+                    ">
+                        {{ b.branch_id }}
+                    </p>
+                </div>
+
+                {% if b.is_active == 'Y' %}
+                    <span class="badge badge-green">
+                        Active
+                    </span>
+                {% else %}
+                    <span class="badge badge-gray">
+                        Inactive
+                    </span>
+                {% endif %}
+            </div>
+
+            <div style="
+                display:flex;
+                flex-direction:column;
+                gap:10px;
+                font-size:14px;
+                color:var(--mid);
+            ">
+
+                <div>
+                    <i class="fas fa-map-marker-alt"
+                       style="width:18px;color:var(--orange);"></i>
+                    {{ b.city_name }}
+                </div>
+
+                <div>
+                    <i class="fas fa-home"
+                       style="width:18px;color:var(--orange);"></i>
+                    {{ b.address }}
+                </div>
+
+                <div>
+                    <i class="fas fa-phone"
+                       style="width:18px;color:var(--orange);"></i>
+                    {{ b.phone or '—' }}
+                </div>
+
+                <div>
+                    <i class="fas fa-clock"
+                       style="width:18px;color:var(--orange);"></i>
+                    {{ b.open_time }} – {{ b.close_time }}
+                </div>
+
+                <div>
+                    <i class="fas fa-user-tie"
+                       style="width:18px;color:var(--orange);"></i>
+
+                    <strong>
+                        {{ b.manager_name or 'No manager assigned' }}
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+{% endblock %}

@@ -246,7 +246,7 @@ def employee_dashboard(request: Request, session=Depends(require_employee)):
     })
 
 
-@app.get("/employees", response_class=HTMLResponse)
+@app.get("/admin/dashboard/employees", response_class=HTMLResponse)
 def employees_page(request: Request, session=Depends(require_admin)):
     employees = query("""
         SELECT e.emp_id,
@@ -366,7 +366,7 @@ def sales_page(request: Request, session=Depends(require_login)):
     })
 
 
-@app.get("/customers", response_class=HTMLResponse)
+@app.get("/admin/dashboard/customers", response_class=HTMLResponse)
 def customers_page(request: Request, session=Depends(require_admin)):
     customers = query("""
         SELECT cust_id, cust_name, email, phone,
@@ -382,7 +382,7 @@ def customers_page(request: Request, session=Depends(require_admin)):
     })
 
 
-@app.get("/branches", response_class=HTMLResponse)
+@app.get("/admin/dashboard/branches", response_class=HTMLResponse)
 def branches_page(request: Request, session=Depends(require_login)):
     branches = query("""
         SELECT b.branch_id, b.branch_name, c.city_name,
@@ -394,7 +394,7 @@ def branches_page(request: Request, session=Depends(require_login)):
                LEFT JOIN employee e ON bm.emp_id = e.emp_id
         ORDER BY b.branch_id
     """)
-    return templates.TemplateResponse(request, "branches.html", {
+    return templates.TemplateResponse(request, "admin/branches.html", {
         "branches":  branches,
         "user_name": session.get("user_name"),
         "role":      session.get("role"),
