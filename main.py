@@ -317,6 +317,23 @@ def customer_dashboard(request: Request, session=Depends(require_customer)):
 # ══════════════════════════════════════════════════════════════════════════════
 #  EXISTING ROUTES (unchanged — now also pass user context to templates)
 # ══════════════════════════════════════════════════════════════════════════════
+@app.get("/admin/dashboard/products", response_class=HTMLResponse)
+def admin_products_page(request: Request, session=Depends(require_admin)):
+    products = query("""
+        SELECT p.product_id, p.product_name, p.brand,
+               p.unit_price, p.unit, p.is_active,
+               c.cat_name, s.supplier_name
+        FROM   product p
+               LEFT JOIN category c  USING (cat_id)
+               LEFT JOIN supplier s  USING (supplier_id)
+        ORDER BY p.product_name
+    """)
+    return templates.TemplateResponse(request, "admin/products.html", {
+        "products":  products,
+        "user_name": session.get("user_name"),
+        "role":      session.get("role"),
+    })
+
 
 @app.get("/products", response_class=HTMLResponse)
 def products_page(request: Request, session=Depends(require_login)):

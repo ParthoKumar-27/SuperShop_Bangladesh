@@ -570,7 +570,7 @@
 
       <a
         href="{{ '/admin/dashboard' if role == 'ADMIN' else '/employee/dashboard' }}"
-        class="nav-item {{ 'active' if 'dashboard' in path else '' }}"
+        class="nav-item {{ 'active' if path =='/admin/dashboard' else '' }}"
       >
         <i class="fas fa-th-large"></i> Dashboard
       </a>
@@ -607,8 +607,8 @@
       <div class="nav-label">Catalogue</div>
 
       <a
-        href="/products"
-        class="nav-item {{ 'active' if path == '/products' else '' }}"
+        href="/admin/dashboard/products"
+        class="nav-item {{ 'active' if path == '/admin/dashboard/products' else '' }}"
       >
         <i class="fas fa-tag"></i> Products
       </a>
@@ -624,21 +624,21 @@
 
       <a
         href="/admin/dashboard/customers"
-        class="nav-item {{ 'active' if path == '/customers' else '' }}"
+        class="nav-item {{ 'active' if path == '/admin/dashboard/customers' else '' }}"
       >
         <i class="fas fa-users"></i> Customers
       </a>
 
       <a
         href="/admin/dashboard/employees"
-        class="nav-item {{ 'active' if path == '/employees' else '' }}"
+        class="nav-item {{ 'active' if path == '/admin/dashboard/employees' else '' }}"
       >
         <i class="fas fa-id-badge"></i> Employees
       </a>
 
       <a
         href="/admin/dashboard/branches"
-        class="nav-item {{ 'active' if path == '/branches' else '' }}"
+        class="nav-item {{ 'active' if path == '/admin/dashboard/branches' else '' }}"
       >
         <i class="fas fa-store"></i> Branches
       </a>
