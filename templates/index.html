@@ -1,82 +1,204 @@
-{% extends "base.html" %}
+{% extends "base_admin.html" %}
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
 
-<!-- ── STAT CARDS ── -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+<!-- STAT CARDS on dark green bg (metrocery style) -->
+<div style="background:var(--green);border-radius:var(--radius);padding:24px;margin-bottom:24px;">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
 
-  <div class="bg-white rounded-xl shadow p-5 border-l-4 border-blue-500">
-    <p class="text-sm text-gray-500 mb-1">Active Branches</p>
-    <p class="text-3xl font-bold text-blue-600">{{ stats.branches }}</p>
+    <!-- Total Revenue -->
+    <div style="background:var(--white);border-radius:12px;padding:20px 22px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:42px;height:42px;background:#dbeafe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💰</div>
+        <p style="font-size:12px;color:var(--mid);font-weight:500;">Total Revenue</p>
+      </div>
+      <p style="font-size:24px;font-weight:700;color:var(--orange);">৳{{ "{:,.0f}".format(stats.total_revenue|default(0)) }}</p>
+      <p style="font-size:11px;color:var(--mid);margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">All paid orders</p>
+    </div>
+
+    <!-- Orders -->
+    <div style="background:var(--white);border-radius:12px;padding:20px 22px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:42px;height:42px;background:rgba(4,70,53,.10);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-shopping-cart" style="color:var(--green);font-size:16px;"></i>
+        </div>
+        <p style="font-size:12px;color:var(--mid);">Orders</p>
+      </div>
+      <p style="font-size:28px;font-weight:700;color:var(--dark);">{{ stats.total_orders }}</p>
+    </div>
+
+    <!-- Active Products -->
+    <div style="background:var(--white);border-radius:12px;padding:20px 22px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:42px;height:42px;background:#f3e8ff;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-box" style="color:#7c3aed;font-size:16px;"></i>
+        </div>
+        <p style="font-size:12px;color:var(--mid);">Products</p>
+      </div>
+      <p style="font-size:28px;font-weight:700;color:var(--dark);">{{ stats.products }}</p>
+    </div>
+
+    <!-- Pending -->
+    <div style="background:var(--white);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-clock" style="color:#15803d;font-size:13px;"></i>
+        </div>
+        <p style="font-size:12px;color:var(--mid);">Pending Orders</p>
+      </div>
+      <p style="font-size:22px;font-weight:700;color:var(--dark);">{{ stats.pending_orders|default(0) }}</p>
+    </div>
+
+    <!-- Today's Sales -->
+    <div style="background:var(--white);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;background:#dbeafe;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-calendar-day" style="color:#1d4ed8;font-size:13px;"></i>
+        </div>
+        <p style="font-size:12px;color:var(--mid);">Today's Sales</p>
+      </div>
+      <p style="font-size:22px;font-weight:700;color:var(--dark);">{{ stats.today_sales|default(0) }}</p>
+    </div>
+
+    <!-- Riders -->
+    <div style="background:var(--white);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;background:#fff3e0;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-motorcycle" style="color:var(--orange);font-size:13px;"></i>
+        </div>
+        <p style="font-size:12px;color:var(--mid);">Riders</p>
+      </div>
+      <p style="font-size:22px;font-weight:700;color:var(--dark);">{{ stats.riders }}</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- CHART + BRANCHES -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;">
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Sales Revenue</h3>
+      <span style="font-size:12px;color:var(--mid);display:flex;align-items:center;gap:5px;">
+        <span style="width:9px;height:9px;border-radius:50%;background:var(--orange);display:inline-block;"></span>This week
+      </span>
+    </div>
+    <div style="padding:18px 20px;">
+      <p style="font-size:11px;color:var(--mid);">Total Sale</p>
+      <p style="font-size:20px;font-weight:700;color:var(--dark);margin-bottom:14px;">৳{{ "{:,.2f}".format(stats.total_revenue|default(0)) }}</p>
+      <canvas id="revenueChart" height="100"></canvas>
+    </div>
   </div>
 
-  <div class="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
-    <p class="text-sm text-gray-500 mb-1">Products</p>
-    <p class="text-3xl font-bold text-green-600">{{ stats.products }}</p>
-  </div>
-
-  <div class="bg-white rounded-xl shadow p-5 border-l-4 border-purple-500">
-    <p class="text-sm text-gray-500 mb-1">Customers</p>
-    <p class="text-3xl font-bold text-purple-600">{{ stats.customers }}</p>
-  </div>
-
-  <div class="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
-    <p class="text-sm text-gray-500 mb-1">Employees</p>
-    <p class="text-3xl font-bold text-orange-500">{{ stats.employees }}</p>
+  <div class="card">
+    <div class="card-header">
+      <h3>Top Branches by Revenue</h3>
+      <a href="/branches" class="card-link">View All</a>
+    </div>
+    <div>
+      {% for b in branch_stats %}
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #f3f4f6;">
+        <div style="width:32px;height:32px;border-radius:9px;background:rgba(4,70,53,.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-store" style="font-size:11px;color:var(--green);"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12px;font-weight:600;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ b.branch_name }}</p>
+          <p style="font-size:11px;color:var(--mid);">{{ b.sale_count|default(0) }} sales</p>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:var(--orange);flex-shrink:0;">৳{{ "{:,.0f}".format(b.revenue|default(0)) }}</span>
+      </div>
+      {% endfor %}
+    </div>
   </div>
 
 </div>
 
-<!-- ── RECENT SALES TABLE ── -->
-<div class="bg-white rounded-xl shadow">
-  <div class="px-6 py-4 border-b border-gray-100">
-    <h2 class="text-lg font-semibold text-gray-700">Recent Sales</h2>
+<!-- RECENT SALES + TOP PRODUCTS -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Recent Sales</h3>
+      <a href="/sales" class="card-link">View All</a>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr>
+          <th>Sale ID</th><th>Branch</th><th>Customer</th>
+          <th style="text-align:right">Total</th><th style="text-align:center">Status</th>
+        </tr></thead>
+        <tbody>
+          {% for s in recent_sales %}
+          <tr>
+            <td style="font-family:monospace;font-size:11px;color:var(--green);">{{ s.sale_id }}</td>
+            <td style="font-size:12px;">{{ s.branch_name }}</td>
+            <td style="font-size:12px;color:var(--mid);">{{ s.customer }}</td>
+            <td style="text-align:right;font-weight:600;font-size:12px;">৳{{ "%.0f"|format(s.total_amt) }}</td>
+            <td style="text-align:center;">
+              {% if s.payment_status=='PAID' %}<span class="badge badge-green">Paid</span>
+              {% elif s.payment_status=='PENDING' %}<span class="badge badge-yellow">Pending</span>
+              {% else %}<span class="badge badge-red">Cancelled</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
-        <tr>
-          <th class="px-4 py-3 text-left">Sale ID</th>
-          <th class="px-4 py-3 text-left">Date</th>
-          <th class="px-4 py-3 text-left">Branch</th>
-          <th class="px-4 py-3 text-left">Customer</th>
-          <th class="px-4 py-3 text-right">Total (BDT)</th>
-          <th class="px-4 py-3 text-center">Type</th>
-          <th class="px-4 py-3 text-center">Status</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-100">
-        {% for s in recent_sales %}
-        <tr class="hover:bg-gray-50">
-          <td class="px-4 py-3 font-mono text-blue-600">{{ s.sale_id }}</td>
-          <td class="px-4 py-3 text-gray-500">{{ s.sale_date }}</td>
-          <td class="px-4 py-3">{{ s.branch_name }}</td>
-          <td class="px-4 py-3">{{ s.customer }}</td>
-          <td class="px-4 py-3 text-right font-semibold">
-            {{ "%.2f"|format(s.total_amt) }}
-          </td>
-          <td class="px-4 py-3 text-center">
-            {% if s.order_type == 'ONLINE' %}
-              <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">Online</span>
-            {% else %}
-              <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">In-Store</span>
-            {% endif %}
-          </td>
-          <td class="px-4 py-3 text-center">
-            {% if s.payment_status == 'PAID' %}
-              <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">Paid</span>
-            {% elif s.payment_status == 'PENDING' %}
-              <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs">Pending</span>
-            {% else %}
-              <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">Cancelled</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Top Selling Products</h3>
+      <a href="/products" class="card-link">View All</a>
+    </div>
+    <div>
+      {% for p in top_products %}
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #f3f4f6;">
+        <div style="width:34px;height:34px;background:#fff3e0;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">🛒</div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:600;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.product_name }}</p>
+          <p style="font-size:11px;color:var(--mid);">{{ p.cat_name }} · {{ p.times_sold }} sold</p>
+        </div>
+        <p style="font-size:13px;font-weight:700;color:var(--dark);flex-shrink:0;">৳{{ "%.0f"|format(p.unit_price) }}</p>
+      </div>
+      {% endfor %}
+    </div>
   </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const ctx = document.getElementById('revenueChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ chart_labels | tojson }},
+        datasets: [{
+          data: {{ chart_data | tojson }},
+          borderColor: '#F17B0D',
+          backgroundColor: 'rgba(241,123,13,0.09)',
+          borderWidth: 2.5, fill: true, tension: 0.4,
+          pointBackgroundColor: '#F17B0D', pointBorderColor: '#fff',
+          pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false },
+          tooltip: { backgroundColor:'#044635', titleColor:'#fff', bodyColor:'rgba(255,255,255,.7)',
+            padding:10, cornerRadius:8, callbacks:{ label: c=>' ৳ '+c.parsed.y.toLocaleString() } }
+        },
+        scales: {
+          x: { grid:{ display:false }, ticks:{ font:{family:'DM Sans',size:11}, color:'#9ca3af' } },
+          y: { grid:{ color:'#f3f4f6' }, ticks:{ font:{family:'DM Sans',size:11}, color:'#9ca3af', callback: v=>'৳'+v } }
+        }
+      }
+    });
+  }
+</script>
 {% endblock %}

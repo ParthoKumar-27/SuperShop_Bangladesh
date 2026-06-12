@@ -1,63 +1,579 @@
-{% extends "base.html" %}
-{% block title %}Store{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperShop Bangladesh – Fresh Food Delivered</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:  #044635;
+      --orange: #F17B0D;
+      --dark:   #464646;
+      --mid:    #646464;
+      --cream:  #FFFCF1;
+      --white:  #ffffff;
+      --border: #e5e7eb;
+      --shadow: 0 4px 24px rgba(4,70,53,.10);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--dark); }
+    a { text-decoration: none; color: inherit; }
 
-{% block content %}
+    /* ── TOP NAV ── */
+    .topnav {
+      background: var(--green);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topnav-logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .topnav-logo span { color: var(--orange); }
+    .topnav-search {
+      flex: 1;
+      max-width: 580px;
+      display: flex;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .topnav-search input {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--dark);
+      outline: none;
+    }
+    .topnav-search button {
+      width: 48px;
+      background: var(--orange);
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .topnav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-left: auto;
+    }
+    .btn-signin {
+      background: var(--orange);
+      color: #fff;
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-signin:hover { background: #d96b00; }
+    .topnav-hotline {
+      font-size: 12px;
+      color: rgba(255,255,255,.6);
+      white-space: nowrap;
+    }
 
-<section class="bg-[#044635] rounded-3xl p-12 text-white mb-10">
-    <h1 class="text-5xl font-bold mb-4">
-        Fresh Food Delivered
-    </h1>
+    /* ── CATEGORY STRIP ── */
+    .catstrip {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .catstrip::-webkit-scrollbar { display: none; }
+    .catstrip-item {
+      padding: 13px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--mid);
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+    .catstrip-item:hover { color: var(--green); border-color: var(--green); }
+    .catstrip-item.active { color: var(--green); border-color: var(--orange); font-weight: 600; }
+    .catstrip-menu {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--green);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      margin-right: 4px;
+      cursor: pointer;
+    }
 
-    <p class="text-lg opacity-80 mb-6">
-        Shop groceries, snacks and daily essentials from
-        SuperShop Bangladesh.
-    </p>
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
 
-    <a href="/auth/login"
-       class="bg-[#F17B0D] px-6 py-3 rounded-xl font-semibold">
-        Login
-    </a>
-</section>
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 230px;
+      flex-shrink: 0;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      min-height: calc(100vh - 97px);
+    }
+    .sidebar-header {
+      padding: 14px 18px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--green);
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 18px;
+      font-size: 13px;
+      color: var(--dark);
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .sidebar-item:hover { background: rgba(4,70,53,.04); color: var(--green); }
+    .sidebar-item-left { display: flex; align-items: center; gap: 10px; }
+    .sidebar-icon { font-size: 16px; width: 22px; text-align: center; }
+    .sidebar-arrow { color: var(--mid); font-size: 11px; }
 
-<h2 class="text-3xl font-bold text-[#044635] mb-6">
-    Popular Products
-</h2>
+    /* ── MAIN CONTENT ── */
+    .main { flex: 1; padding: 16px 20px; min-width: 0; }
 
-<div class="grid md:grid-cols-4 gap-6">
+    /* ── HERO BANNER ── */
+    .hero-banner {
+      background: var(--green);
+      border-radius: var(--radius);
+      padding: 36px 44px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute;
+      width: 320px; height: 320px;
+      background: rgba(241,123,13,.12);
+      border-radius: 50%;
+      top: -80px; right: -60px;
+    }
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      width: 180px; height: 180px;
+      background: rgba(255,255,255,.05);
+      border-radius: 50%;
+      bottom: -40px; left: 200px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(241,123,13,.22);
+      color: var(--orange);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .hero-heading {
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1.18;
+      margin-bottom: 10px;
+    }
+    .hero-heading span { color: var(--orange); }
+    .hero-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,.65);
+      margin-bottom: 22px;
+      max-width: 340px;
+    }
+    .hero-cta {
+      background: var(--orange);
+      color: #fff;
+      padding: 11px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background .15s;
+      position: relative; z-index: 1;
+    }
+    .hero-cta:hover { background: #d96b00; }
+    .hero-emoji { font-size: 88px; position: relative; z-index: 1; }
 
-{% for p in products %}
+    /* ── QUICK CATEGORY TILES ── */
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    .cat-tiles {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .cat-tile {
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--white);
+      box-shadow: var(--shadow);
+      transition: transform .15s;
+    }
+    .cat-tile:hover { transform: translateY(-3px); }
+    .cat-tile img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      display: block;
+    }
+    .cat-tile-label {
+      background: var(--orange);
+      color: #fff;
+      text-align: center;
+      padding: 7px;
+      font-size: 12px;
+      font-weight: 600;
+    }
 
-<div class="bg-white rounded-2xl shadow overflow-hidden">
+    /* ── PRODUCTS GRID ── */
+    .products-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .view-all {
+      font-size: 13px;
+      color: var(--orange);
+      font-weight: 600;
+    }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .product-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(4,70,53,.07);
+      transition: box-shadow .15s;
+    }
+    .product-card:hover { box-shadow: 0 6px 24px rgba(4,70,53,.14); }
+    .product-card img { width: 100%; height: 148px; object-fit: cover; display: block; }
+    .product-card-body { padding: 12px 14px 14px; }
+    .product-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--dark);
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .product-brand { font-size: 11px; color: var(--mid); margin-bottom: 10px; }
+    .product-footer { display: flex; align-items: center; justify-content: space-between; }
+    .product-price { font-size: 16px; font-weight: 700; color: var(--orange); }
+    .btn-add {
+      background: var(--green);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .15s;
+    }
+    .btn-add:hover { background: #033828; }
 
-    <img src="https://picsum.photos/300/200"
-         class="w-full h-44 object-cover">
+    /* ── FEATURE STRIP ── */
+    .feature-strip {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      margin-top: 32px;
+      padding: 28px 48px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    .feature-item { display: flex; align-items: center; gap: 14px; }
+    .feature-icon {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      border: 2px solid rgba(4,70,53,.20);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .feature-title { font-size: 14px; font-weight: 700; color: var(--dark); }
+    .feature-sub { font-size: 12px; color: var(--mid); margin-top: 2px; }
 
-    <div class="p-4">
+    /* ── FOOTER ── */
+    footer {
+      background: var(--green);
+      color: rgba(255,255,255,.6);
+      text-align: center;
+      padding: 18px;
+      font-size: 12px;
+      margin-top: 0;
+    }
+    footer span { color: var(--orange); }
 
-        <h3 class="font-semibold text-lg text-[#464646]">
-            {{ p.product_name }}
-        </h3>
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      .cat-tiles { grid-template-columns: repeat(3, 1fr); }
+      .products-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .topnav-search { display: none; }
+      .cat-tiles { grid-template-columns: repeat(2, 1fr); }
+      .products-grid { grid-template-columns: repeat(2, 1fr); }
+      .feature-strip { grid-template-columns: repeat(2, 1fr); padding: 20px; }
+      .hero-heading { font-size: 24px; }
+      .hero-emoji { display: none; }
+    }
+  </style>
+</head>
+<body>
 
-        <p class="text-sm text-[#646464]">
-            {{ p.brand }}
-        </p>
+  <!-- ══ TOP NAVBAR ══ -->
+  <nav class="topnav">
+    <a href="/" class="topnav-logo">🛒 SuperShop <span>BD</span></a>
 
-        <div class="mt-3 flex justify-between items-center">
-
-            <span class="font-bold text-[#F17B0D]">
-                ৳ {{ p.unit_price }}
-            </span>
-
-            <button
-                class="bg-[#044635] text-white px-3 py-1 rounded-lg">
-                View
-            </button>
-
-        </div>
+    <!-- Search -->
+    <div class="topnav-search">
+      <input type="text" placeholder="Search your products…" id="storeSearch">
+      <button>🔍</button>
     </div>
-</div>
 
-{% endfor %}
-</div>
+    <!-- Actions -->
+    <div class="topnav-actions">
+      <span class="topnav-hotline">📞 Help: 16516</span>
+      {% if role == 'CUSTOMER' %}
+        <a href="/customer/dashboard" class="btn-signin">My Account</a>
+      {% elif role == 'ADMIN' %}
+        <a href="/admin/dashboard" class="btn-signin">Dashboard</a>
+      {% else %}
+        <a href="/auth/login" class="btn-signin">Sign in / Sign up</a>
+      {% endif %}
+    </div>
+  </nav>
 
-{% endblock %}
+  <!-- ══ CATEGORY STRIP ══ -->
+  <div class="catstrip">
+    <div class="catstrip-menu">☰ Shop by Category</div>
+    <a href="#" class="catstrip-item active">🍎 Food</a>
+    <a href="#" class="catstrip-item">🥛 Dairy & Bakery</a>
+    <a href="#" class="catstrip-item">🧴 Health & Beauty</a>
+    <a href="#" class="catstrip-item">📱 Electronics</a>
+    <a href="#" class="catstrip-item">👕 Clothing</a>
+    <a href="#" class="catstrip-item">🍬 Snacks</a>
+    <a href="#" class="catstrip-item">🥤 Beverages</a>
+    <a href="#" class="catstrip-item">🎉 Great Deals</a>
+  </div>
+
+  <!-- ══ MAIN LAYOUT ══ -->
+  <div class="layout">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">Shop by Category</div>
+
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🍎</span> Food</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🥛</span> Dairy Products</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🍞</span> Bakery</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🍬</span> Snacks</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🥤</span> Beverages</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🧴</span> Health & Beauty</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">📱</span> Electronics</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="sidebar-item-left"><span class="sidebar-icon">👕</span> Clothing</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div>
+          <div class="hero-badge">Summer Offer 2025</div>
+          <h1 class="hero-heading">
+            Fresh Groceries,<br>
+            <span>Up To 50% OFF</span>
+          </h1>
+          <p class="hero-sub">
+            Shop from 8 branches across Bangladesh — or order online
+            and get it delivered to your door.
+          </p>
+          <a href="/auth/login" class="hero-cta">Shop Now →</a>
+        </div>
+        <div class="hero-emoji">🛒</div>
+      </div>
+
+      <!-- Quick Category Tiles -->
+      <p class="section-title">Shop by Category</p>
+      <div class="cat-tiles">
+        <div class="cat-tile">
+          <img src="https://picsum.photos/200/100?1" alt="Dairy">
+          <div class="cat-tile-label">Dairy</div>
+        </div>
+        <div class="cat-tile">
+          <img src="https://picsum.photos/200/100?2" alt="Bakery">
+          <div class="cat-tile-label">Bakery</div>
+        </div>
+        <div class="cat-tile">
+          <img src="https://picsum.photos/200/100?3" alt="Snacks">
+          <div class="cat-tile-label">Snacks</div>
+        </div>
+        <div class="cat-tile">
+          <img src="https://picsum.photos/200/100?4" alt="Beverages">
+          <div class="cat-tile-label">Beverages</div>
+        </div>
+        <div class="cat-tile">
+          <img src="https://picsum.photos/200/100?5" alt="Health">
+          <div class="cat-tile-label">Health</div>
+        </div>
+      </div>
+
+      <!-- Popular Products -->
+      <div class="products-header">
+        <p class="section-title" style="margin-bottom:0">Popular Products</p>
+        <a href="#" class="view-all">View All ›</a>
+      </div>
+      <div class="products-grid" id="productGrid">
+        {% for p in products %}
+        <div class="product-card">
+          <img src="https://picsum.photos/300/200?{{ loop.index + 10 }}" alt="{{ p.product_name }}">
+          <div class="product-card-body">
+            <p class="product-name">{{ p.product_name }}</p>
+            <p class="product-brand">{{ p.brand or 'SuperShop' }}</p>
+            <div class="product-footer">
+              <span class="product-price">৳ {{ "%.0f"|format(p.unit_price) }}</span>
+              {% if logged_in %}
+                <button class="btn-add">+ Add</button>
+              {% else %}
+                <a href="/auth/login?role=customer"
+                   style="background:var(--green); color:#fff; padding:6px 14px; border-radius:8px; font-size:12px; font-weight:600">
+                  Login
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ══ FEATURE STRIP ══ -->
+  <div class="feature-strip">
+    <div class="feature-item">
+      <div class="feature-icon">⚡</div>
+      <div>
+        <p class="feature-title">Same-Day Delivery</p>
+        <p class="feature-sub">Free shipping over ৳500</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">✅</div>
+      <div>
+        <p class="feature-title">Authorized Products</p>
+        <p class="feature-sub">Within 30 days exchange</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🎧</div>
+      <div>
+        <p class="feature-title">Customer Support</p>
+        <p class="feature-sub">9am to 10pm every day</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">💳</div>
+      <div>
+        <p class="feature-title">Flexible Payments</p>
+        <p class="feature-sub">bKash, Nagad, Card, Cash</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <footer>
+    SuperShop Bangladesh &nbsp;·&nbsp; CSE-2201 &nbsp;·&nbsp;
+    University of Dhaka 2025 &nbsp;·&nbsp;
+    <span>Powered by FastAPI + PostgreSQL</span>
+  </footer>
+
+  <script>
+    // Live search filters product cards
+    document.getElementById('storeSearch').addEventListener('input', function () {
+      const term = this.value.toLowerCase();
+      document.querySelectorAll('.product-card').forEach(card => {
+        card.style.display = card.innerText.toLowerCase().includes(term) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

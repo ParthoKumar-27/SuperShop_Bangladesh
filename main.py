@@ -90,29 +90,116 @@ def storefront(request: Request):
 
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 def admin_dashboard(request: Request, session=Depends(require_admin)):
+
     stats = {
-        "branches":  query("SELECT COUNT(*) AS n FROM branch WHERE is_active='Y'")[0]["n"],
-        "products":  query("SELECT COUNT(*) AS n FROM product WHERE is_active='Y'")[0]["n"],
-        "customers": query("SELECT COUNT(*) AS n FROM customer")[0]["n"],
-        "employees": query("SELECT COUNT(*) AS n FROM employee WHERE is_active='Y'")[0]["n"],
+        "total_revenue": query("""
+            SELECT COALESCE(SUM(total_amt),0) AS n
+            FROM sale
+            WHERE payment_status='PAID'
+        """)[0]["n"],
+
+        "total_orders": query("""
+            SELECT COUNT(*) AS n
+            FROM sale
+        """)[0]["n"],
+
+        "products": query("""
+            SELECT COUNT(*) AS n
+            FROM product
+            WHERE is_active='Y'
+        """)[0]["n"],
+
+        "pending_orders": query("""
+            SELECT COUNT(*) AS n
+            FROM sale
+            WHERE payment_status='PENDING'
+        """)[0]["n"],
+
+        "today_sales": query("""
+            SELECT COUNT(*) AS n
+            FROM sale
+            WHERE DATE(sale_date)=CURRENT_DATE
+        """)[0]["n"],
+
+        "riders": query("""
+            SELECT COUNT(*) AS n
+            FROM employee
+            WHERE position='DELIVERY_RIDER'
+            AND is_active='Y'
+        """)[0]["n"],
     }
+
     recent_sales = query("""
-        SELECT s.sale_id, b.branch_name,
-               COALESCE(c.cust_name, 'Walk-in') AS customer,
-               s.total_amt, s.payment_status, s.order_type,
-               TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date
-        FROM   sale s
-               JOIN branch b        ON s.branch_id = b.branch_id
-               LEFT JOIN customer c ON s.cust_id   = c.cust_id
+        SELECT s.sale_id,
+               b.branch_name,
+               COALESCE(c.cust_name,'Walk-in') AS customer,
+               s.total_amt,
+               s.payment_status
+        FROM sale s
+        JOIN branch b
+            ON s.branch_id=b.branch_id
+        LEFT JOIN customer c
+            ON s.cust_id=c.cust_id
         ORDER BY s.sale_date DESC
         LIMIT 8
     """)
-    return templates.TemplateResponse(request, "index.html", {
-        "stats":        stats,
-        "recent_sales": recent_sales,
-        "user_name":    session.get("user_name"),
-        "role":         "ADMIN",
-    })
+
+    branch_stats = query("""
+        SELECT b.branch_name,
+               COUNT(s.sale_id) AS sale_count,
+               COALESCE(SUM(s.total_amt),0) AS revenue
+        FROM branch b
+        LEFT JOIN sale s
+            ON b.branch_id=s.branch_id
+            AND s.payment_status='PAID'
+        GROUP BY b.branch_name
+        ORDER BY revenue DESC
+        LIMIT 5
+    """)
+
+    top_products = query("""
+        SELECT p.product_name,
+               c.cat_name,
+               p.unit_price,
+               COALESCE(SUM(si.quantity),0) AS times_sold
+        FROM product p
+        LEFT JOIN category c
+            ON p.cat_id=c.cat_id
+        LEFT JOIN sale_item si
+            ON p.product_id=si.product_id
+        GROUP BY p.product_name,
+                 c.cat_name,
+                 p.unit_price
+        ORDER BY times_sold DESC
+        LIMIT 5
+    """)
+
+    weekly = query("""
+        SELECT TO_CHAR(DATE(sale_date),'Dy') AS day,
+               COALESCE(SUM(total_amt),0) AS revenue
+        FROM sale
+        WHERE sale_date >= CURRENT_DATE - INTERVAL '6 day'
+        GROUP BY DATE(sale_date)
+        ORDER BY DATE(sale_date)
+    """)
+
+    chart_labels = [row["day"] for row in weekly]
+    chart_data = [float(row["revenue"]) for row in weekly]
+
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "stats": stats,
+            "recent_sales": recent_sales,
+            "branch_stats": branch_stats,
+            "top_products": top_products,
+            "chart_labels": chart_labels,
+            "chart_data": chart_data,
+            "user_name": session.get("user_name"),
+            "role": "ADMIN",
+        }
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
