@@ -103,7 +103,10 @@ venv/
 
 ```
 DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/supershop
+<<<<<<< HEAD
 SECRET_KEY=any-random-32-character-string-here
+=======
+>>>>>>> b63d10f934172cbea7e31a4297106e582e4df63c
 ```
 
 When deployed on Railway, you delete this line and Railway injects
@@ -233,4 +236,8 @@ Every time you `git push`, Railway redeploys automatically.
    This proves your database queries work.
 
 ## 📄 License
+<<<<<<< HEAD
 This repository is intended for academic and educational purposes only.
+=======
+This repository is intended for academic and educational purposes only.
+>>>>>>> b63d10f934172cbea7e31a4297106e582e4df63c
