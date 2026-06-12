@@ -1,0 +1,202 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Employees{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">Employees</div>
+
+<div class="page-subheading">
+    View and manage all employees.
+</div>
+
+<div class="filter-bar"
+     style="display:flex;justify-content:space-between;align-items:center;">
+
+    <!-- Search -->
+    <div class="filter-input-wrap">
+        <i class="fas fa-search"></i>
+
+        <input
+            id="searchBox"
+            type="text"
+            class="filter-input"
+            placeholder="Search employees..."
+        >
+    </div>
+
+    <!-- Sort -->
+    <select id="sortSelect" class="filter-select">
+        <option value="">Sort Employees</option>
+        <option value="name_asc">Name ↑</option>
+        <option value="name_desc">Name ↓</option>
+        <option value="salary_asc">Salary ↑</option>
+        <option value="salary_desc">Salary ↓</option>
+        <option value="hire_asc">Oldest Hire</option>
+        <option value="hire_desc">Newest Hire</option>
+    </select>
+</div>
+
+<div class="card">
+
+    <div class="card-header">
+        <h3
+      style="
+        color: var(--green);
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          background: var(--orange);
+          border-radius: 50%;
+          display: inline-block;
+        "
+      ></span>
+      Employee List
+    </h3>
+
+        <span style="font-size:12px;color:var(--mid);">
+            Total: {{ employees|length }}
+        </span>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Employee</th>
+                <th>Branch</th>
+                <th>Department</th>
+                <th>Position</th>
+                <th>Gender</th>
+                <th style="text-align:right;">Salary</th>
+                <th>Status</th>
+                <th>Hire Date</th>
+            </tr>
+            </thead>
+
+            <tbody id="empBody">
+
+            {% for e in employees %}
+            <tr>
+
+                <td>{{ e.emp_id }}</td>
+
+                <td>
+                    <div style="font-weight:600;">
+                        {{ e.emp_name }}
+                    </div>
+
+                    <div style="font-size:11px;color:var(--mid);">
+                        {{ e.email }}
+                    </div>
+                </td>
+
+                <td>{{ e.branch_name }}</td>
+
+                <td>{{ e.dept_name or '-' }}</td>
+
+                <td>{{ e.position }}</td>
+
+                <td style="text-align:center;">
+                    {{ '👨' if e.gender == 'M' else '👩' }}
+                </td>
+
+                <td style="text-align:right;font-weight:700;">
+                    ৳{{ "{:,.0f}".format(e.salary or 0) }}
+                </td>
+
+                <td>
+                    {% if e.is_active == 'Y' %}
+                        <span class="badge badge-green">
+                            ACTIVE
+                        </span>
+                    {% else %}
+                        <span class="badge badge-gray">
+                            INACTIVE
+                        </span>
+                    {% endif %}
+                </td>
+
+                <td>{{ e.hire_date }}</td>
+
+            </tr>
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const searchBox = document.getElementById("searchBox");
+const sortSelect = document.getElementById("sortSelect");
+const tbody = document.getElementById("empBody");
+
+searchBox.addEventListener("input", function () {
+    const term = this.value.toLowerCase();
+
+    tbody.querySelectorAll("tr").forEach(row => {
+        row.style.display =
+            row.innerText.toLowerCase().includes(term)
+            ? ""
+            : "none";
+    });
+});
+
+sortSelect.addEventListener("change", function () {
+
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+    function getCell(row, index) {
+        return row.children[index]?.innerText.trim() || "";
+    }
+
+    rows.sort((a, b) => {
+
+        switch (this.value) {
+
+            case "name_asc":
+                return getCell(a,1).localeCompare(getCell(b,1));
+
+            case "name_desc":
+                return getCell(b,1).localeCompare(getCell(a,1));
+
+            case "salary_asc":
+                return parseFloat(getCell(a,6).replace(/[^\d.]/g,'')) -
+                       parseFloat(getCell(b,6).replace(/[^\d.]/g,''));
+
+            case "salary_desc":
+                return parseFloat(getCell(b,6).replace(/[^\d.]/g,'')) -
+                       parseFloat(getCell(a,6).replace(/[^\d.]/g,''));
+
+            case "hire_asc":
+                return new Date(getCell(a,8)) -
+                       new Date(getCell(b,8));
+
+            case "hire_desc":
+                return new Date(getCell(b,8)) -
+                       new Date(getCell(a,8));
+
+            default:
+                return 0;
+        }
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+});
+</script>
+{% endblock %}

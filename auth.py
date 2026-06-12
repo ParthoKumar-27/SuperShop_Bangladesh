@@ -79,7 +79,7 @@ def _next_user_id() -> str:
 @auth_router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     """Serve the login page (login.html)."""
-    return templates.TemplateResponse(request, "login.html", {})
+    return templates.TemplateResponse(request, "authentication/login.html", {})
 
 
 # ══════════════════════════════════════════════════════════════════════════════

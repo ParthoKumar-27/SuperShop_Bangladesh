@@ -188,7 +188,7 @@ def admin_dashboard(request: Request, session=Depends(require_admin)):
 
     return templates.TemplateResponse(
         request,
-        "index.html",
+        "admin/index.html",
         {
             "stats": stats,
             "recent_sales": recent_sales,
@@ -245,6 +245,38 @@ def employee_dashboard(request: Request, session=Depends(require_employee)):
         "role":         "EMPLOYEE",
     })
 
+
+@app.get("/employees", response_class=HTMLResponse)
+def employees_page(request: Request, session=Depends(require_admin)):
+    employees = query("""
+        SELECT e.emp_id,
+               e.emp_name,
+               e.email,
+               e.phone,
+               e.position,
+               e.salary,
+               e.hire_date,
+               e.gender,
+               e.is_active,
+               b.branch_name,
+               d.dept_name
+        FROM employee e
+        LEFT JOIN branch b
+            ON e.branch_id = b.branch_id
+        LEFT JOIN department d
+            ON e.dept_id = d.dept_id
+        ORDER BY e.emp_name
+    """)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/employees.html",
+        {
+            "employees": employees,
+            "user_name": session.get("user_name"),
+            "role": "ADMIN",
+        }
+    )
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER DASHBOARD  (protected — CUSTOMER only)
@@ -343,7 +375,7 @@ def customers_page(request: Request, session=Depends(require_admin)):
         FROM   customer
         ORDER BY cust_name
     """)
-    return templates.TemplateResponse(request, "customers.html", {
+    return templates.TemplateResponse(request, "admin/customers.html", {
         "customers": customers,
         "user_name": session.get("user_name"),
         "role":      "ADMIN",
