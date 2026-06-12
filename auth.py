@@ -11,6 +11,7 @@ Dependencies:  pip install bcrypt python-multipart itsdangerous
 Add to main.py: from auth import auth_router; app.include_router(auth_router)
 """
 
+from importlib.resources import path
 import os
 import re
 import uuid
@@ -44,7 +45,11 @@ def _verify(plain: str, hashed: str) -> bool:
 def _redirect_error(path: str, msg: str) -> RedirectResponse:
     """Redirect to login page with an error message in the query string."""
     from urllib.parse import quote
-    return RedirectResponse(f"{path}?error={quote(msg)}", status_code=302)
+    separator = "&" if "?" in path else "?"
+    return RedirectResponse(
+        f"{path}{separator}error={quote(msg)}",
+        status_code=302
+    )
 
 
 def _next_cust_id() -> str:
@@ -219,7 +224,7 @@ def customer_login(
     request.session["user_name"]      = c["cust_name"]
     request.session["role"]           = "CUSTOMER"
     request.session["membership"]     = c["membership_type"]
-    request.session["loyalty_points"] = c["loyalty_points"]
+    request.session["loyalty_points"] = int(c["loyalty_points"])
 
     return RedirectResponse("/customer/dashboard", status_code=302)
 
