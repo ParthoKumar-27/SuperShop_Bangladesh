@@ -102,7 +102,7 @@ venv/
 ### .env  (replace with YOUR actual PostgreSQL credentials)
 
 ```
-DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/supershop
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/SuperShop
 SECRET_KEY=any-random-32-character-string-here
 ```
 
