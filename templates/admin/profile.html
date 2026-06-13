@@ -1,0 +1,373 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+
+<style>
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 20px;
+    max-width: 900px;
+  }
+
+  .profile-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .profile-card-top {
+    background: var(--green);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .profile-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .profile-avatar-meta .avatar-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .profile-avatar-meta .avatar-id {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 2px;
+    font-family: monospace;
+  }
+
+  .profile-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .profile-status-pill .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    flex-shrink: 0;
+  }
+
+  .profile-status-pill.inactive .dot {
+    background: #f87171;
+  }
+
+  .profile-card-body {
+    padding: 24px;
+  }
+
+  .profile-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--mid);
+    margin-bottom: 16px;
+  }
+
+  .profile-field {
+    margin-bottom: 16px;
+  }
+
+  .profile-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mid);
+    margin-bottom: 5px;
+    letter-spacing: 0.02em;
+  }
+
+  .profile-field input {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    color: var(--dark);
+    outline: none;
+    transition: border-color 0.15s;
+    background: #fff;
+  }
+
+  .profile-field input:focus {
+    border-color: var(--green);
+  }
+
+  .profile-field input[readonly] {
+    background: #f9fafb;
+    color: var(--mid);
+    cursor: default;
+  }
+
+  .profile-badge-row {
+    display: flex;
+    align-items: center;
+    height: 42px;
+  }
+
+  .profile-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  .profile-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .profile-btn:hover {
+    background: #033828;
+  }
+
+  .pw-meter {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin-top: 6px;
+    overflow: hidden;
+  }
+
+  .pw-bar {
+    height: 100%;
+    width: 0;
+    transition: width 0.2s, background 0.2s;
+  }
+
+  .pw-hint {
+    font-size: 11px;
+    color: var(--mid);
+    margin-top: 4px;
+    min-height: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .profile-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:6px">Account settings</p>
+<h2 class="page-heading">My Profile</h2>
+<p class="page-subheading">Manage your personal information and security settings.</p>
+
+{% if request.query_params.get('success') %}
+<div class="alert success" style="margin-bottom:20px">
+    {{ request.query_params.get('success') }}
+</div>
+{% endif %}
+
+{% if request.query_params.get('error') %}
+<div class="alert error" style="margin-bottom:20px">
+    {{ request.query_params.get('error') }}
+</div>
+{% endif %}
+
+<div class="profile-grid">
+
+    <!-- ── Profile Information ── -->
+    <div class="profile-card">
+        <div class="profile-card-top">
+            <div class="profile-avatar" id="profileAvatar">
+                {{ admin.admin_name[:2]|upper if admin.admin_name else 'AD' }}
+            </div>
+            <div class="profile-avatar-meta">
+                <div class="avatar-name">{{ admin.admin_name or 'Admin User' }}</div>
+                <div class="avatar-id">#{{ admin.admin_id }}</div>
+                <div class="profile-status-pill {{ '' if admin.is_active == 'Y' else 'inactive' }}">
+                    <span class="dot"></span>
+                    {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card-body">
+            <p class="profile-section-label">Profile information</p>
+
+            <form method="POST" action="/admin/dashboard/profile/update">
+
+                <div class="profile-field">
+                    <label>Admin ID</label>
+                    <input type="text" value="{{ admin.admin_id }}" readonly>
+                </div>
+
+                <div class="profile-field">
+                    <label>Full name</label>
+                    <input type="text"
+                           name="admin_name"
+                           value="{{ admin.admin_name }}"
+                           id="inputName"
+                           oninput="syncAvatar(this.value)"
+                           required>
+                </div>
+
+                <div class="profile-field">
+                    <label>Email address</label>
+                    <input type="email"
+                           name="email"
+                           value="{{ admin.email }}"
+                           required>
+                </div>
+
+                <div class="profile-field">
+                    <label>Account status</label>
+                    <div class="profile-badge-row">
+                        <span class="badge {{ 'badge-green' if admin.is_active == 'Y' else 'badge-red' }}">
+                            {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Member since</label>
+                    <input type="text" value="{{ admin.created_at }}" readonly>
+                </div>
+
+                <hr class="profile-divider">
+
+                <button type="submit" class="profile-btn">
+                    <i class="fas fa-save"></i> Save changes
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- ── Change Password ── -->
+    <div class="profile-card">
+        <div class="profile-card-body">
+            <p class="profile-section-label">Change password</p>
+
+            <form method="POST" action="/admin/dashboard/profile/password">
+
+                <div class="profile-field">
+                    <label>Current password</label>
+                    <input type="password"
+                           name="current_password"
+                           placeholder="Enter current password"
+                           required>
+                </div>
+
+                <div class="profile-field">
+                    <label>New password</label>
+                    <input type="password"
+                           name="new_password"
+                           id="newPassword"
+                           placeholder="Min. 8 characters"
+                           oninput="checkStrength(this.value)"
+                           required>
+                    
+                    <p class="pw-hint" id="pwHint"></p>
+                </div>
+
+                <div class="profile-field">
+                    <label>Confirm new password</label>
+                    <input type="password"
+                           name="confirm_password"
+                           id="confirmPassword"
+                           placeholder="Repeat new password"
+                           oninput="checkMatch()"
+                           required>
+                    <p class="pw-hint" id="matchHint"></p>
+                </div>
+
+                <hr class="profile-divider">
+
+                <button type="submit" class="profile-btn">
+                    <i class="fas fa-lock"></i> Update password
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+  function syncAvatar(val) {
+    const parts = val.trim().split(' ').filter(Boolean);
+    const initials = parts.length >= 2
+      ? parts[0][0] + parts[parts.length - 1][0]
+      : parts[0] ? parts[0].slice(0, 2) : 'AD';
+    document.getElementById('profileAvatar').textContent = initials.toUpperCase();
+  }
+
+  function checkStrength(val) {
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const pcts  = [0, 25, 50, 75, 100];
+    const cols  = ['', '#ef4444', '#f17b0d', '#f17b0d', '#044635'];
+    const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+
+    const bar  = document.getElementById('pwBar');
+    const hint = document.getElementById('pwHint');
+    bar.style.width      = pcts[score] + '%';
+    bar.style.background = cols[score];
+    hint.textContent     = val ? labels[score] : '';
+    hint.style.color     = cols[score];
+
+    checkMatch();
+  }
+
+  function checkMatch() {
+    const np   = document.getElementById('newPassword').value;
+    const cf   = document.getElementById('confirmPassword').value;
+    const hint = document.getElementById('matchHint');
+    if (!cf) { hint.textContent = ''; return; }
+    if (np === cf) {
+      hint.textContent = 'Passwords match';
+      hint.style.color = '#166534';
+    } else {
+      hint.textContent = "Passwords don't match";
+      hint.style.color = '#991b1b';
+    }
+  }
+</script>
+
+{% endblock %}

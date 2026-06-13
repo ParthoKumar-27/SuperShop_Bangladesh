@@ -1,93 +1,284 @@
-{% extends "admin/base_admin.html" %}
-{% block title %}Dashboard{% endblock %}
-
+{% extends "admin/base_admin.html" %} {% block title %}Dashboard{% endblock %}
 {% block content %}
 
 <!-- STAT CARDS on dark green bg (metrocery style) -->
-<div style="background:var(--green);border-radius:var(--radius);padding:24px;margin-bottom:24px;">
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-
+<div
+  style="
+    background: var(--green);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  "
+>
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px">
     <!-- Total Revenue -->
-    <div style="background:var(--white);border-radius:12px;padding:20px 22px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="width:42px;height:42px;background:#dbeafe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💰</div>
-        <p style="font-size:12px;color:var(--mid);font-weight:500;">Total Revenue</p>
+    <div
+      style="background: var(--white); border-radius: 12px; padding: 20px 22px"
+    >
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 12px;
+        "
+      >
+        <div
+          style="
+            width: 42px;
+            height: 42px;
+            background: #dbeafe;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+          "
+        >
+          💰
+        </div>
+        <p style="font-size: 12px; color: var(--mid); font-weight: 500">
+          Total Revenue
+        </p>
       </div>
-      <p style="font-size:24px;font-weight:700;color:var(--orange);">৳{{ "{:,.0f}".format(stats.total_revenue|default(0)) }}</p>
-      <p style="font-size:11px;color:var(--mid);margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">All paid orders</p>
+      <p style="font-size: 24px; font-weight: 700; color: var(--orange)">
+        ৳{{ "{:,.0f}".format(stats.total_revenue|default(0)) }}
+      </p>
+      <p
+        style="
+          font-size: 11px;
+          color: var(--mid);
+          margin-top: 8px;
+          border-top: 1px solid var(--border);
+          padding-top: 8px;
+        "
+      >
+        All paid orders
+      </p>
     </div>
 
     <!-- Orders -->
-    <div style="background:var(--white);border-radius:12px;padding:20px 22px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="width:42px;height:42px;background:rgba(4,70,53,.10);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i class="fas fa-shopping-cart" style="color:var(--green);font-size:16px;"></i>
+    <div
+      style="background: var(--white); border-radius: 12px; padding: 20px 22px"
+    >
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 12px;
+        "
+      >
+        <div
+          style="
+            width: 42px;
+            height: 42px;
+            background: rgba(4, 70, 53, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          "
+        >
+          <i
+            class="fas fa-shopping-cart"
+            style="color: var(--green); font-size: 16px"
+          ></i>
         </div>
-        <p style="font-size:12px;color:var(--mid);">Orders</p>
+        <p style="font-size: 12px; color: var(--mid)">Orders</p>
       </div>
-      <p style="font-size:28px;font-weight:700;color:var(--dark);">{{ stats.total_orders }}</p>
+      <p style="font-size: 28px; font-weight: 700; color: var(--dark)">
+        {{ stats.total_orders }}
+      </p>
     </div>
 
     <!-- Active Products -->
-    <div style="background:var(--white);border-radius:12px;padding:20px 22px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="width:42px;height:42px;background:#f3e8ff;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i class="fas fa-box" style="color:#7c3aed;font-size:16px;"></i>
+    <div
+      style="background: var(--white); border-radius: 12px; padding: 20px 22px"
+    >
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 12px;
+        "
+      >
+        <div
+          style="
+            width: 42px;
+            height: 42px;
+            background: #f3e8ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          "
+        >
+          <i class="fas fa-box" style="color: #7c3aed; font-size: 16px"></i>
         </div>
-        <p style="font-size:12px;color:var(--mid);">Products</p>
+        <p style="font-size: 12px; color: var(--mid)">Products</p>
       </div>
-      <p style="font-size:28px;font-weight:700;color:var(--dark);">{{ stats.products }}</p>
+      <p style="font-size: 28px; font-weight: 700; color: var(--dark)">
+        {{ stats.products }}
+      </p>
     </div>
 
     <!-- Pending -->
-    <div style="background:var(--white);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:38px;height:38px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i class="fas fa-clock" style="color:#15803d;font-size:13px;"></i>
+    <div
+      style="
+        background: var(--white);
+        border-radius: 12px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 10px">
+        <div
+          style="
+            width: 38px;
+            height: 38px;
+            background: #dcfce7;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          "
+        >
+          <i class="fas fa-clock" style="color: #15803d; font-size: 13px"></i>
         </div>
-        <p style="font-size:12px;color:var(--mid);">Pending Orders</p>
+        <p style="font-size: 12px; color: var(--mid)">Pending Orders</p>
       </div>
-      <p style="font-size:22px;font-weight:700;color:var(--dark);">{{ stats.pending_orders|default(0) }}</p>
+      <p style="font-size: 22px; font-weight: 700; color: var(--dark)">
+        {{ stats.pending_orders|default(0) }}
+      </p>
     </div>
 
     <!-- Today's Sales -->
-    <div style="background:var(--white);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:38px;height:38px;background:#dbeafe;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i class="fas fa-calendar-day" style="color:#1d4ed8;font-size:13px;"></i>
+    <div
+      style="
+        background: var(--white);
+        border-radius: 12px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 10px">
+        <div
+          style="
+            width: 38px;
+            height: 38px;
+            background: #dbeafe;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          "
+        >
+          <i
+            class="fas fa-calendar-day"
+            style="color: #1d4ed8; font-size: 13px"
+          ></i>
         </div>
-        <p style="font-size:12px;color:var(--mid);">Today's Sales</p>
+        <p style="font-size: 12px; color: var(--mid)">Today's Sales</p>
       </div>
-      <p style="font-size:22px;font-weight:700;color:var(--dark);">{{ stats.today_sales|default(0) }}</p>
+      <p style="font-size: 22px; font-weight: 700; color: var(--dark)">
+        {{ stats.today_sales|default(0) }}
+      </p>
     </div>
 
     <!-- Riders -->
-    <div style="background:var(--white);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:38px;height:38px;background:#fff3e0;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i class="fas fa-motorcycle" style="color:var(--orange);font-size:13px;"></i>
+    <div
+      style="
+        background: var(--white);
+        border-radius: 12px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 10px">
+        <div
+          style="
+            width: 38px;
+            height: 38px;
+            background: #fff3e0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          "
+        >
+          <i
+            class="fas fa-motorcycle"
+            style="color: var(--orange); font-size: 13px"
+          ></i>
         </div>
-        <p style="font-size:12px;color:var(--mid);">Riders</p>
+        <p style="font-size: 12px; color: var(--mid)">Riders</p>
       </div>
-      <p style="font-size:22px;font-weight:700;color:var(--dark);">{{ stats.riders }}</p>
+      <p style="font-size: 22px; font-weight: 700; color: var(--dark)">
+        {{ stats.riders }}
+      </p>
     </div>
-
   </div>
 </div>
 
 <!-- CHART + BRANCHES -->
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;">
-
+<div
+  style="
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  "
+>
   <div class="card">
     <div class="card-header">
       <h3>Sales Revenue</h3>
-      <span style="font-size:12px;color:var(--mid);display:flex;align-items:center;gap:5px;">
-        <span style="width:9px;height:9px;border-radius:50%;background:var(--orange);display:inline-block;"></span>This week
+      <span
+        style="
+          font-size: 12px;
+          color: var(--mid);
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        "
+      >
+        <span
+          style="
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--orange);
+            display: inline-block;
+          "
+        ></span
+        >This week
       </span>
     </div>
-    <div style="padding:18px 20px;">
-      <p style="font-size:11px;color:var(--mid);">Total Sale</p>
-      <p style="font-size:20px;font-weight:700;color:var(--dark);margin-bottom:14px;">৳{{ "{:,.2f}".format(stats.total_revenue|default(0)) }}</p>
+    <div style="padding: 18px 20px">
+      <p style="font-size: 11px; color: var(--mid)">Total Sale</p>
+      <p
+        style="
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--dark);
+          margin-bottom: 14px;
+        "
+      >
+        ৳{{ "{:,.2f}".format(stats.total_revenue|default(0)) }}
+      </p>
       <canvas id="revenueChart" height="100"></canvas>
     </div>
   </div>
@@ -99,47 +290,109 @@
     </div>
     <div>
       {% for b in branch_stats %}
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #f3f4f6;">
-        <div style="width:32px;height:32px;border-radius:9px;background:rgba(4,70,53,.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i class="fas fa-store" style="font-size:11px;color:var(--green);"></i>
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 18px;
+          border-bottom: 1px solid #f3f4f6;
+        "
+      >
+        <div
+          style="
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: rgba(4, 70, 53, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          "
+        >
+          <i
+            class="fas fa-store"
+            style="font-size: 11px; color: var(--green)"
+          ></i>
         </div>
-        <div style="flex:1;min-width:0;">
-          <p style="font-size:12px;font-weight:600;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ b.branch_name }}</p>
-          <p style="font-size:11px;color:var(--mid);">{{ b.sale_count|default(0) }} sales</p>
+        <div style="flex: 1; min-width: 0">
+          <p
+            style="
+              font-size: 12px;
+              font-weight: 600;
+              color: var(--dark);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+          >
+            {{ b.branch_name }}
+          </p>
+          <p style="font-size: 11px; color: var(--mid)">
+            {{ b.sale_count|default(0) }} sales
+          </p>
         </div>
-        <span style="font-size:12px;font-weight:700;color:var(--orange);flex-shrink:0;">৳{{ "{:,.0f}".format(b.revenue|default(0)) }}</span>
+        <span
+          style="
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--orange);
+            flex-shrink: 0;
+          "
+          >৳{{ "{:,.0f}".format(b.revenue|default(0)) }}</span
+        >
       </div>
       {% endfor %}
     </div>
   </div>
-
 </div>
 
 <!-- RECENT SALES + TOP PRODUCTS -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
   <div class="card">
     <div class="card-header">
       <h3>Recent Sales</h3>
       <a href="/admin/dashboard/sales" class="card-link">View All</a>
     </div>
-    <div style="overflow-x:auto;">
+    <div style="overflow-x: auto">
       <table class="data-table">
-        <thead><tr>
-          <th>Sale ID</th><th>Branch</th><th>Customer</th>
-          <th style="text-align:right">Total</th><th style="text-align:center">Status</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th>Sale ID</th>
+            <th>Branch</th>
+            <th>Customer</th>
+            <th style="text-align: right">Total</th>
+            <th style="text-align: center">Status</th>
+          </tr>
+        </thead>
         <tbody>
           {% for s in recent_sales %}
           <tr>
-            <td style="font-family:monospace;font-size:11px;color:var(--green);">{{ s.sale_id }}</td>
-            <td style="font-size:12px;">{{ s.branch_name }}</td>
-            <td style="font-size:12px;color:var(--mid);">{{ s.customer }}</td>
-            <td style="text-align:right;font-weight:600;font-size:12px;">৳{{ "%.0f"|format(s.total_amt) }}</td>
-            <td style="text-align:center;">
-              {% if s.payment_status=='PAID' %}<span class="badge badge-green">Paid</span>
-              {% elif s.payment_status=='PENDING' %}<span class="badge badge-yellow">Pending</span>
-              {% else %}<span class="badge badge-red">Cancelled</span>{% endif %}
+            <td
+              style="
+                font-family: monospace;
+                font-size: 11px;
+                color: var(--green);
+              "
+            >
+              <strong style="color: var(--green)"> {{ s.sale_id }} </strong>
+            </td>
+            <td style="font-size: 12px"><strong>{{ s.branch_name }}</strong></td>
+            <td style="font-size: 12px; color: var(--mid)">{{ s.customer }}</td>
+            <td style="text-align: right; font-weight: 600; font-size: 12px">
+              ৳{{ "%.0f"|format(s.total_amt) }}
+            </td>
+            <td style="text-align: center">
+              {% if s.payment_status=='PAID' %}<span class="badge badge-green"
+                >Paid</span
+              >
+              {% elif s.payment_status=='PENDING' %}<span
+                class="badge badge-yellow"
+                >Pending</span
+              >
+              {% else %}<span class="badge badge-red">Cancelled</span>{% endif
+              %}
             </td>
           </tr>
           {% endfor %}
@@ -155,22 +408,63 @@
     </div>
     <div>
       {% for p in top_products %}
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #f3f4f6;">
-        <div style="width:34px;height:34px;background:#fff3e0;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">🛒</div>
-        <div style="flex:1;min-width:0;">
-          <p style="font-size:12.5px;font-weight:600;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.product_name }}</p>
-          <p style="font-size:11px;color:var(--mid);">{{ p.cat_name }} · {{ p.times_sold }} sold</p>
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 18px;
+          border-bottom: 1px solid #f3f4f6;
+        "
+      >
+        <div
+          style="
+            width: 34px;
+            height: 34px;
+            background: #fff3e0;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+          "
+        >
+          🛒
         </div>
-        <p style="font-size:13px;font-weight:700;color:var(--dark);flex-shrink:0;">৳{{ "%.0f"|format(p.unit_price) }}</p>
+        <div style="flex: 1; min-width: 0">
+          <p
+            style="
+              font-size: 12.5px;
+              font-weight: 600;
+              color: var(--dark);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+          >
+            {{ p.product_name }}
+          </p>
+          <p style="font-size: 11px; color: var(--mid)">
+            {{ p.cat_name }} · {{ p.times_sold }} sold
+          </p>
+        </div>
+        <p
+          style="
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--dark);
+            flex-shrink: 0;
+          "
+        >
+          ৳{{ "%.0f"|format(p.unit_price) }}
+        </p>
       </div>
       {% endfor %}
     </div>
   </div>
-
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   const ctx = document.getElementById('revenueChart');
   if (ctx) {

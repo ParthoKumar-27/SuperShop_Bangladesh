@@ -15,6 +15,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from auth import _hash, _verify
 
 from database import query, execute
 from auth import (
@@ -559,4 +560,124 @@ def admin_sales(
             "role": "ADMIN",
             "user_name": session.get("user_name"),
         }
+    )
+
+@app.get("/admin/dashboard/profile", response_class=HTMLResponse)
+def admin_profile(
+    request: Request,
+    session=Depends(require_admin)
+):
+    admin = query("""
+        SELECT
+            admin_id,
+            admin_name,
+            email,
+            is_active,
+            TO_CHAR(created_at,'DD Mon YYYY HH24:MI') AS created_at
+        FROM admin_account
+        WHERE admin_id = %s
+    """, (session["user_id"],))
+
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+
+    return templates.TemplateResponse(
+        request,
+        "admin/profile.html",
+        {
+            "admin": admin[0],
+            "user_name": session.get("user_name"),
+            "role": "ADMIN"
+        }
+    )
+
+@app.post("/admin/dashboard/profile/update")
+def update_admin_profile(
+    request: Request,
+    admin_name: str = Form(...),
+    email: str = Form(...),
+    session=Depends(require_admin)
+):
+    admin_id = session["user_id"]
+
+    existing = query("""
+        SELECT 1
+        FROM admin_account
+        WHERE email = %s
+        AND admin_id <> %s
+    """, (email.strip(), admin_id))
+
+    if existing:
+        return RedirectResponse(
+            "/admin/dashboard/profile?error=Email already exists",
+            status_code=302
+        )
+
+    execute("""
+        UPDATE admin_account
+        SET admin_name = %s,
+            email = %s
+        WHERE admin_id = %s
+    """, (
+        admin_name.strip(),
+        email.strip().lower(),
+        admin_id
+    ))
+
+    request.session["user_name"] = admin_name.strip()
+
+    return RedirectResponse(
+        "/admin/dashboard/profile?success=Profile updated successfully",
+        status_code=302
+    )
+
+@app.post("/admin/dashboard/profile/password")
+def change_admin_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    session=Depends(require_admin)
+):
+    admin_id = session["user_id"]
+
+    admin = query("""
+        SELECT password_hash
+        FROM admin_account
+        WHERE admin_id = %s
+    """, (admin_id,))
+
+    if not admin:
+        raise HTTPException(status_code=404)
+
+    if not _verify(current_password, admin[0]["password_hash"]):
+        return RedirectResponse(
+            "/admin/dashboard/profile?error=Current password is incorrect",
+            status_code=302
+        )
+
+    if new_password != confirm_password:
+        return RedirectResponse(
+            "/admin/dashboard/profile?error=Passwords do not match",
+            status_code=302
+        )
+
+    if len(new_password) < 6:
+        return RedirectResponse(
+            "/admin/dashboard/profile?error=Password must be at least 6 characters",
+            status_code=302
+        )
+
+    execute("""
+        UPDATE admin_account
+        SET password_hash = %s
+        WHERE admin_id = %s
+    """, (
+        _hash(new_password),
+        admin_id
+    ))
+
+    return RedirectResponse(
+        "/admin/dashboard/profile?success=Password updated successfully",
+        status_code=302
     )

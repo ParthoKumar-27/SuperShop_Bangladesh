@@ -27,6 +27,86 @@
         --shadow: 0 4px 24px rgba(4, 70, 53, 0.1);
         --radius: 14px;
       }
+      .header-dropdown {
+        position: relative;
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: 48px;
+        right: 0;
+        width: 260px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        display: none;
+        z-index: 999;
+      }
+
+      .dropdown-menu.show {
+        display: block;
+      }
+
+      .dropdown-title {
+        padding: 14px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        color: var(--dark);
+        text-decoration: none;
+        font-size: 13px;
+        transition: background 0.15s;
+      }
+
+      .dropdown-item:hover {
+        background: #f9fafb;
+      }
+
+      .notification-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .notification-item small {
+        color: var(--mid);
+        margin-top: 4px;
+      }
+
+      .dropdown-empty {
+        padding: 18px;
+        text-align: center;
+        color: var(--mid);
+        font-size: 13px;
+      }
+
+      .logout-item {
+        color: #dc2626;
+      }
+
+      .notif-count {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--orange);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       * {
         box-sizing: border-box;
         margin: 0;
@@ -551,6 +631,126 @@
       .filter-select:focus {
         border-color: var(--green);
       }
+
+      .profile-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+      }
+
+      .card {
+        background: #fff;
+        padding: 24px;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      }
+
+      .form-group {
+        margin-bottom: 18px;
+      }
+
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+      }
+
+      .btn-primary {
+        background: #044635;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      .btn-primary:hover {
+        background: #033828;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+
+      .badge.active {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .badge.inactive {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .alert {
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+      }
+
+      .alert.success {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .alert.error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      @media (max-width: 768px) {
+        .profile-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .sidebar-user-wrapper {
+    margin-top: auto;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-user {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+}
+
+.sidebar-user:hover {
+    background: rgba(4, 70, 53, 0.05);
+}
+
+.sidebar-user.active {
+    background: var(--orange);
+}
+
+.sidebar-user.active .user-name,
+.sidebar-user.active .user-role,
+.sidebar-user.active .user-avatar {
+    color: white;
+}
+
+.sidebar-user.active .user-avatar {
+    background: rgba(255, 255, 255, 0.2);
+}
     </style>
   </head>
   <body>
@@ -676,15 +876,25 @@
       </a>
       {% endif %} {% endif %}
 
+      <div class="nav-label">Account</div>
+
+      
+      
       <!-- User card + Logout -->
       <div class="sidebar-user">
+        <a
+    href="/admin/dashboard/profile"
+    class="sidebar-user {{ 'active' if path == '/admin/dashboard/profile' else '' }}"
+  >
         <div class="user-avatar">
           {{ user_name[0]|upper if user_name else 'U' }}
         </div>
+
         <div>
           <p class="user-name">{{ user_name or 'User' }}</p>
           <p class="user-role">{{ role or '' }}</p>
         </div>
+
         <a href="/auth/logout" class="logout-btn" title="Log out">
           <i class="fas fa-sign-out-alt"></i>
         </a>
@@ -695,16 +905,61 @@
        MAIN CONTENT
        ══════════════════════════════════ -->
     <div class="main-wrap">
-      <!-- Dark green header bar (metrocery style) -->
+      <!-- Dark green header bar -->
       <div class="stats-header">
         <div class="stats-header-search">
           <i class="fas fa-search"></i>
           <input type="text" placeholder="Search…" id="globalSearch" />
         </div>
         <span class="stats-header-date" id="headerDate"></span>
-        <div class="stats-header-bell"><i class="fas fa-bell"></i></div>
-        <div class="stats-header-user">
-          {{ user_name[0]|upper if user_name else 'A' }}
+        <!-- Notification -->
+        <div class="header-dropdown">
+          <div
+            class="stats-header-bell"
+            onclick="toggleDropdown('notificationMenu')"
+          >
+            <i class="fas fa-bell"></i>
+
+            {% if notifications and notifications|length > 0 %}
+            <span class="notif-count">{{ notifications|length }}</span>
+            {% endif %}
+          </div>
+
+          <div class="dropdown-menu" id="notificationMenu">
+            <div class="dropdown-title">Notifications</div>
+
+            {% if notifications and notifications|length > 0 %} {% for n in
+            notifications %}
+            <div class="dropdown-item notification-item">
+              <div>{{ n.message }}</div>
+              <small>{{ n.created_at }}</small>
+            </div>
+            {% endfor %} {% else %}
+            <div class="dropdown-empty">No notifications</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Profile -->
+        <div class="header-dropdown">
+          <div
+            class="stats-header-user"
+            onclick="toggleDropdown('profileMenu')"
+          >
+            {{ user_name[0]|upper if user_name else 'A' }}
+          </div>
+
+          <div class="dropdown-menu" id="profileMenu">
+            <a href="/admin/dashboard/profile" class="dropdown-item">
+              <i class="fas fa-user"></i>
+              View Profile
+            </a>
+
+            <a href="/auth/logout" class="dropdown-item logout-item">
+              <i class="fas fa-sign-out-alt"></i>
+              Logout
+            </a>
+          </div>
         </div>
       </div>
 
@@ -736,6 +991,27 @@
           sub.classList.add("open");
           const hdr = sub.previousElementSibling;
           if (hdr) hdr.classList.add("open");
+        }
+      });
+    </script>
+    <script>
+      function toggleDropdown(id) {
+        const menu = document.getElementById(id);
+
+        document.querySelectorAll(".dropdown-menu").forEach((dropdown) => {
+          if (dropdown.id !== id) {
+            dropdown.classList.remove("show");
+          }
+        });
+
+        menu.classList.toggle("show");
+      }
+
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest(".header-dropdown")) {
+          document.querySelectorAll(".dropdown-menu").forEach((dropdown) => {
+            dropdown.classList.remove("show");
+          });
         }
       });
     </script>
