@@ -63,8 +63,8 @@
         {% for i in inventory %}
         <tr>
           <td><strong style="color: var(--green)"> {{ i.inv_id }} </strong></td>
-          <td>{{ i.branch_name }}</td>
-          <td>{{ i.product_name }}</td>
+          <td><strong>{{ i.branch_name }}</strong></td>
+          <td><strong>{{ i.product_name }}</strong></td>
           <td>{{ i.quantity }}</td>
           <td>{{ i.reorder_level }}</td>
           <td>{{ i.shelf_location }}</td>
