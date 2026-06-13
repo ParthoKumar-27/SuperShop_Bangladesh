@@ -67,7 +67,10 @@
       <tbody>
         {% for d in discounts %}
         <tr>
-          <td>{{ d.discount_id }}</td>
+          <td><strong style="color:var(--green)">
+            {{ d.discount_id }}
+          </strong>
+            </td>
 
           <td>
             <strong>{{ d.discount_name }}</strong>

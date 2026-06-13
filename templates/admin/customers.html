@@ -1,5 +1,5 @@
-{% extends "admin/base_admin.html" %} {% block title %}Customers{% endblock %} {%
-block content %}
+{% extends "admin/base_admin.html" %} {% block title %}Customers{% endblock %}
+{% block content %}
 
 <div class="page-heading">Customers</div>
 <div class="page-subheading">View and manage all registered customers.</div>
@@ -77,10 +77,8 @@ block content %}
         {% for c in customers %}
         <tr style="transition: all 0.15s ease">
           <!-- ID -->
-          <td
-            style="font-family: monospace; font-size: 11px; color: var(--green)"
-          >
-            {{ c.cust_id }}
+          <td>
+            <strong style="color: var(--green)"> {{ c.cust_id }} </strong>
           </td>
 
           <!-- Name + email (better hierarchy) -->
