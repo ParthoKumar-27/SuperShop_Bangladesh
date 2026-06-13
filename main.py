@@ -522,3 +522,41 @@ def discounts_page(request: Request, session=Depends(require_admin)):
             "role": "ADMIN",
         }
     )
+
+@app.get("/admin/dashboard/sales", response_class=HTMLResponse)
+def admin_sales(
+    request: Request,
+    session=Depends(require_admin)
+):
+
+    sales = query("""
+        SELECT
+            s.sale_id,
+            TO_CHAR(s.sale_date,'DD Mon YYYY HH24:MI') AS sale_date,
+            s.order_type,
+            s.subtotal,
+            s.discount_amt,
+            s.total_amt,
+            s.payment_status,
+            b.branch_name,
+            e.emp_name,
+            COALESCE(c.cust_name, 'Walk-in') AS customer
+        FROM sale s
+        JOIN branch b
+            ON s.branch_id = b.branch_id
+        JOIN employee e
+            ON s.emp_id = e.emp_id
+        LEFT JOIN customer c
+            ON s.cust_id = c.cust_id
+        ORDER BY s.sale_date DESC
+    """)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/sales.html",
+        {
+            "sales": sales,
+            "role": "ADMIN",
+            "user_name": session.get("user_name"),
+        }
+    )

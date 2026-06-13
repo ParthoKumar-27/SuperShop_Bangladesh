@@ -581,21 +581,13 @@
       <div class="nav-label">Operations</div>
 
       <!-- Orders group -->
-      <div class="nav-group-header" onclick="toggleGroup('orders-sub', this)">
+      <a
+        href="/admin/dashboard/sales"
+        class="nav-item {{ 'active' if path == '/admin/dashboard/sales' else '' }}"
+      >
         <i class="fas fa-shopping-cart"></i>
         Orders / Sales
-        <i class="fas fa-chevron-down"></i>
-      </div>
-      <div class="nav-sub" id="orders-sub">
-        <a
-          href="/sales"
-          class="nav-sub-item {{ 'active' if path == '/sales' else '' }}"
-          >All Sales</a
-        >
-        <a href="/sales?type=ONLINE" class="nav-sub-item">Online Orders</a>
-        <a href="/sales?status=PENDING" class="nav-sub-item">Pending</a>
-        <a href="/sales?status=PAID" class="nav-sub-item">Completed</a>
-      </div>
+      </a>
 
       <a
         href="/admin/dashboard/inventory"

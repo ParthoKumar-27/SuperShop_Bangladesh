@@ -1,0 +1,214 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Sales Management{% endblock %}
+
+{% block content %}
+<div class="page-heading">Orders and Sales</div>
+<div class="page-subheading">View all orders and sales records</div>
+<!-- Filters -->
+<div class="filter-bar"
+     style="display:flex;justify-content:space-between;align-items:center">
+
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+
+    <div class="filter-input-wrap">
+      <i class="fas fa-search"></i>
+      <input
+        type="text"
+        id="searchInput"
+        class="filter-input"
+        placeholder="Search Sale ID, Customer, Employee..."
+      />
+    </div>
+
+    <select id="statusFilter" class="filter-select">
+      <option value="">All Status</option>
+      <option value="PAID">Paid</option>
+      <option value="PENDING">Pending</option>
+      <option value="CANCELLED">Cancelled</option>
+    </select>
+
+    <select id="typeFilter" class="filter-select">
+      <option value="">All Types</option>
+      <option value="ONLINE">Online</option>
+      <option value="IN_STORE">In-Store</option>
+    </select>
+
+  </div>
+
+  
+
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3
+      style="
+        color: var(--green);
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      <span
+        style="
+          width:10px;
+          height:10px;
+          background:var(--orange);
+          border-radius:50%;
+          display:inline-block;
+        "
+      ></span>
+      Sales Records
+    </h3>
+    <span style="font-size:12px;color:var(--mid)">
+    Total: {{ sales|length }}
+  </span>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table class="data-table">
+    <thead>
+      <tr>
+        <th>Sale ID</th>
+        <th>Date</th>
+        <th>Branch</th>
+        <th>Customer</th>
+        <th>Employee</th>
+        <th>Subtotal</th>
+        <th>Discount</th>
+        <th>Total</th>
+        <th>Order Type</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody id="salesTableBody">
+      {% for s in sales %}
+      <tr
+        data-status="{{ s.payment_status }}"
+        data-type="{{ s.order_type }}"
+      >
+        <td>
+          <strong style="color:var(--green)">
+            {{ s.sale_id }}
+          </strong>
+        </td>
+
+        <td>{{ s.sale_date }}</td>
+
+        <td>{{ s.branch_name }}</td>
+
+        <td>
+          {{ s.customer or 'Walk-in Customer' }}
+        </td>
+
+        <td>{{ s.emp_name }}</td>
+
+        <td>৳{{ "%.2f"|format(s.subtotal or 0) }}</td>
+
+        <td style="color:#dc2626">
+          {% if s.discount_amt and s.discount_amt > 0 %}
+            -৳{{ "%.2f"|format(s.discount_amt) }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+
+        <td>
+          <strong>
+            ৳{{ "%.2f"|format(s.total_amt or 0) }}
+          </strong>
+        </td>
+
+        <td>
+          {% if s.order_type == 'ONLINE' %}
+            <span class="badge badge-blue">Online</span>
+          {% else %}
+            <span class="badge badge-gray">In-Store</span>
+          {% endif %}
+        </td>
+
+        <td>
+          {% if s.payment_status == 'PAID' %}
+            <span class="badge badge-green">Paid</span>
+
+          {% elif s.payment_status == 'PENDING' %}
+            <span class="badge badge-yellow">Pending</span>
+
+          {% else %}
+            <span class="badge badge-red">Cancelled</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+
+  </table>
+</div>
+
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+function filterSales() {
+
+    const search =
+      document.getElementById("searchInput")
+      .value
+      .toLowerCase();
+
+    const status =
+      document.getElementById("statusFilter").value;
+
+    const type =
+      document.getElementById("typeFilter").value;
+
+    document
+      .querySelectorAll("#salesTableBody tr")
+      .forEach(row => {
+
+        const text =
+          row.textContent.toLowerCase();
+
+        const matchSearch =
+          text.includes(search);
+
+        const matchStatus =
+          !status ||
+          row.dataset.status === status;
+
+        const matchType =
+          !type ||
+          row.dataset.type === type;
+
+        row.style.display =
+          (matchSearch &&
+           matchStatus &&
+           matchType)
+          ? ""
+          : "none";
+      });
+}
+
+document
+  .getElementById("searchInput")
+  .addEventListener("keyup", filterSales);
+
+document
+  .getElementById("statusFilter")
+  .addEventListener("change", filterSales);
+
+document
+  .getElementById("typeFilter")
+  .addEventListener("change", filterSales);
+</script>
+
+{% endblock %}
