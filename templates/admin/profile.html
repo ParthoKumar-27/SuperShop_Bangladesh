@@ -2,112 +2,224 @@
 {% block content %}
 
 <style>
-  .profile-grid {
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    gap: 20px;
-    max-width: 900px;
-    width: 100%; /* ← ADD */
+  /* ── Layout ── */
+  .prof-wrap {
+    width: 100%;
+    max-width: none;
+}
+
+  /* ── Page header ── */
+  .prof-page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 12px;
+    flex-wrap: wrap;
   }
-  .profile-grid > * {
-    min-width: 0; /* ← ADD: prevents grid blowout */
+  .prof-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--mid);
+    margin-bottom: 4px;
+  }
+  .prof-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1.2;
   }
 
-  .profile-card {
-    background: #fff;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-
-  .profile-card-top {
-    background: var(--green);
-    padding: 20px 24px;
+  /* ── Alert banner ── */
+  .prof-alert {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 22px;
   }
+  .prof-alert.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  .prof-alert.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  .prof-alert i { font-size: 14px; flex-shrink: 0; }
 
-  .profile-avatar {
-    width: 56px;
-    height: 56px;
+  /* ── Hero identity strip ── */
+  .prof-hero {
+    background: var(--green);
+    border-radius: 16px 16px 0 0;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Subtle decorative ring — the signature element */
+  .prof-hero::before {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 32px solid rgba(255,255,255,0.06);
+    pointer-events: none;
+  }
+  .prof-hero::after {
+    content: '';
+    position: absolute;
+    right: 60px;
+    bottom: -60px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 24px solid rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+  .prof-avatar-ring {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 2px solid rgba(255,255,255,0.25);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
     color: #fff;
     flex-shrink: 0;
+    letter-spacing: -0.5px;
+    position: relative;
+    z-index: 1;
   }
-
-  .profile-avatar-meta .avatar-name {
-    font-size: 16px;
+  .prof-hero-meta { position: relative; z-index: 1; }
+  .prof-hero-name {
+    font-size: 18px;
     font-weight: 700;
     color: #fff;
+    line-height: 1.3;
   }
-
-  .profile-avatar-meta .avatar-id {
+  .prof-hero-id {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: 2px;
+    color: rgba(255,255,255,0.5);
     font-family: monospace;
+    margin-top: 2px;
   }
-
-  .profile-status-pill {
+  .prof-status-pill {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 10px;
+    margin-top: 8px;
+    padding: 3px 10px 3px 8px;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 700;
-    margin-top: 6px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255,255,255,0.12);
     color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
   }
-
-  .profile-status-pill .dot {
+  .prof-status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
     background: #4ade80;
     flex-shrink: 0;
   }
-
-  .profile-status-pill.inactive .dot {
-    background: #f87171;
+  .prof-status-pill.inactive .prof-status-dot { background: #f87171; }
+  .prof-hero-spacer { flex: 1; }
+  .prof-hero-since {
+    position: relative;
+    z-index: 1;
+    text-align: right;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.6;
+  }
+  .prof-hero-since strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
   }
 
-  .profile-card-body {
-    padding: 24px;
+  /* ── Two-panel body ── */
+  .prof-body {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 0;
+    background: #fff;
+    border-radius: 0 0 16px 16px;
+    border: 1px solid var(--border);
+    border-top: none;
+    overflow: hidden;
+  }
+  @media (max-width: 768px) {
+    .prof-body { grid-template-columns: 1fr; }
   }
 
-  .profile-section-label {
+  .prof-panel {
+    padding: 28px 32px;
+    min-width: 0;
+  }
+  .prof-panel + .prof-panel {
+    border-left: 1px solid var(--border);
+  }
+  @media (max-width: 768px) {
+    .prof-panel + .prof-panel {
+      border-left: none;
+      border-top: 1px solid var(--border);
+    }
+  }
+
+  /* ── Section label ── */
+  .prof-section-label {
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--mid);
-    margin-bottom: 16px;
+    letter-spacing: 0.12em;
+    color: #b0b8c1;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .prof-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
   }
 
-  .profile-field {
-    margin-bottom: 16px;
+  /* ── Form fields ── */
+  .prof-field {
+    margin-bottom: 18px;
   }
+  .prof-field:last-of-type { margin-bottom: 0; }
 
-  .profile-field label {
+  .prof-field label {
     display: block;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     color: var(--mid);
-    margin-bottom: 5px;
+    margin-bottom: 6px;
     letter-spacing: 0.02em;
   }
 
-  .profile-field input {
+  .prof-field input {
     width: 100%;
     padding: 10px 13px;
     border: 1.5px solid var(--border);
@@ -116,138 +228,206 @@
     font-size: 13px;
     color: var(--dark);
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
     background: #fff;
   }
-
-  .profile-field input:focus {
+  .prof-field input:focus {
     border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(4, 70, 53, 0.08);
   }
-
-  .profile-field input[readonly] {
+  .prof-field input[readonly] {
     background: #f9fafb;
-    color: var(--mid);
+    color: #9ca3af;
     cursor: default;
   }
+  .prof-field input[readonly]:focus {
+    border-color: var(--border);
+    box-shadow: none;
+  }
 
-  .profile-badge-row {
+  /* row of two fields */
+  .prof-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .prof-field-row .prof-field { margin-bottom: 0; }
+
+  /* badge inside a field slot */
+  .prof-badge-slot {
     display: flex;
     align-items: center;
-    height: 42px;
+    height: 41px;
   }
 
-  .profile-divider {
+  /* ── Divider ── */
+  .prof-divider {
     border: none;
     border-top: 1px solid var(--border);
-    margin: 20px 0;
+    margin: 22px 0;
   }
 
-  .profile-btn {
+  /* ── Action row ── */
+  .prof-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .prof-btn {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 10px 20px;
+    padding: 10px 22px;
     background: var(--green);
     color: #fff;
     border: none;
-    border-radius: 10px;
+    border-radius: 9px;
     font-family: "DM Sans", sans-serif;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.1s;
   }
+  .prof-btn:hover { background: #033828; }
+  .prof-btn:active { transform: scale(0.98); }
 
-  .profile-btn:hover {
-    background: #033828;
+  .prof-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    background: transparent;
+    color: var(--mid);
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    text-decoration: none;
   }
+  .prof-btn-ghost:hover { border-color: var(--dark); color: var(--dark); }
 
+  /* ── Password strength ── */
   .pw-meter {
-    height: 4px;
+    height: 3px;
     border-radius: 2px;
     background: var(--border);
-    margin-top: 6px;
+    margin-top: 8px;
     overflow: hidden;
   }
-
   .pw-bar {
     height: 100%;
     width: 0;
-    transition:
-      width 0.2s,
-      background 0.2s;
+    border-radius: 2px;
+    transition: width 0.2s ease, background 0.2s ease;
   }
-
   .pw-hint {
     font-size: 11px;
     color: var(--mid);
-    margin-top: 4px;
+    margin-top: 5px;
     min-height: 16px;
+    font-weight: 500;
   }
 
-  @media (max-width: 768px) {
-    .profile-grid {
-      grid-template-columns: 1fr;
-    }
+  /* ── Input with eye-toggle ── */
+  .input-icon-wrap {
+    position: relative;
   }
+  .input-icon-wrap input {
+    padding-right: 40px;
+  }
+  .input-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #b0b8c1;
+    font-size: 13px;
+    transition: color 0.15s;
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+  }
+  .input-eye:hover { color: var(--dark); }
+  
 </style>
 
-<p
-  style="
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--mid);
-    margin-bottom: 6px;
-  "
->
-  Account settings
-</p>
-<h2 class="page-heading">My Profile</h2>
-<p class="page-subheading">
-  Manage your personal information and security settings.
-</p>
+<div class="prof-wrap">
 
-{% if request.query_params.get('success') %}
-<div class="alert success" style="margin-bottom: 20px">
-  {{ request.query_params.get('success') }}
-</div>
-{% endif %} {% if request.query_params.get('error') %}
-<div class="alert error" style="margin-bottom: 20px">
-  {{ request.query_params.get('error') }}
-</div>
-{% endif %}
+  <!-- Page header -->
+  <div class="prof-page-header">
+    <div>
+      <p class="prof-eyebrow">Account settings</p>
+      <h2 class="prof-title">My Profile</h2>
+    </div>
+  </div>
 
-<div class="profile-grid">
-  <!-- ── Profile Information ── -->
-  <div class="profile-card">
-    <div class="profile-card-top">
-      <div class="profile-avatar" id="profileAvatar">
-        {{ admin.admin_name[:2]|upper if admin.admin_name else 'AD' }}
-      </div>
-      <div class="profile-avatar-meta">
-        <div class="avatar-name">{{ admin.admin_name or 'Admin User' }}</div>
-        <div class="avatar-id">#{{ admin.admin_id }}</div>
-        <div
-          class="profile-status-pill {{ '' if admin.is_active == 'Y' else 'inactive' }}"
-        >
-          <span class="dot"></span>
-          {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
-        </div>
+  <!-- Alerts -->
+  {% if request.query_params.get('success') %}
+  <div class="prof-alert success">
+    <i class="fas fa-check-circle"></i>
+    {{ request.query_params.get('success') }}
+  </div>
+  {% endif %}
+  {% if request.query_params.get('error') %}
+  <div class="prof-alert error">
+    <i class="fas fa-exclamation-circle"></i>
+    {{ request.query_params.get('error') }}
+  </div>
+  {% endif %}
+
+  <!-- Hero identity strip -->
+  <div class="prof-hero">
+    <div class="prof-avatar-ring" id="profileAvatar">
+      {{ admin.admin_name[:2]|upper if admin.admin_name else 'AD' }}
+    </div>
+    <div class="prof-hero-meta">
+      <div class="prof-hero-name">{{ admin.admin_name or 'Admin User' }}</div>
+      <div class="prof-hero-id">#{{ admin.admin_id }}</div>
+      <div class="prof-status-pill {{ '' if admin.is_active == 'Y' else 'inactive' }}">
+        <span class="prof-status-dot"></span>
+        {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
       </div>
     </div>
+    <div class="prof-hero-spacer"></div>
+    <div class="prof-hero-since">
+      Member since
+      <strong>{{ admin.created_at }}</strong>
+    </div>
+  </div>
 
-    <div class="profile-card-body">
-      <p class="profile-section-label">Profile information</p>
+  <!-- Two-panel body -->
+  <div class="prof-body">
+
+    <!-- Left: Profile information -->
+    <div class="prof-panel">
+      <p class="prof-section-label">Profile information</p>
 
       <form method="POST" action="/admin/dashboard/profile/update">
-        <div class="profile-field">
-          <label>Admin ID</label>
-          <input type="text" value="{{ admin.admin_id }}" readonly />
+
+        <div class="prof-field-row">
+          <div class="prof-field">
+            <label>Admin ID</label>
+            <input type="text" value="{{ admin.admin_id }}" readonly />
+          </div>
+          <div class="prof-field">
+            <label>Account status</label>
+            <div class="prof-badge-slot">
+              <span class="badge {{ 'badge-green' if admin.is_active == 'Y' else 'badge-red' }}">
+                {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div class="profile-field">
+        <div class="prof-field">
           <label>Full name</label>
           <input
             type="text"
@@ -255,141 +435,160 @@
             value="{{ admin.admin_name }}"
             id="inputName"
             oninput="syncAvatar(this.value)"
+            placeholder="Your full name"
             required
           />
         </div>
 
-        <div class="profile-field">
+        <div class="prof-field">
           <label>Email address</label>
-          <input type="email" name="email" value="{{ admin.email }}" required />
+          <input
+            type="email"
+            name="email"
+            value="{{ admin.email }}"
+            placeholder="you@example.com"
+            required
+          />
         </div>
 
-        <div class="profile-field">
-          <label>Account status</label>
-          <div class="profile-badge-row">
-            <span
-              class="badge {{ 'badge-green' if admin.is_active == 'Y' else 'badge-red' }}"
-            >
-              {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
-            </span>
+        <hr class="prof-divider" />
+
+        <div class="prof-actions">
+          <button type="submit" class="prof-btn">
+            <i class="fas fa-check"></i> Save changes
+          </button>
+          <a href="/admin/dashboard" class="prof-btn-ghost">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right: Change password -->
+    <div class="prof-panel">
+      <p class="prof-section-label">Change password</p>
+
+      <form method="POST" action="/admin/dashboard/profile/password">
+
+        <div class="prof-field">
+          <label>Current password</label>
+          <div class="input-icon-wrap">
+            <input
+              type="password"
+              name="current_password"
+              id="currentPassword"
+              placeholder="Enter current password"
+              required
+            />
+            <button type="button" class="input-eye" onclick="toggleEye('currentPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
           </div>
         </div>
 
-        <div class="profile-field">
-          <label>Member since</label>
-          <input type="text" value="{{ admin.created_at }}" readonly />
-        </div>
-
-        <hr class="profile-divider" />
-
-        <button type="submit" class="profile-btn">
-          <i class="fas fa-save"></i> Save changes
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- ── Change Password ── -->
-  <div class="profile-card">
-    <div class="profile-card-body">
-      <p class="profile-section-label">Change password</p>
-
-      <form method="POST" action="/admin/dashboard/profile/password">
-        <div class="profile-field">
-          <label>Current password</label>
-          <input
-            type="password"
-            name="current_password"
-            placeholder="Enter current password"
-            required
-          />
-        </div>
-
-        <div class="profile-field">
+        <div class="prof-field">
           <label>New password</label>
-          <input
-            type="password"
-            name="new_password"
-            id="newPassword"
-            placeholder="Min. 8 characters"
-            oninput="checkStrength(this.value)"
-            required
-          />
-
+          <div class="input-icon-wrap">
+            <input
+              type="password"
+              name="new_password"
+              id="newPassword"
+              placeholder="Min. 8 characters"
+              oninput="checkStrength(this.value)"
+              required
+            />
+            <button type="button" class="input-eye" onclick="toggleEye('newPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          
           <p class="pw-hint" id="pwHint"></p>
         </div>
 
-        <div class="profile-field">
+        <div class="prof-field">
           <label>Confirm new password</label>
-          <input
-            type="password"
-            name="confirm_password"
-            id="confirmPassword"
-            placeholder="Repeat new password"
-            oninput="checkMatch()"
-            required
-          />
+          <div class="input-icon-wrap">
+            <input
+              type="password"
+              name="confirm_password"
+              id="confirmPassword"
+              placeholder="Repeat new password"
+              oninput="checkMatch()"
+              required
+            />
+            <button type="button" class="input-eye" onclick="toggleEye('confirmPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
           <p class="pw-hint" id="matchHint"></p>
         </div>
 
-        <hr class="profile-divider" />
+        <hr class="prof-divider" />
 
-        <button type="submit" class="profile-btn">
-          <i class="fas fa-lock"></i> Update password
-        </button>
+        <div class="prof-actions">
+          <button type="submit" class="prof-btn">
+            <i class="fas fa-lock"></i> Update password
+          </button>
+        </div>
       </form>
     </div>
-  </div>
-</div>
+
+  </div><!-- /.prof-body -->
+</div><!-- /.prof-wrap -->
 
 <script>
   function syncAvatar(val) {
-    const parts = val.trim().split(" ").filter(Boolean);
-    const initials =
-      parts.length >= 2
-        ? parts[0][0] + parts[parts.length - 1][0]
-        : parts[0]
-          ? parts[0].slice(0, 2)
-          : "AD";
-    document.getElementById("profileAvatar").textContent =
-      initials.toUpperCase();
+    const parts = val.trim().split(' ').filter(Boolean);
+    const initials = parts.length >= 2
+      ? parts[0][0] + parts[parts.length - 1][0]
+      : parts[0] ? parts[0].slice(0, 2) : 'AD';
+    document.getElementById('profileAvatar').textContent = initials.toUpperCase();
   }
 
   function checkStrength(val) {
     let score = 0;
-    if (val.length >= 8) score++;
-    if (/[A-Z]/.test(val)) score++;
-    if (/[0-9]/.test(val)) score++;
-    if (/[^A-Za-z0-9]/.test(val)) score++;
+    if (val.length >= 8)           score++;
+    if (/[A-Z]/.test(val))         score++;
+    if (/[0-9]/.test(val))         score++;
+    if (/[^A-Za-z0-9]/.test(val))  score++;
 
-    const pcts = [0, 25, 50, 75, 100];
-    const cols = ["", "#ef4444", "#f17b0d", "#f17b0d", "#044635"];
-    const labels = ["", "Weak", "Fair", "Good", "Strong"];
+    const pcts  = [0, 25, 50, 75, 100];
+    const cols  = ['', '#ef4444', '#f17b0d', '#eab308', '#044635'];
+    const labels= ['', 'Weak', 'Fair', 'Good', 'Strong'];
 
-    const bar = document.getElementById("pwBar");
-    const hint = document.getElementById("pwHint");
-    bar.style.width = pcts[score] + "%";
+    const bar  = document.getElementById('pwBar');
+    const hint = document.getElementById('pwHint');
+    bar.style.width      = pcts[score] + '%';
     bar.style.background = cols[score];
-    hint.textContent = val ? labels[score] : "";
-    hint.style.color = cols[score];
+    hint.textContent     = val ? labels[score] : '';
+    hint.style.color     = cols[score];
 
     checkMatch();
   }
 
   function checkMatch() {
-    const np = document.getElementById("newPassword").value;
-    const cf = document.getElementById("confirmPassword").value;
-    const hint = document.getElementById("matchHint");
-    if (!cf) {
-      hint.textContent = "";
-      return;
-    }
+    const np   = document.getElementById('newPassword').value;
+    const cf   = document.getElementById('confirmPassword').value;
+    const hint = document.getElementById('matchHint');
+    if (!cf) { hint.textContent = ''; return; }
     if (np === cf) {
-      hint.textContent = "Passwords match";
-      hint.style.color = "#166534";
+      hint.textContent  = '✓ Passwords match';
+      hint.style.color  = '#166534';
     } else {
-      hint.textContent = "Passwords don't match";
-      hint.style.color = "#991b1b";
+      hint.textContent  = '✗ Passwords don\'t match';
+      hint.style.color  = '#991b1b';
+    }
+  }
+
+  function toggleEye(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon  = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
   }
 </script>
