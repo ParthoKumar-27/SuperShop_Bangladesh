@@ -681,3 +681,29 @@ def change_admin_password(
         "/admin/dashboard/profile?success=Password updated successfully",
         status_code=302
     )
+
+@app.get("/admin/dashboard/branches/manage")
+def manage_branches(
+    request: Request,
+    session=Depends(require_admin)
+):
+    branches = query("""
+        SELECT b.branch_id, b.branch_name, c.city_name,
+               b.address, b.phone, b.open_time, b.close_time,
+               b.is_active, e.emp_name AS manager_name
+        FROM branch b
+        JOIN city c ON b.city_id = c.city_id
+        LEFT JOIN branch_manager bm USING (branch_id)
+        LEFT JOIN employee e ON bm.emp_id = e.emp_id
+        ORDER BY b.branch_id
+    """)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/manage_branches.html",
+        {
+            "branches": branches,
+            "user_name": session.get("user_name"),
+            "role": "ADMIN",
+        }
+    )
