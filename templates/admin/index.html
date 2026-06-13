@@ -234,16 +234,19 @@
   </div>
 </div>
 
-<!-- CHART + BRANCHES -->
+<!-- CHART + BRANCHES
+     FIX: added min-width:0 so grid children can't overflow their tracks -->
 <div
   style="
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 16px;
     margin-bottom: 20px;
+    min-width: 0;
   "
 >
-  <div class="card">
+  <!-- FIX: added min-width:0 on the card itself so the canvas shrinks with it -->
+  <div class="card" style="min-width: 0;">
     <div class="card-header">
       <h3>Sales Revenue</h3>
       <span
@@ -267,7 +270,8 @@
         >This week
       </span>
     </div>
-    <div style="padding: 18px 20px">
+    <!-- FIX: overflow:hidden prevents canvas from blowing out the card -->
+    <div style="padding: 18px 20px; min-width: 0; overflow: hidden;">
       <p style="font-size: 11px; color: var(--mid)">Total Sale</p>
       <p
         style="
@@ -283,7 +287,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" style="min-width: 0;">
     <div class="card-header">
       <h3>Top Branches by Revenue</h3>
       <a href="/admin/dashboard/branches" class="card-link">View All</a>
@@ -348,15 +352,27 @@
   </div>
 </div>
 
-<!-- RECENT SALES + TOP PRODUCTS -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
-  <div class="card">
+<!-- RECENT SALES + TOP PRODUCTS
+     FIX: added min-width:0 on the grid wrapper and both cards -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 0;">
+  <div class="card" style="min-width: 0;">
     <div class="card-header">
       <h3>Recent Sales</h3>
       <a href="/admin/dashboard/sales" class="card-link">View All</a>
     </div>
     <div style="overflow-x: auto">
-      <table class="data-table">
+      <!-- FIX: removed the vibrating scale(1.002) via a scoped style override.
+           We keep the background highlight but drop the transform entirely. -->
+      <style>
+        #recentSalesTable tbody tr:hover td {
+          background: rgba(4, 70, 53, 0.04);
+        }
+        /* Override the global rule that causes the vibration */
+        #recentSalesTable tbody tr:hover {
+          transform: none;
+        }
+      </style>
+      <table class="data-table" id="recentSalesTable">
         <thead>
           <tr>
             <th>Sale ID</th>
@@ -401,7 +417,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" style="min-width: 0;">
     <div class="card-header">
       <h3>Top Selling Products</h3>
       <a href="/admin/dashboard/products" class="card-link">View All</a>
@@ -468,7 +484,8 @@
 <script>
   const ctx = document.getElementById('revenueChart');
   if (ctx) {
-    new Chart(ctx, {
+    // FIX: store instance on window so base_admin's toggleSidebar can call .resize()
+    window.revenueChartInstance = new Chart(ctx, {
       type: 'line',
       data: {
         labels: {{ chart_labels | tojson }},
@@ -476,20 +493,39 @@
           data: {{ chart_data | tojson }},
           borderColor: '#F17B0D',
           backgroundColor: 'rgba(241,123,13,0.09)',
-          borderWidth: 2.5, fill: true, tension: 0.4,
-          pointBackgroundColor: '#F17B0D', pointBorderColor: '#fff',
-          pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6,
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#F17B0D',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
         }]
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false },
-          tooltip: { backgroundColor:'#044635', titleColor:'#fff', bodyColor:'rgba(255,255,255,.7)',
-            padding:10, cornerRadius:8, callbacks:{ label: c=>' ৳ '+c.parsed.y.toLocaleString() } }
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#044635',
+            titleColor: '#fff',
+            bodyColor: 'rgba(255,255,255,.7)',
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: { label: c => ' ৳ ' + c.parsed.y.toLocaleString() }
+          }
         },
         scales: {
-          x: { grid:{ display:false }, ticks:{ font:{family:'DM Sans',size:11}, color:'#9ca3af' } },
-          y: { grid:{ color:'#f3f4f6' }, ticks:{ font:{family:'DM Sans',size:11}, color:'#9ca3af', callback: v=>'৳'+v } }
+          x: {
+            grid: { display: false },
+            ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9ca3af' }
+          },
+          y: {
+            grid: { color: '#f3f4f6' },
+            ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9ca3af', callback: v => '৳' + v }
+          }
         }
       }
     });

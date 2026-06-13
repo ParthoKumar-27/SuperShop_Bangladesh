@@ -1,7 +1,4 @@
-{% extends "admin/base_admin.html" %}
-
-{% block title %}My Profile{% endblock %}
-
+{% extends "admin/base_admin.html" %} {% block title %}My Profile{% endblock %}
 {% block content %}
 
 <style>
@@ -10,6 +7,10 @@
     grid-template-columns: 3fr 2fr;
     gap: 20px;
     max-width: 900px;
+    width: 100%; /* ← ADD */
+  }
+  .profile-grid > * {
+    min-width: 0; /* ← ADD: prevents grid blowout */
   }
 
   .profile-card {
@@ -172,7 +173,9 @@
   .pw-bar {
     height: 100%;
     width: 0;
-    transition: width 0.2s, background 0.2s;
+    transition:
+      width 0.2s,
+      background 0.2s;
   }
 
   .pw-hint {
@@ -189,149 +192,167 @@
   }
 </style>
 
-<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mid);margin-bottom:6px">Account settings</p>
+<p
+  style="
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--mid);
+    margin-bottom: 6px;
+  "
+>
+  Account settings
+</p>
 <h2 class="page-heading">My Profile</h2>
-<p class="page-subheading">Manage your personal information and security settings.</p>
+<p class="page-subheading">
+  Manage your personal information and security settings.
+</p>
 
 {% if request.query_params.get('success') %}
-<div class="alert success" style="margin-bottom:20px">
-    {{ request.query_params.get('success') }}
+<div class="alert success" style="margin-bottom: 20px">
+  {{ request.query_params.get('success') }}
 </div>
-{% endif %}
-
-{% if request.query_params.get('error') %}
-<div class="alert error" style="margin-bottom:20px">
-    {{ request.query_params.get('error') }}
+{% endif %} {% if request.query_params.get('error') %}
+<div class="alert error" style="margin-bottom: 20px">
+  {{ request.query_params.get('error') }}
 </div>
 {% endif %}
 
 <div class="profile-grid">
-
-    <!-- ── Profile Information ── -->
-    <div class="profile-card">
-        <div class="profile-card-top">
-            <div class="profile-avatar" id="profileAvatar">
-                {{ admin.admin_name[:2]|upper if admin.admin_name else 'AD' }}
-            </div>
-            <div class="profile-avatar-meta">
-                <div class="avatar-name">{{ admin.admin_name or 'Admin User' }}</div>
-                <div class="avatar-id">#{{ admin.admin_id }}</div>
-                <div class="profile-status-pill {{ '' if admin.is_active == 'Y' else 'inactive' }}">
-                    <span class="dot"></span>
-                    {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
-                </div>
-            </div>
+  <!-- ── Profile Information ── -->
+  <div class="profile-card">
+    <div class="profile-card-top">
+      <div class="profile-avatar" id="profileAvatar">
+        {{ admin.admin_name[:2]|upper if admin.admin_name else 'AD' }}
+      </div>
+      <div class="profile-avatar-meta">
+        <div class="avatar-name">{{ admin.admin_name or 'Admin User' }}</div>
+        <div class="avatar-id">#{{ admin.admin_id }}</div>
+        <div
+          class="profile-status-pill {{ '' if admin.is_active == 'Y' else 'inactive' }}"
+        >
+          <span class="dot"></span>
+          {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
         </div>
-
-        <div class="profile-card-body">
-            <p class="profile-section-label">Profile information</p>
-
-            <form method="POST" action="/admin/dashboard/profile/update">
-
-                <div class="profile-field">
-                    <label>Admin ID</label>
-                    <input type="text" value="{{ admin.admin_id }}" readonly>
-                </div>
-
-                <div class="profile-field">
-                    <label>Full name</label>
-                    <input type="text"
-                           name="admin_name"
-                           value="{{ admin.admin_name }}"
-                           id="inputName"
-                           oninput="syncAvatar(this.value)"
-                           required>
-                </div>
-
-                <div class="profile-field">
-                    <label>Email address</label>
-                    <input type="email"
-                           name="email"
-                           value="{{ admin.email }}"
-                           required>
-                </div>
-
-                <div class="profile-field">
-                    <label>Account status</label>
-                    <div class="profile-badge-row">
-                        <span class="badge {{ 'badge-green' if admin.is_active == 'Y' else 'badge-red' }}">
-                            {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="profile-field">
-                    <label>Member since</label>
-                    <input type="text" value="{{ admin.created_at }}" readonly>
-                </div>
-
-                <hr class="profile-divider">
-
-                <button type="submit" class="profile-btn">
-                    <i class="fas fa-save"></i> Save changes
-                </button>
-
-            </form>
-        </div>
+      </div>
     </div>
 
-    <!-- ── Change Password ── -->
-    <div class="profile-card">
-        <div class="profile-card-body">
-            <p class="profile-section-label">Change password</p>
+    <div class="profile-card-body">
+      <p class="profile-section-label">Profile information</p>
 
-            <form method="POST" action="/admin/dashboard/profile/password">
-
-                <div class="profile-field">
-                    <label>Current password</label>
-                    <input type="password"
-                           name="current_password"
-                           placeholder="Enter current password"
-                           required>
-                </div>
-
-                <div class="profile-field">
-                    <label>New password</label>
-                    <input type="password"
-                           name="new_password"
-                           id="newPassword"
-                           placeholder="Min. 8 characters"
-                           oninput="checkStrength(this.value)"
-                           required>
-                    
-                    <p class="pw-hint" id="pwHint"></p>
-                </div>
-
-                <div class="profile-field">
-                    <label>Confirm new password</label>
-                    <input type="password"
-                           name="confirm_password"
-                           id="confirmPassword"
-                           placeholder="Repeat new password"
-                           oninput="checkMatch()"
-                           required>
-                    <p class="pw-hint" id="matchHint"></p>
-                </div>
-
-                <hr class="profile-divider">
-
-                <button type="submit" class="profile-btn">
-                    <i class="fas fa-lock"></i> Update password
-                </button>
-
-            </form>
+      <form method="POST" action="/admin/dashboard/profile/update">
+        <div class="profile-field">
+          <label>Admin ID</label>
+          <input type="text" value="{{ admin.admin_id }}" readonly />
         </div>
-    </div>
 
+        <div class="profile-field">
+          <label>Full name</label>
+          <input
+            type="text"
+            name="admin_name"
+            value="{{ admin.admin_name }}"
+            id="inputName"
+            oninput="syncAvatar(this.value)"
+            required
+          />
+        </div>
+
+        <div class="profile-field">
+          <label>Email address</label>
+          <input type="email" name="email" value="{{ admin.email }}" required />
+        </div>
+
+        <div class="profile-field">
+          <label>Account status</label>
+          <div class="profile-badge-row">
+            <span
+              class="badge {{ 'badge-green' if admin.is_active == 'Y' else 'badge-red' }}"
+            >
+              {{ 'Active' if admin.is_active == 'Y' else 'Inactive' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="profile-field">
+          <label>Member since</label>
+          <input type="text" value="{{ admin.created_at }}" readonly />
+        </div>
+
+        <hr class="profile-divider" />
+
+        <button type="submit" class="profile-btn">
+          <i class="fas fa-save"></i> Save changes
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Change Password ── -->
+  <div class="profile-card">
+    <div class="profile-card-body">
+      <p class="profile-section-label">Change password</p>
+
+      <form method="POST" action="/admin/dashboard/profile/password">
+        <div class="profile-field">
+          <label>Current password</label>
+          <input
+            type="password"
+            name="current_password"
+            placeholder="Enter current password"
+            required
+          />
+        </div>
+
+        <div class="profile-field">
+          <label>New password</label>
+          <input
+            type="password"
+            name="new_password"
+            id="newPassword"
+            placeholder="Min. 8 characters"
+            oninput="checkStrength(this.value)"
+            required
+          />
+
+          <p class="pw-hint" id="pwHint"></p>
+        </div>
+
+        <div class="profile-field">
+          <label>Confirm new password</label>
+          <input
+            type="password"
+            name="confirm_password"
+            id="confirmPassword"
+            placeholder="Repeat new password"
+            oninput="checkMatch()"
+            required
+          />
+          <p class="pw-hint" id="matchHint"></p>
+        </div>
+
+        <hr class="profile-divider" />
+
+        <button type="submit" class="profile-btn">
+          <i class="fas fa-lock"></i> Update password
+        </button>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
   function syncAvatar(val) {
-    const parts = val.trim().split(' ').filter(Boolean);
-    const initials = parts.length >= 2
-      ? parts[0][0] + parts[parts.length - 1][0]
-      : parts[0] ? parts[0].slice(0, 2) : 'AD';
-    document.getElementById('profileAvatar').textContent = initials.toUpperCase();
+    const parts = val.trim().split(" ").filter(Boolean);
+    const initials =
+      parts.length >= 2
+        ? parts[0][0] + parts[parts.length - 1][0]
+        : parts[0]
+          ? parts[0].slice(0, 2)
+          : "AD";
+    document.getElementById("profileAvatar").textContent =
+      initials.toUpperCase();
   }
 
   function checkStrength(val) {
@@ -341,31 +362,34 @@
     if (/[0-9]/.test(val)) score++;
     if (/[^A-Za-z0-9]/.test(val)) score++;
 
-    const pcts  = [0, 25, 50, 75, 100];
-    const cols  = ['', '#ef4444', '#f17b0d', '#f17b0d', '#044635'];
-    const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+    const pcts = [0, 25, 50, 75, 100];
+    const cols = ["", "#ef4444", "#f17b0d", "#f17b0d", "#044635"];
+    const labels = ["", "Weak", "Fair", "Good", "Strong"];
 
-    const bar  = document.getElementById('pwBar');
-    const hint = document.getElementById('pwHint');
-    bar.style.width      = pcts[score] + '%';
+    const bar = document.getElementById("pwBar");
+    const hint = document.getElementById("pwHint");
+    bar.style.width = pcts[score] + "%";
     bar.style.background = cols[score];
-    hint.textContent     = val ? labels[score] : '';
-    hint.style.color     = cols[score];
+    hint.textContent = val ? labels[score] : "";
+    hint.style.color = cols[score];
 
     checkMatch();
   }
 
   function checkMatch() {
-    const np   = document.getElementById('newPassword').value;
-    const cf   = document.getElementById('confirmPassword').value;
-    const hint = document.getElementById('matchHint');
-    if (!cf) { hint.textContent = ''; return; }
+    const np = document.getElementById("newPassword").value;
+    const cf = document.getElementById("confirmPassword").value;
+    const hint = document.getElementById("matchHint");
+    if (!cf) {
+      hint.textContent = "";
+      return;
+    }
     if (np === cf) {
-      hint.textContent = 'Passwords match';
-      hint.style.color = '#166534';
+      hint.textContent = "Passwords match";
+      hint.style.color = "#166534";
     } else {
       hint.textContent = "Passwords don't match";
-      hint.style.color = '#991b1b';
+      hint.style.color = "#991b1b";
     }
   }
 </script>
