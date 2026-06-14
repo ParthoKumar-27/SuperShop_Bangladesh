@@ -1,112 +1,1888 @@
-{% extends "admin/base_admin.html" %}
+{% extends "admin/base_admin.html" %} {% block title %}Manage Branches{%
+endblock %} {% block content %}
+<style>
+  /* ── Slide-in drawer ── */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 200;
+    display: none;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+  .drawer-overlay.open {
+    display: flex;
+  }
 
-{% block title %}Manage Branches{% endblock %}
+  .drawer {
+    background: var(--white);
+    width: 420px;
+    height: 100vh;
+    overflow-y: auto;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.22s ease;
+  }
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
 
-{% block content %}
+  .drawer-head {
+    background: var(--green);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .drawer-head h3 {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .drawer-head p {
+    font-size: 12px;
+    opacity: 0.65;
+    margin-top: 2px;
+  }
+  .drawer-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .drawer-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .drawer-body {
+    padding: 24px;
+    flex: 1;
+  }
+
+  /* ── Form elements (drawer-scoped) ── */
+  .df-group {
+    margin-bottom: 18px;
+  }
+  .df-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  .df-input,
+  .df-select {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    color: var(--dark);
+    background: #fafafa;
+    outline: none;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+  }
+  .df-input:focus,
+  .df-select:focus {
+    border-color: var(--green);
+    background: white;
+  }
+  .df-hint {
+    font-size: 11px;
+    color: var(--mid);
+    margin-top: 4px;
+  }
+
+  .df-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .df-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 9px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+    transition:
+      background 0.15s,
+      transform 0.1s;
+  }
+  .df-btn:hover {
+    background: #033828;
+    transform: translateY(-1px);
+  }
+
+  .df-btn-danger {
+    background: #dc2626;
+  }
+  .df-btn-danger:hover {
+    background: #b91c1c;
+  }
+
+  .df-btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--dark);
+    margin-top: 8px;
+  }
+  .df-btn-outline:hover {
+    background: #f9fafb;
+    transform: none;
+  }
+
+  .df-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  .df-warn {
+    background: #fef9c3;
+    border: 1px solid #fde047;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: #713f12;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .df-danger-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: #7f1d1d;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  /* ── Alert flash ── */
+  .flash {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .flash.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  .flash.error {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border: 1px solid #fecaca;
+  }
+
+  /* ── Action button row ── */
+  .action-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .act-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition:
+      background 0.15s,
+      transform 0.1s;
+  }
+  .act-btn:hover {
+    transform: translateY(-1px);
+  }
+  .act-btn-green {
+    background: var(--green);
+    color: white;
+  }
+  .act-btn-orange {
+    background: var(--orange);
+    color: white;
+  }
+  .act-btn-teal {
+    background: #0891b2;
+    color: white;
+  }
+  .act-btn-purple {
+    background: #7c3aed;
+    color: white;
+  }
+  .act-btn-red {
+    background: #dc2626;
+    color: white;
+  }
+
+  /* ── Manager badge in table ── */
+  .mgr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(4, 70, 53, 0.07);
+    color: var(--green);
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .no-mgr {
+    font-size: 12px;
+    color: #dc2626;
+    font-style: italic;
+  }
+  .act-btn-blue {
+    background: #2563eb;
+    color: white;
+  }
+</style>
+
+<!-- ── Flash messages ── -->
+{% set msg_ok = request.query_params.get('success') %} {% set msg_err =
+request.query_params.get('error') %} {% if msg_ok %}
+<div class="flash success">✓ {{ msg_ok }}</div>
+{% endif %} {% if msg_err %}
+<div class="flash error">✗ {{ msg_err }}</div>
+{% endif %}
 
 <div class="page-heading">Manage Branches</div>
-
 <div class="page-subheading">
-    View and manage all branch information.
+  Add, edit, and manage branch details, cities, and manager assignments.
 </div>
 
-<div class="card">
-
+<!-- ── Top row: City table (left) + Action buttons (right) ── -->
+<div
+  style="
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 22px;
+    align-items: start;
+  "
+>
+  <!-- LEFT: City table -->
+  <div class="card">
     <div class="card-header">
-        <h3 style="color:var(--green)">
-            Branch List
-        </h3>
-
-        <span style="font-size:12px;color:var(--mid)">
-            Total: {{ branches|length }}
-        </span>
+      <h3
+        style="
+          color: var(--green);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        "
+      >
+        <span
+          style="
+            width: 9px;
+            height: 9px;
+            background: var(--orange);
+            border-radius: 50%;
+            display: inline-block;
+          "
+        ></span>
+        Cities
+      </h3>
+      <span style="font-size: 12px; color: var(--mid)"
+        >Total: {{ cities|length }}</span
+      >
     </div>
-
-    <div style="overflow-x:auto">
-
-        <table class="data-table">
-
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Branch</th>
-                    <th>City</th>
-                    <th>Phone</th>
-                    <th>Manager</th>
-                    <th>Hours</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                {% for b in branches %}
-                <tr>
-
-                    <td>
-                        <strong style="color:var(--green)">
-                            {{ b.branch_id }}
-                        </strong>
-                    </td>
-
-                    <td>
-                        <div style="font-weight:600">
-                            {{ b.branch_name }}
-                        </div>
-
-                        <div style="font-size:12px;color:var(--mid)">
-                            {{ b.address }}
-                        </div>
-                    </td>
-
-                    <td>{{ b.city_name }}</td>
-
-                    <td>{{ b.phone or '—' }}</td>
-
-                    <td>{{ b.manager_name or 'Unassigned' }}</td>
-
-                    <td>
-                        {{ b.open_time }} – {{ b.close_time }}
-                    </td>
-
-                    <td>
-                        {% if b.is_active == 'Y' %}
-                            <span class="badge badge-green">
-                                Active
-                            </span>
-                        {% else %}
-                            <span class="badge badge-gray">
-                                Inactive
-                            </span>
-                        {% endif %}
-                    </td>
-
-                    <td>
-
-                        <a
-                            href="/admin/dashboard/branches/{{ b.branch_id }}/edit"
-                            class="badge"
-                            style="
-                                background:#e0f2fe;
-                                color:#0369a1;
-                                text-decoration:none;
-                            "
-                        >
-                            Edit
-                        </a>
-
-                    </td>
-
-                </tr>
-                {% endfor %}
-
-            </tbody>
-
-        </table>
-
+    <div style="overflow-x: auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>City ID</th>
+            <th>City Name</th>
+            <th>Division</th>
+            <th>Branches</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cities %} {% set branch_count = branches |
+          selectattr('city_name', 'equalto', c.city_name) | list | length %}
+          <tr>
+            <td>
+              <strong
+                style="
+                  color: var(--green);
+                  font-family: monospace;
+                  font-size: 12px;
+                "
+                >{{ c.city_id }}</strong
+              >
+            </td>
+            <td style="font-weight: 600">{{ c.city_name }}</td>
+            <td style="font-size: 12px; color: var(--mid)">{{ c.division }}</td>
+            <td style="text-align: center">
+              {% if branch_count > 0 %}
+              <span class="badge badge-green">{{ branch_count }}</span>
+              {% else %}
+              <span class="badge badge-gray">0</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
+  <!-- RIGHT: Action buttons -->
+  <div class="card" style="padding: 20px">
+    <div
+      style="
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--mid);
+        margin-bottom: 14px;
+      "
+    >
+      Quick Actions
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <button
+        class="act-btn act-btn-green"
+        style="width: 100%; justify-content: flex-start"
+        onclick="openDrawer('drawer-add-city')"
+      >
+        <i class="fas fa-city" style="width: 16px"></i> Add New City
+      </button>
+
+      <button
+        class="act-btn act-btn-red"
+        style="width: 100%; justify-content: flex-start"
+        onclick="openDrawer('drawer-del-city')"
+      >
+        <i class="fas fa-trash-alt" style="width: 16px"></i> Delete City
+      </button>
+
+      <div style="border-top: 1px solid var(--border); margin: 4px 0"></div>
+
+      <button
+        class="act-btn act-btn-orange"
+        style="width: 100%; justify-content: flex-start"
+        onclick="openDrawer('drawer-add-branch')"
+      >
+        <i class="fas fa-store" style="width: 16px"></i> Add New Branch
+      </button>
+
+      <div style="border-top: 1px solid var(--border); margin: 4px 0"></div>
+
+      <button
+        class="act-btn act-btn-blue"
+        style="width: 100%; justify-content: flex-start"
+        onclick="openDrawer('drawer-add-new-manager')"
+      >
+        <i class="fas fa-user-tie" style="width: 16px"></i>
+        Add New Manager
+      </button>
+      <button
+        class="act-btn act-btn-teal"
+        style="width: 100%; justify-content: flex-start"
+        onclick="openDrawer('drawer-add-manager')"
+      >
+        <i class="fas fa-user-plus" style="width: 16px"></i> Assign Manager
+      </button>
+
+      <button
+        class="act-btn act-btn-purple"
+        style="width: 100%; justify-content: flex-start"
+        onclick="openDrawer('drawer-manage-manager')"
+      >
+        <i class="fas fa-user-cog" style="width: 16px"></i> Manage Branch
+        Manager
+      </button>
+    </div>
+  </div>
 </div>
 
+<!-- ── Branch table ── -->
+<div class="card">
+  <div class="card-header">
+    <h3 style="color: var(--green)">Branch List</h3>
+    <span style="font-size: 12px; color: var(--mid)"
+      >Total: {{ branches|length }}</span
+    >
+  </div>
+  <div style="overflow-x: auto">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Branch</th>
+          <th>City</th>
+          <th>Phone</th>
+          <th>Manager</th>
+          <th>Hours</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in branches %}
+        <tr>
+          <td>
+            <strong
+              style="
+                color: var(--green);
+                font-family: monospace;
+                font-size: 12px;
+              "
+              >{{ b.branch_id }}</strong
+            >
+          </td>
+          <td>
+            <div style="font-weight: 600">{{ b.branch_name }}</div>
+            <div style="font-size: 11px; color: var(--mid)">
+              {{ b.address }}
+            </div>
+          </td>
+          <td>{{ b.city_name }}</td>
+          <td style="font-size: 12px">{{ b.phone or '—' }}</td>
+          <td>
+            {% if b.manager_name %}
+            <span class="mgr-badge"
+              ><i class="fas fa-user-tie" style="font-size: 9px"></i>{{
+              b.manager_name }}</span
+            >
+            {% else %}
+            <span class="no-mgr">⚠ Unassigned</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 12px; white-space: nowrap">
+            {{ b.open_time }} – {{ b.close_time }}
+          </td>
+          <td>
+            {% if b.is_active == 'Y' %}
+            <span class="badge badge-green">Active</span>
+            {% else %}
+            <span class="badge badge-gray">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <a
+              href="/admin/dashboard/branches/{{ b.branch_id }}/edit"
+              class="badge"
+              style="
+                background: #e0f2fe;
+                color: #0369a1;
+                text-decoration: none;
+                cursor: pointer;
+              "
+            >
+              <i class="fas fa-edit" style="font-size: 10px"></i> Edit
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     DRAWER 1: ADD CITY
+══════════════════════════════════════════════ -->
+<div
+  class="drawer-overlay"
+  id="drawer-add-city"
+  onclick="closeOnOverlay(event, this)"
+>
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <h3>Add New City</h3>
+        <p>Register a new Bangladesh city for branch operations</p>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer('drawer-add-city')">
+        ✕
+      </button>
+    </div>
+    <div class="drawer-body">
+      <form method="POST" action="/admin/branches/city/add">
+        <div class="df-group">
+          <label class="df-label">City ID</label>
+          <input
+            class="df-input"
+            name="city_id"
+            placeholder="BD-SYL"
+            maxlength="6"
+            required
+          />
+          <p class="df-hint">
+            Format: BD-XXX — must be exactly 6 characters starting with BD-
+          </p>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">City Name</label>
+          <input
+            class="df-input"
+            name="city_name"
+            placeholder="Sylhet"
+            required
+          />
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Division</label>
+          <select class="df-select" name="division" required>
+            <option value="">— Select division —</option>
+            <option>Dhaka</option>
+            <option>Chattogram</option>
+            <option>Sylhet</option>
+            <option>Rajshahi</option>
+            <option>Khulna</option>
+            <option>Barishal</option>
+            <option>Mymensingh</option>
+            <option>Rangpur</option>
+          </select>
+        </div>
+
+        <hr class="df-divider" />
+        <button type="submit" class="df-btn">
+          <i class="fas fa-plus"></i> Add City
+        </button>
+        <button
+          type="button"
+          class="df-btn df-btn-outline"
+          onclick="closeDrawer('drawer-add-city')"
+        >
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     DRAWER 2: DELETE CITY
+══════════════════════════════════════════════ -->
+<div
+  class="drawer-overlay"
+  id="drawer-del-city"
+  onclick="closeOnOverlay(event, this)"
+>
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <h3>Delete City</h3>
+        <p>Permanently remove a city from the system</p>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer('drawer-del-city')">
+        ✕
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="df-danger-box">
+        <strong>⚠ This cannot be undone.</strong><br />
+        A city can only be deleted if it has
+        <strong>no active branches</strong>. All branches in the city must be
+        removed first. The database will reject deletion if any branch
+        references this city.
+      </div>
+
+      <form method="POST" action="/admin/branches/city/delete">
+        <div class="df-group">
+          <label class="df-label">Select City to Delete</label>
+          <select class="df-select" name="city_id" required>
+            <option value="">— Choose city —</option>
+            {% for c in cities %} {% set branch_count = branches |
+            selectattr('city_name', 'equalto', c.city_name) | list | length %}
+            {% if branch_count > 0 %}
+            <option
+              value="{{ c.city_name }}"
+              disabled
+              style="color: #b0b8c1; font-style: italic"
+            >
+              {{ c.city_name }} ({{ c.city_id }}) — {{ branch_count }} branch{{
+              'es' if branch_count > 1 else '' }}, cannot delete
+            </option>
+            {% else %}
+            <option value="{{ c.city_name }}">
+              {{ c.city_name }} ({{ c.city_id }}) — no branches ✓
+            </option>
+            {% endif %} {% endfor %}
+          </select>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Type city name to confirm</label>
+          <input
+            class="df-input"
+            name="confirm_name"
+            placeholder="Type the city name exactly"
+            required
+          />
+          <p class="df-hint">
+            This is a safety check — you must type the exact city name.
+          </p>
+        </div>
+
+        <hr class="df-divider" />
+        <button type="submit" class="df-btn df-btn-danger">
+          <i class="fas fa-trash-alt"></i> Delete City
+        </button>
+        <button
+          type="button"
+          class="df-btn df-btn-outline"
+          onclick="closeDrawer('drawer-del-city')"
+        >
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     DRAWER 3: ADD NEW BRANCH
+══════════════════════════════════════════════ -->
+<div
+  class="drawer-overlay"
+  id="drawer-add-branch"
+  onclick="closeOnOverlay(event, this)"
+>
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <h3>Add New Branch</h3>
+        <p>Open a new SuperShop outlet</p>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer('drawer-add-branch')">
+        ✕
+      </button>
+    </div>
+    <div class="drawer-body">
+      <form method="POST" action="/admin/branches/add">
+        <div class="df-row">
+          <div class="df-group">
+            <label class="df-label">Branch ID</label>
+            <input
+              class="df-input"
+              name="branch_id"
+              placeholder="B-SY02"
+              maxlength="6"
+              required
+            />
+            <p class="df-hint">Format: B-XXXX</p>
+          </div>
+          <div class="df-group">
+            <label class="df-label">City</label>
+            <select class="df-select" name="city_id" required>
+              <option value="">— Select —</option>
+              {% for c in cities %}
+              <option value="{{ c.city_name }}">{{ c.city_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Branch Name</label>
+          <input
+            class="df-input"
+            name="branch_name"
+            placeholder="SuperShop Sylhet Zindabazar"
+            required
+          />
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Address</label>
+          <input
+            class="df-input"
+            name="address"
+            placeholder="House/Road, Area, City-Postcode"
+            required
+          />
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Phone</label>
+          <input
+            class="df-input"
+            type="tel"
+            name="phone"
+            placeholder="0821-XXXXX"
+          />
+        </div>
+
+        <div class="df-row">
+          <div class="df-group">
+            <label class="df-label">Opens at</label>
+            <input
+              class="df-input"
+              type="time"
+              name="open_time"
+              value="09:00"
+            />
+          </div>
+          <div class="df-group">
+            <label class="df-label">Closes at</label>
+            <input
+              class="df-input"
+              type="time"
+              name="close_time"
+              value="22:00"
+            />
+          </div>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Status</label>
+          <select class="df-select" name="is_active">
+            <option value="Y">Active</option>
+            <option value="N">Inactive</option>
+          </select>
+        </div>
+
+        <hr class="df-divider" />
+        <button type="submit" class="df-btn">
+          <i class="fas fa-store"></i> Create Branch
+        </button>
+        <button
+          type="button"
+          class="df-btn df-btn-outline"
+          onclick="closeDrawer('drawer-add-branch')"
+        >
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     DRAWER 4: ASSIGN MANAGER (to a branch)
+══════════════════════════════════════════════ -->
+<div
+  class="drawer-overlay"
+  id="drawer-add-manager"
+  onclick="closeOnOverlay(event, this)"
+>
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <h3>Assign Branch Manager</h3>
+        <p>Assign a BRANCH_MANAGER employee to an unmanaged branch</p>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer('drawer-add-manager')">
+        ✕
+      </button>
+    </div>
+    <div class="drawer-body">
+      <!-- Count how many branches have no manager -->
+      {% set unmanaged = branches | rejectattr('manager_name') | list %} {% if
+      unmanaged | length == 0 %}
+      <!-- All branches already have managers -->
+      <div class="df-warn">
+        <strong>All branches are assigned.</strong><br />
+        Every branch currently has a manager. To assign a new manager, first
+        remove an existing one using
+        <strong>Manage Branch Manager → Remove</strong>.
+      </div>
+
+      <form>
+        <div class="df-group">
+          <label class="df-label">Select Branch</label>
+          <select class="df-select" disabled>
+            <option>All branches have managers</option>
+          </select>
+        </div>
+        <div class="df-group">
+          <label class="df-label">Employee</label>
+          <select class="df-select" disabled>
+            <option>No action needed</option>
+          </select>
+        </div>
+        <div class="df-group">
+          <label class="df-label">Assignment Date</label>
+          <input class="df-input" type="date" disabled />
+        </div>
+        <button
+          type="button"
+          class="df-btn"
+          disabled
+          style="opacity: 0.45; cursor: not-allowed; transform: none"
+        >
+          No Unmanaged Branches
+        </button>
+      </form>
+
+      {% else %}
+      <!-- At least one branch has no manager -->
+
+      {% if unassigned_managers | length == 0 %}
+      <div class="df-warn">
+        <strong>No available managers.</strong><br />
+        There are unmanaged branches but no BRANCH_MANAGER employees are free.
+        Either add an employee with
+        <code
+          style="
+            background: rgba(0, 0, 0, 0.07);
+            padding: 1px 4px;
+            border-radius: 3px;
+          "
+          >position = BRANCH_MANAGER</code
+        >
+        or remove an existing manager assignment first.
+      </div>
+      {% endif %}
+
+      <div class="df-warn">
+        <strong>Note:</strong> Only branches without a current manager appear
+        below. Only free BRANCH_MANAGER employees are selectable.
+      </div>
+
+      <form method="POST" action="/admin/branches/manager/assign">
+        <div class="df-group">
+          <label class="df-label">Select Branch (unmanaged only)</label>
+          <select
+            class="df-select"
+            name="branch_id"
+            id="assignBranchSelect"
+            onchange="onBranchSelected(this)"
+            required
+          >
+            <option value="">— Choose branch —</option>
+            {% for b in branches %} {% if not b.manager_name %}
+            <option value="{{ b.branch_id }}">
+              {{ b.branch_name }} ({{ b.branch_id }}) — ⚠ No manager
+            </option>
+            {% endif %} {% endfor %}
+          </select>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Select Manager Employee</label>
+          <select
+            class="df-select"
+            name="emp_id"
+            id="assignEmpSelect"
+            disabled
+            required
+          >
+            <option value="">— Select a branch first —</option>
+            {% for m in unassigned_managers %}
+            <option value="{{ m.emp_id }}" data-branch="{{ m.branch_id }}">
+              {{ m.emp_name }} ({{ m.emp_id }}) — currently at {{ m.branch_id }}
+            </option>
+            {% endfor %}
+          </select>
+          <p class="df-hint" id="assignEmpHint">
+            Choose a branch above to enable employee selection.
+          </p>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Assignment Date</label>
+          <input
+            class="df-input"
+            type="date"
+            name="assigned_on"
+            id="assignDateInput"
+            disabled
+          />
+          <p class="df-hint">Leave blank to use today's date.</p>
+        </div>
+
+        <hr class="df-divider" />
+        <button
+          type="submit"
+          class="df-btn"
+          id="assignSubmitBtn"
+          disabled
+          style="opacity: 0.45; cursor: not-allowed"
+        >
+          <i class="fas fa-user-check"></i> Assign Manager
+        </button>
+        <button
+          type="button"
+          class="df-btn df-btn-outline"
+          onclick="closeDrawer('drawer-add-manager')"
+        >
+          Cancel
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div
+  class="drawer-overlay"
+  id="drawer-add-new-manager"
+  onclick="closeOnOverlay(event, this)"
+>
+  <div class="drawer" style="width: 460px">
+    <!-- Header -->
+    <div class="drawer-head" style="padding: 22px 26px">
+      <div>
+        <h3 style="font-size: 16px">Add New Branch Manager</h3>
+        <p>Creates a new employee account with BRANCH_MANAGER role</p>
+      </div>
+      <button
+        class="drawer-close"
+        onclick="closeDrawer('drawer-add-new-manager')"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="drawer-body" style="padding: 0; overflow-y: auto; flex: 1">
+      <form
+        method="POST"
+        action="/admin/branches/manager/create"
+        id="newMgrForm"
+        onsubmit="return validateNewManager();"
+      >
+        <!-- ── SECTION 1: Personal Details ── -->
+        <div style="padding: 20px 26px 0">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 16px;
+            "
+          >
+            <div
+              style="
+                width: 26px;
+                height: 26px;
+                background: var(--green);
+                color: white;
+                border-radius: 50%;
+                font-size: 12px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              1
+            </div>
+            <div>
+              <div
+                style="font-size: 13px; font-weight: 700; color: var(--dark)"
+              >
+                Personal Details
+              </div>
+              <div style="font-size: 11px; color: var(--mid)">
+                Basic information about the manager
+              </div>
+            </div>
+          </div>
+
+          <div class="df-group">
+            <label class="df-label">Full Name</label>
+            <input
+              class="df-input"
+              name="emp_name"
+              placeholder="e.g. Md. Habibur Rahman"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="df-row">
+            <div class="df-group">
+              <label class="df-label">Gender</label>
+              <select class="df-select" name="gender" required>
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+              </select>
+            </div>
+            <div class="df-group">
+              <label class="df-label">Hire Date</label>
+              <input
+                class="df-input"
+                type="date"
+                name="hire_date"
+                required
+                id="hireDateInput"
+              />
+            </div>
+          </div>
+
+          <div class="df-group">
+            <label class="df-label"
+              >Email
+              <span
+                style="
+                  color: var(--mid);
+                  font-weight: 400;
+                  text-transform: none;
+                "
+                >(optional)</span
+              ></label
+            >
+            <input
+              class="df-input"
+              type="email"
+              name="email"
+              placeholder="manager@supershop.com.bd"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="df-group">
+            <label class="df-label"
+              >Phone
+              <span
+                style="
+                  color: var(--mid);
+                  font-weight: 400;
+                  text-transform: none;
+                "
+                >(used for employee login)</span
+              ></label
+            >
+            <input
+              class="df-input"
+              type="tel"
+              name="phone"
+              placeholder="01711-XXXXXX"
+              required
+              autocomplete="off"
+            />
+            <p class="df-hint">
+              This phone number will be their login credential.
+            </p>
+          </div>
+        </div>
+
+        <!-- divider -->
+        <div style="border-top: 6px solid #f5f5f0; margin: 20px 0"></div>
+
+        <!-- ── SECTION 2: Branch Assignment ── -->
+        <div style="padding: 0 26px">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 16px;
+            "
+          >
+            <div
+              style="
+                width: 26px;
+                height: 26px;
+                background: var(--orange);
+                color: white;
+                border-radius: 50%;
+                font-size: 12px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              2
+            </div>
+            <div>
+              <div
+                style="font-size: 13px; font-weight: 700; color: var(--dark)"
+              >
+                Employment Details
+              </div>
+              <div style="font-size: 11px; color: var(--mid)">
+                Salary and department — branch is assigned separately
+              </div>
+            </div>
+          </div>
+
+          <!-- Info box -->
+          <div
+            style="
+              background: #f0fdf4;
+              border: 1px solid #bbf7d0;
+              border-radius: 9px;
+              padding: 12px 14px;
+              font-size: 12px;
+              color: #166534;
+              margin-bottom: 16px;
+              line-height: 1.6;
+              display: flex;
+              gap: 10px;
+              align-items: flex-start;
+            "
+          >
+            <i
+              class="fas fa-info-circle"
+              style="margin-top: 2px; flex-shrink: 0"
+            ></i>
+            <div>
+              No branch is assigned here. After creating this manager account,
+              use the <strong>Assign Manager</strong> button to link them to a
+              branch — this will automatically update their home branch too.
+            </div>
+          </div>
+
+          <div class="df-group">
+            <label class="df-label"
+              >Department
+              <span
+                style="
+                  color: var(--mid);
+                  font-weight: 400;
+                  text-transform: none;
+                "
+                >(optional)</span
+              ></label
+            >
+            <select class="df-select" name="dept_id">
+              <option value="">— No department —</option>
+              {% for d in departments %}
+              <option value="{{ d.dept_id }}">{{ d.dept_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="df-group">
+            <label class="df-label">Salary (BDT / month)</label>
+            <div style="position: relative">
+              <span
+                style="
+                  position: absolute;
+                  left: 13px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  font-size: 13px;
+                  color: var(--mid);
+                  pointer-events: none;
+                "
+                >৳</span
+              >
+              <input
+                class="df-input"
+                type="number"
+                step="0.01"
+                name="salary"
+                placeholder="30000"
+                min="10000"
+                required
+                style="padding-left: 28px"
+              />
+            </div>
+            <p class="df-hint">Minimum salary is ৳10,000.</p>
+          </div>
+
+          <div class="df-group">
+            <label class="df-label">Position</label>
+            <div
+              style="
+                padding: 10px 13px;
+                background: rgba(4, 70, 53, 0.06);
+                border: 1.5px solid rgba(4, 70, 53, 0.2);
+                border-radius: 9px;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--green);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              "
+            >
+              <i class="fas fa-user-tie" style="font-size: 12px"></i>
+              BRANCH_MANAGER
+            </div>
+          </div>
+        </div>
+
+        <!-- divider -->
+        <div style="border-top: 6px solid #f5f5f0; margin: 20px 0"></div>
+
+        <!-- ── SECTION 3: Login Credentials ── -->
+        <div style="padding: 0 26px 26px">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 16px;
+            "
+          >
+            <div
+              style="
+                width: 26px;
+                height: 26px;
+                background: #7c3aed;
+                color: white;
+                border-radius: 50%;
+                font-size: 12px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              3
+            </div>
+            <div>
+              <div
+                style="font-size: 13px; font-weight: 700; color: var(--dark)"
+              >
+                Login Credentials
+              </div>
+              <div style="font-size: 11px; color: var(--mid)">
+                Set a temporary password — share it with the manager
+              </div>
+            </div>
+          </div>
+
+          <!-- Info box about password workflow -->
+          <div
+            style="
+              background: #f0fdf4;
+              border: 1px solid #bbf7d0;
+              border-radius: 9px;
+              padding: 12px 14px;
+              font-size: 12px;
+              color: #166534;
+              margin-bottom: 16px;
+              line-height: 1.6;
+              display: flex;
+              gap: 10px;
+              align-items: flex-start;
+            "
+          >
+            <i
+              class="fas fa-info-circle"
+              style="margin-top: 2px; flex-shrink: 0"
+            ></i>
+            <div>
+              Set a temporary password and share it with the manager verbally or
+              via message. They can change it anytime from their profile after
+              first login using
+              <strong>phone + this password</strong>.
+            </div>
+          </div>
+
+          <div class="df-group">
+            <label class="df-label">Temporary Password</label>
+            <div style="position: relative">
+              <input
+                class="df-input"
+                type="password"
+                name="password"
+                id="newMgrPassword"
+                placeholder="Min. 6 characters"
+                required
+                minlength="6"
+                oninput="checkPasswordStrength(this.value)"
+                autocomplete="new-password"
+                style="padding-right: 40px"
+              />
+              <button
+                type="button"
+                onclick="togglePassword('newMgrPassword', this)"
+                style="
+                  position: absolute;
+                  right: 12px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  color: var(--mid);
+                  font-size: 13px;
+                  padding: 4px;
+                "
+              >
+                <i class="fas fa-eye" id="newMgrPasswordEyeIcon"></i>
+              </button>
+            </div>
+
+            <!-- Strength bar -->
+            <div style="margin-top: 8px">
+              <div
+                style="
+                  height: 4px;
+                  background: #e5e7eb;
+                  border-radius: 2px;
+                  overflow: hidden;
+                "
+              >
+                <div
+                  id="strengthBar"
+                  style="
+                    height: 100%;
+                    width: 0%;
+                    border-radius: 2px;
+                    transition:
+                      width 0.25s,
+                      background 0.25s;
+                  "
+                ></div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  margin-top: 4px;
+                "
+              >
+                <span
+                  id="strengthLabel"
+                  style="font-size: 11px; color: var(--mid)"
+                >
+                  Enter a password
+                </span>
+                <span
+                  id="strengthTip"
+                  style="font-size: 11px; color: var(--mid)"
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="df-group">
+            <label class="df-label">Confirm Password</label>
+            <div style="position: relative">
+              <input
+                class="df-input"
+                type="password"
+                name="confirm_password"
+                id="newMgrConfirm"
+                placeholder="Re-enter the password"
+                required
+                oninput="checkConfirm()"
+                autocomplete="new-password"
+                style="padding-right: 40px"
+              />
+              <button
+                type="button"
+                onclick="togglePassword('newMgrConfirm', this)"
+                style="
+                  position: absolute;
+                  right: 12px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  color: var(--mid);
+                  font-size: 13px;
+                  padding: 4px;
+                "
+              >
+                <i class="fas fa-eye" id="newMgrConfirmEyeIcon"></i>
+              </button>
+            </div>
+            <p
+              id="confirmMsg"
+              style="font-size: 11px; margin-top: 4px; color: var(--mid)"
+            ></p>
+          </div>
+
+          <!-- Checklist summary before submit -->
+          <div
+            id="mgrChecklist"
+            style="
+              background: #f9fafb;
+              border: 1px solid var(--border);
+              border-radius: 9px;
+              padding: 12px 14px;
+              font-size: 12px;
+              color: var(--dark);
+              margin-bottom: 16px;
+              line-height: 1.8;
+              display: none;
+            "
+          >
+            <div
+              style="
+                font-weight: 600;
+                margin-bottom: 6px;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--mid);
+              "
+            >
+              Ready to create account
+            </div>
+            <div id="checklistBody"></div>
+          </div>
+
+          <button
+            type="submit"
+            class="df-btn"
+            id="newMgrSubmit"
+            style="margin-top: 0"
+          >
+            <i class="fas fa-user-plus"></i> Create Manager Account
+          </button>
+          <button
+            type="button"
+            class="df-btn df-btn-outline"
+            onclick="closeDrawer('drawer-add-new-manager')"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Set today's date as default for hire date ─────────────────────────────
+  document.addEventListener("DOMContentLoaded", () => {
+    const d = document.getElementById("hireDateInput");
+    if (d) d.value = new Date().toISOString().split("T")[0];
+  });
+
+  // ── Branch manager warning ────────────────────────────────────────────────
+  function checkBranchManager(select) {
+    const opt = select.options[select.selectedIndex];
+    const warn = document.getElementById("branchMgrWarning");
+    const name = document.getElementById("existingMgrName");
+    if (opt && opt.dataset.hasManager === "true") {
+      warn.style.display = "block";
+      name.textContent = opt.dataset.managerName;
+    } else {
+      warn.style.display = "none";
+    }
+  }
+
+  // ── Password strength ─────────────────────────────────────────────────────
+  function checkPasswordStrength(val) {
+    const bar = document.getElementById("strengthBar");
+    const label = document.getElementById("strengthLabel");
+    const tip = document.getElementById("strengthTip");
+
+    if (!val) {
+      bar.style.width = "0%";
+      label.textContent = "Enter a password";
+      label.style.color = "var(--mid)";
+      tip.textContent = "";
+      return;
+    }
+
+    let score = 0;
+    if (val.length >= 6) score++;
+    if (val.length >= 10) score++;
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+    if (/\d/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const levels = [
+      { pct: "20%", color: "#dc2626", text: "Very weak", tip: "Too short" },
+      {
+        pct: "40%",
+        color: "#f59e0b",
+        text: "Weak",
+        tip: "Add uppercase letters",
+      },
+      { pct: "60%", color: "#f59e0b", text: "Fair", tip: "Add numbers" },
+      {
+        pct: "80%",
+        color: "#16a34a",
+        text: "Good",
+        tip: "Add symbols for better security",
+      },
+      {
+        pct: "100%",
+        color: "#044635",
+        text: "Strong",
+        tip: "✓ Excellent password",
+      },
+    ];
+    const lvl = levels[Math.min(score, 4)];
+    bar.style.width = lvl.pct;
+    bar.style.background = lvl.color;
+    label.textContent = lvl.text;
+    label.style.color = lvl.color;
+    tip.textContent = lvl.tip;
+
+    checkConfirm();
+    updateChecklist();
+  }
+
+  // ── Confirm password match ────────────────────────────────────────────────
+  function checkConfirm() {
+    const pw = document.getElementById("newMgrPassword").value;
+    const cpw = document.getElementById("newMgrConfirm").value;
+    const msg = document.getElementById("confirmMsg");
+    if (!cpw) {
+      msg.textContent = "";
+      return;
+    }
+    if (pw === cpw) {
+      msg.textContent = "✓ Passwords match";
+      msg.style.color = "#16a34a";
+    } else {
+      msg.textContent = "✗ Passwords do not match";
+      msg.style.color = "#dc2626";
+    }
+    updateChecklist();
+  }
+
+  // ── Live checklist ────────────────────────────────────────────────────────
+  function updateChecklist() {
+    const name = document.querySelector("[name=emp_name]")?.value?.trim();
+    const phone = document.querySelector("[name=phone]")?.value?.trim();
+    const branch = document.getElementById("newMgrBranch")?.value;
+    const salary = document.querySelector("[name=salary]")?.value;
+    const pw = document.getElementById("newMgrPassword")?.value;
+    const cpw = document.getElementById("newMgrConfirm")?.value;
+
+    const items = [
+      { ok: !!name, text: `Name: ${name || "—"}` },
+      { ok: !!phone, text: `Phone: ${phone || "—"}` },
+      { ok: !!branch, text: `Branch assigned` },
+      { ok: !!salary && parseFloat(salary) >= 10000, text: `Salary ≥ ৳10,000` },
+      { ok: pw?.length >= 6, text: `Password ≥ 6 characters` },
+      { ok: pw === cpw && !!pw, text: `Passwords match` },
+    ];
+
+    const allOk = items.every((i) => i.ok);
+    const box = document.getElementById("mgrChecklist");
+    const body = document.getElementById("checklistBody");
+
+    if (allOk || items.some((i) => i.ok)) {
+      box.style.display = "block";
+      body.innerHTML = items
+        .map(
+          (i) =>
+            `<div style="color:${i.ok ? "#16a34a" : "#9ca3af"}">
+          <span style="display:inline-block;width:14px">${i.ok ? "✓" : "○"}</span>
+          ${i.text}
+        </div>`,
+        )
+        .join("");
+    } else {
+      box.style.display = "none";
+    }
+  }
+
+  // ── Live input listeners for checklist ───────────────────────────────────
+  ["emp_name", "phone", "branch_id", "salary"].forEach((name) => {
+    const el = document.querySelector(`[name="${name}"]`);
+    if (el) el.addEventListener("input", updateChecklist);
+  });
+  const mgrBranch = document.getElementById("newMgrBranch");
+  if (mgrBranch) mgrBranch.addEventListener("change", updateChecklist);
+
+  // ── Show / hide password toggle ───────────────────────────────────────────
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector("i");
+    if (input.type === "password") {
+      input.type = "text";
+      icon.className = "fas fa-eye-slash";
+    } else {
+      input.type = "password";
+      icon.className = "fas fa-eye";
+    }
+  }
+
+  // ── Final validation before submit ───────────────────────────────────────
+  function validateNewManager() {
+    const pw = document.getElementById("newMgrPassword").value;
+    const cpw = document.getElementById("newMgrConfirm").value;
+
+    if (pw.length < 6) {
+      alert("Password must be at least 6 characters.");
+      return false;
+    }
+    if (pw !== cpw) {
+      alert("Passwords do not match. Please check and try again.");
+      return false;
+    }
+    return true;
+  }
+</script>
+<!-- ══════════════════════════════════════════════
+     DRAWER 5: MANAGE EXISTING BRANCH MANAGER
+     — Reassign or Remove
+══════════════════════════════════════════════ -->
+<div
+  class="drawer-overlay"
+  id="drawer-manage-manager"
+  onclick="closeOnOverlay(event, this)"
+>
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <h3>Manage Branch Manager</h3>
+        <p>Reassign or remove a branch's manager</p>
+      </div>
+      <button
+        class="drawer-close"
+        onclick="closeDrawer('drawer-manage-manager')"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="drawer-body">
+      <!-- Current assignments summary -->
+      <p
+        style="
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--mid);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 10px;
+        "
+      >
+        Current Manager Assignments
+      </p>
+      <div
+        style="
+          margin-bottom: 20px;
+          border: 1px solid var(--border);
+          border-radius: 9px;
+          overflow: hidden;
+        "
+      >
+        {% for b in branches %}
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 12px;
+          "
+        >
+          <div>
+            <span style="font-weight: 600; color: var(--dark)"
+              >{{ b.branch_name }}</span
+            >
+            <span style="color: var(--mid); margin-left: 6px; font-size: 11px"
+              >{{ b.branch_id }}</span
+            >
+          </div>
+          {% if b.manager_name %}
+          <span class="mgr-badge">{{ b.manager_name }}</span>
+          {% else %}
+          <span class="no-mgr" style="font-size: 11px">No manager</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <hr class="df-divider" style="margin-top: 0" />
+
+      <!-- SECTION A: Reassign -->
+      <!-- <p
+        style="
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--dark);
+          margin-bottom: 12px;
+        "
+      >
+        ① Reassign Manager
+      </p>
+
+      <div class="df-warn">
+        This replaces the existing manager for the chosen branch. The old
+        assignment is overwritten. The employee being assigned must have
+        <code
+          style="
+            background: rgba(0, 0, 0, 0.07);
+            padding: 1px 4px;
+            border-radius: 3px;
+          "
+          >position = BRANCH_MANAGER</code
+        >.
+      </div>
+
+      <form method="POST" action="/admin/branches/manager/reassign">
+        <div class="df-group">
+          <label class="df-label">Branch</label>
+          <select class="df-select" name="branch_id" required>
+            <option value="">— Choose branch —</option>
+            {% for b in branches %}
+            <option value="{{ b.branch_id }}">{{ b.branch_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">New Manager Employee ID</label>
+          <input
+            class="df-input"
+            name="new_emp_id"
+            placeholder="E-00003"
+            required
+          />
+          <p class="df-hint">Must be a BRANCH_MANAGER position employee.</p>
+        </div>
+
+        <button type="submit" class="df-btn">
+          <i class="fas fa-exchange-alt"></i> Reassign Manager
+        </button>
+      </form>
+
+      <hr class="df-divider" /> -->
+
+      <!-- SECTION B: Remove -->
+      <p
+        style="
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--dark);
+          margin-bottom: 12px;
+        "
+      >
+        ② Remove Manager from Branch
+      </p>
+
+      <div class="df-danger-box">
+        <strong>Important:</strong> Removing a manager only deletes the
+        <code
+          style="
+            background: rgba(0, 0, 0, 0.07);
+            padding: 1px 4px;
+            border-radius: 3px;
+          "
+          >branch_manager</code
+        >
+        record — the employee themselves is <strong>not deleted</strong> and
+        keeps their position. The branch will show as "Unassigned" until a new
+        manager is assigned. <br /><br />
+        <strong>If you want to delete the employee entirely:</strong> first
+        remove them from branch_manager here, then go to the Employees page to
+        delete the employee record. This is required because the database
+        enforces <code>ON DELETE RESTRICT</code>
+        on the manager FK — you cannot delete an employee who is still listed as
+        a branch manager.
+      </div>
+
+      <form method="POST" action="/admin/branches/manager/remove">
+        <div class="df-group">
+          <label class="df-label">Select Branch to Remove Manager</label>
+          <select class="df-select" name="branch_id" required>
+            <option value="">— Choose branch —</option>
+            {% for b in branches %} {% if b.manager_name %}
+            <option value="{{ b.branch_id }}">
+              {{ b.branch_name }} → {{ b.manager_name }}
+            </option>
+            {% endif %} {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="df-btn df-btn-danger">
+          <i class="fas fa-user-minus"></i> Remove Manager
+        </button>
+        <button
+          type="button"
+          class="df-btn df-btn-outline"
+          onclick="closeDrawer('drawer-manage-manager')"
+        >
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openDrawer(id) {
+    document.getElementById(id).classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeDrawer(id) {
+    document.getElementById(id).classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  function closeOnOverlay(e, overlay) {
+    if (e.target === overlay) {
+      overlay.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+  }
+  // ESC key closes any open drawer
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      document.querySelectorAll(".drawer-overlay.open").forEach((d) => {
+        d.classList.remove("open");
+        document.body.style.overflow = "";
+      });
+    }
+  });
+
+  function onBranchSelected(select) {
+    const empSelect = document.getElementById("assignEmpSelect");
+    const dateInput = document.getElementById("assignDateInput");
+    const submitBtn = document.getElementById("assignSubmitBtn");
+    const hint = document.getElementById("assignEmpHint");
+
+    if (!select.value) {
+      // No branch chosen — disable everything
+      empSelect.disabled = true;
+      dateInput.disabled = true;
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = ".45";
+      submitBtn.style.cursor = "not-allowed";
+      empSelect.value = "";
+      hint.textContent = "Choose a branch above to enable employee selection.";
+      return;
+    }
+
+    // Branch selected — enable employee + date
+    empSelect.disabled = false;
+    empSelect.value = "";
+    dateInput.disabled = false;
+
+    hint.textContent = "Select a free BRANCH_MANAGER employee to assign.";
+
+    // Enable submit only after employee is also chosen
+    empSelect.onchange = () => {
+      const hasEmp = empSelect.value !== "";
+      submitBtn.disabled = !hasEmp;
+      submitBtn.style.opacity = hasEmp ? "1" : ".45";
+      submitBtn.style.cursor = hasEmp ? "pointer" : "not-allowed";
+    };
+  }
+</script>
 {% endblock %}

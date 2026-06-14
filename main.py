@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from auth import _hash, _verify
-
+from branch_routes import branch_router
 from database import query, execute
 from auth import (
     auth_router,
@@ -46,6 +46,7 @@ templates = Jinja2Templates(directory="templates")
 
 # ── Register auth router  (/auth/login, /auth/logout, /auth/*/login) ──────────
 app.include_router(auth_router)
+app.include_router(branch_router)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -698,11 +699,24 @@ def manage_branches(
         ORDER BY b.branch_id
     """)
 
+# ADD THIS — branch managers not assigned to any branch
+    unassigned_managers = query("""
+        SELECT emp_id, emp_name, branch_id
+        FROM   employee
+        WHERE  position = 'BRANCH_MANAGER'
+          AND  is_active = 'Y'
+          AND  emp_id NOT IN (SELECT emp_id FROM branch_manager)
+        ORDER BY emp_name
+    """)
+   
+    cities = query("SELECT city_id, city_name, division FROM city ORDER BY city_name")
     return templates.TemplateResponse(
         request,
         "admin/manage_branches.html",
         {
             "branches": branches,
+            "unassigned_managers": unassigned_managers,  
+            "cities": cities,
             "user_name": session.get("user_name"),
             "role": "ADMIN",
         }

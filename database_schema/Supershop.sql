@@ -123,7 +123,7 @@ CREATE TABLE employee (
     emp_name    VARCHAR(60)     NOT NULL,
     email       VARCHAR(100),
     phone       VARCHAR(15),
-    branch_id   CHAR(6)         NOT NULL,
+    branch_id   CHAR(6)         
     dept_id     CHAR(6),
     position    VARCHAR(30)     NOT NULL,
     salary      NUMERIC(10,2),
@@ -143,7 +143,7 @@ CREATE TABLE employee (
     CONSTRAINT  check_emp_isAct CHECK (is_active IN ('Y', 'N')),
     CONSTRAINT  check_emp_sal   CHECK (salary >= 10000)
 );
-
+-- ALTER TABLE employee ALTER COLUMN branch_id DROP NOT NULL;
 
 -- ============================================================
 --  TABLE 7: BRANCH_MANAGER  
