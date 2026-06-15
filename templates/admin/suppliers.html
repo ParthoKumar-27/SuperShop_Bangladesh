@@ -1,0 +1,246 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">Suppliers</div>
+<div class="page-subheading">
+    View and manage all registered suppliers.
+</div>
+
+<div
+    class="filter-bar"
+    style="display:flex;justify-content:space-between;align-items:center"
+>
+    <div class="filter-input-wrap">
+        <i class="fas fa-search"></i>
+
+        <input
+            id="searchBox"
+            type="text"
+            class="filter-input"
+            placeholder="Search by supplier, contact, phone..."
+        >
+    </div>
+
+    <select id="sortSelect" class="filter-select">
+        <option value="">Sort Suppliers</option>
+
+        <option value="name_asc">Supplier Name ↑</option>
+        <option value="name_desc">Supplier Name ↓</option>
+
+        <option value="rating_asc">Rating ↑</option>
+        <option value="rating_desc">Rating ↓</option>
+
+        <option value="city_asc">City A-Z</option>
+        <option value="city_desc">City Z-A</option>
+    </select>
+</div>
+
+<div class="card">
+
+    <div class="card-header">
+        <h3
+            style="
+                color:var(--green);
+                font-weight:800;
+                letter-spacing:.3px;
+                display:flex;
+                align-items:center;
+                gap:10px;
+            "
+        >
+            <span
+                style="
+                    width:10px;
+                    height:10px;
+                    background:var(--orange);
+                    border-radius:50%;
+                    display:inline-block;
+                "
+            ></span>
+
+            Supplier List
+        </h3>
+
+        <span style="font-size:12px;color:var(--mid)">
+            Total: {{ suppliers|length }}
+        </span>
+    </div>
+
+    <div style="overflow-x:hidden">
+
+        <table class="data-table">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Supplier</th>
+                    <th>Phone</th>
+                    <th>Country</th>
+                    <th>Rating</th>
+                    <th>City</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+
+            <tbody id="supplierBody">
+
+                {% for s in suppliers %}
+
+                <tr>
+
+                    <td>
+                        <strong style="color:var(--green)">
+                            {{ s.supplier_id }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        <div style="font-weight:600;color:var(--dark)">
+                            <strong>{{ s.supplier_name }}</strong>
+                        </div>
+
+                        <div
+                            style="
+                                font-size:12px;
+                                color:var(--mid);
+                            "
+                        >
+                            Contact: {{ s.contact_name or 'N/A' }}
+                        </div>
+                    </td>
+
+                    <td
+                        style="
+                            font-size:12px;
+                            color:var(--mid);
+                        "
+                    >
+                        {{ s.phone }}
+                    </td>
+
+                    <td style="text-align:center">
+                        {{ s.country }}
+                    </td>
+
+                    <td>
+
+                        {% if s.rating >= 4.5 %}
+                            <span class="badge badge-green">
+                                ★ {{ s.rating }}
+                            </span>
+
+                        {% elif s.rating >= 3 %}
+                            <span class="badge badge-yellow">
+                                ★ {{ s.rating }}
+                            </span>
+
+                        {% else %}
+                            <span class="badge badge-red">
+                                ★ {{ s.rating }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ s.city }}
+                    </td>
+
+                    <td
+                        style="
+                            font-size:12px;
+                            color:var(--mid);
+                        "
+                    >
+                        {{ s.email or '-' }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("searchBox")
+.addEventListener("input", function () {
+
+    const term = this.value.toLowerCase();
+
+    document
+    .querySelectorAll("#supplierBody tr")
+    .forEach((row) => {
+
+        row.style.display =
+            row.innerText.toLowerCase().includes(term)
+            ? ""
+            : "none";
+    });
+});
+
+document.getElementById("sortSelect")
+.addEventListener("change", function () {
+
+    const value = this.value;
+
+    const tbody =
+        document.getElementById("supplierBody");
+
+    const rows =
+        Array.from(tbody.querySelectorAll("tr"));
+
+    function getCell(row, index) {
+        return row.children[index]?.innerText.trim() || "";
+    }
+
+    let sorted = [...rows];
+
+    if (value === "name_asc") {
+
+        sorted.sort((a,b)=>
+            getCell(a,1).localeCompare(getCell(b,1)));
+
+    } else if (value === "name_desc") {
+
+        sorted.sort((a,b)=>
+            getCell(b,1).localeCompare(getCell(a,1)));
+
+    } else if (value === "rating_asc") {
+
+        sorted.sort((a,b)=>
+            parseFloat(getCell(a,4).replace("★","")) -
+            parseFloat(getCell(b,4).replace("★","")));
+
+    } else if (value === "rating_desc") {
+
+        sorted.sort((a,b)=>
+            parseFloat(getCell(b,4).replace("★","")) -
+            parseFloat(getCell(a,4).replace("★","")));
+
+    } else if (value === "city_asc") {
+
+        sorted.sort((a,b)=>
+            getCell(a,5).localeCompare(getCell(b,5)));
+
+    } else if (value === "city_desc") {
+
+        sorted.sort((a,b)=>
+            getCell(b,5).localeCompare(getCell(a,5)));
+    }
+
+    sorted.forEach(row => tbody.appendChild(row));
+});
+</script>
+{% endblock %}

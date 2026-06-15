@@ -709,6 +709,8 @@ def manage_branches(
         ORDER BY emp_name
     """)
    
+    departments = query("SELECT dept_id, dept_name FROM department ORDER BY dept_name")
+
     cities = query("SELECT city_id, city_name, division FROM city ORDER BY city_name")
     return templates.TemplateResponse(
         request,
@@ -717,7 +719,32 @@ def manage_branches(
             "branches": branches,
             "unassigned_managers": unassigned_managers,  
             "cities": cities,
+            "departments": departments,
             "user_name": session.get("user_name"),
             "role": "ADMIN",
         }
+    )
+
+@app.get("/admin/dashboard/suppliers")
+def suppliers_page(
+    request: Request,
+    session=Depends(require_admin)
+):
+
+    suppliers = query("""
+        SELECT *
+        FROM supplier
+        ORDER BY supplier_name
+    """)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/suppliers.html",
+        {
+            "request": request,
+            "suppliers": suppliers,
+            "role": "ADMIN",
+            "user_name": session.get("user_name"),
+        },
+        
     )

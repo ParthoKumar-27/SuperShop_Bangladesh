@@ -300,7 +300,6 @@ def reassign_manager(
 #  Only deletes the branch_manager row — employee record untouched.
 #  After this, the employee CAN be deleted from the Employees page.
 # ══════════════════════════════════════════════════════════════════════════════
-
 @branch_router.post("/manager/remove")
 def remove_manager(
     request: Request,
@@ -320,11 +319,19 @@ def remove_manager(
     if not mgr:
         return redir(f"Branch '{branch_id}' has no manager assigned.", ok=False)
 
+    emp_id     = mgr[0]["emp_id"]
+    emp_name   = mgr[0]["emp_name"]
+    branch_name = mgr[0]["branch_name"]
+
+    # Remove from branch_manager table
     execute("DELETE FROM branch_manager WHERE branch_id = %s", (branch_id,))
 
+    # Nullify their home branch — they are unassigned until given a new branch
+    execute("UPDATE employee SET branch_id = NULL WHERE emp_id = %s", (emp_id,))
+
     return redir(
-        f"{mgr[0]['emp_name']} removed as manager of '{mgr[0]['branch_name']}'. "
-        f"The employee record is untouched — you can now delete them from the Employees page if needed."
+        f"{emp_name} removed as manager of '{branch_name}'. "
+        f"Use 'Assign Manager' to reassign them, or go to Employees to update their details."
     )
 
  
