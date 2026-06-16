@@ -18,6 +18,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from auth import _hash, _verify
 from branch_routes import branch_router
 from database import query, execute
+from customer import customer_router
 from auth import (
     auth_router,
     require_admin,
@@ -47,6 +48,8 @@ templates = Jinja2Templates(directory="templates")
 # ── Register auth router  (/auth/login, /auth/logout, /auth/*/login) ──────────
 app.include_router(auth_router)
 app.include_router(branch_router)
+app.include_router(customer_router)
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -85,6 +88,48 @@ def storefront(request: Request):
             "role": request.session.get("role")
         }
     )
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CATEGORY PAGE — products filtered by category (and its subcategories)
+# ══════════════════════════════════════════════════════════════════════════════
+@app.get("/category/{cat_id}", response_class=HTMLResponse)
+def category_page(request: Request, cat_id: str):
+    category = query("""
+        SELECT cat_id, cat_name, parent_cat_id, description
+        FROM category
+        WHERE cat_id = %s
+    """, (cat_id,))
+
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    products = query("""
+        SELECT p.product_id,
+               p.product_name,
+               p.brand,
+               p.unit_price,
+               p.unit
+        FROM product p
+        WHERE p.is_active = 'Y'
+          AND (
+                p.cat_id = %s
+             OR p.cat_id IN (SELECT cat_id FROM category WHERE parent_cat_id = %s)
+          )
+        ORDER BY p.product_name
+    """, (cat_id, cat_id))
+
+    return templates.TemplateResponse(
+        request,
+        "category.html",
+        {
+            "products": products,
+            "category": category[0],
+            "logged_in": bool(request.session.get("role")),
+            "role": request.session.get("role"),
+        }
+    )
+
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ADMIN DASHBOARD  (protected — ADMIN only)
@@ -284,36 +329,36 @@ def employees_page(request: Request, session=Depends(require_admin)):
 #  CUSTOMER DASHBOARD  (protected — CUSTOMER only)
 # ══════════════════════════════════════════════════════════════════════════════
 
-@app.get("/customer/dashboard", response_class=HTMLResponse)
-def customer_dashboard(request: Request, session=Depends(require_customer)):
-    cust_id = session.get("user_id")
+# @app.get("/customer/dashboard", response_class=HTMLResponse)
+# def customer_dashboard(request: Request, session=Depends(require_customer)):
+#     cust_id = session.get("user_id")
 
-    my_orders = query("""
-        SELECT s.sale_id,
-               TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
-               b.branch_name, s.total_amt,
-               s.payment_status, s.order_type,
-               oo.order_status, oo.delivery_address
-        FROM   sale s
-               JOIN branch b ON s.branch_id = b.branch_id
-               LEFT JOIN online_order oo ON s.sale_id = oo.sale_id
-        WHERE  s.cust_id = %s
-        ORDER BY s.sale_date DESC
-        LIMIT 10
-    """, (cust_id,))
+#     my_orders = query("""
+#         SELECT s.sale_id,
+#                TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
+#                b.branch_name, s.total_amt,
+#                s.payment_status, s.order_type,
+#                oo.order_status, oo.delivery_address
+#         FROM   sale s
+#                JOIN branch b ON s.branch_id = b.branch_id
+#                LEFT JOIN online_order oo ON s.sale_id = oo.sale_id
+#         WHERE  s.cust_id = %s
+#         ORDER BY s.sale_date DESC
+#         LIMIT 10
+#     """, (cust_id,))
 
-    cust_info = query(
-        "SELECT cust_name, loyalty_points, membership_type FROM customer WHERE cust_id = %s",
-        (cust_id,)
-    )
+#     cust_info = query(
+#         "SELECT cust_name, loyalty_points, membership_type FROM customer WHERE cust_id = %s",
+#         (cust_id,)
+#     )
 
-    return templates.TemplateResponse(request, "customer_dashboard.html", {
-        "my_orders":      my_orders,
-        "user_name":      session.get("user_name"),
-        "membership":     session.get("membership"),
-        "loyalty_points": session.get("loyalty_points"),
-        "role":           "CUSTOMER",
-    })
+#     return templates.TemplateResponse(request, "customer_dashboard.html", {
+#         "my_orders":      my_orders,
+#         "user_name":      session.get("user_name"),
+#         "membership":     session.get("membership"),
+#         "loyalty_points": session.get("loyalty_points"),
+#         "role":           "CUSTOMER",
+#     })
 
 
 # ══════════════════════════════════════════════════════════════════════════════

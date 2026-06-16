@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Shop{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">🛍️ Grocery Shop</h1>
+  <input id="searchBox" type="text" placeholder="Search groceries..."
+    class="border border-gray-300 rounded-lg px-4 py-2 text-sm
+           focus:outline-none focus:ring-2 focus:ring-green-500 w-64">
+</div>
+
+{% if request.query_params.get('msg') == 'added' %}
+<div class="bg-green-100 text-green-700 px-4 py-2 rounded-lg mb-4 text-sm">
+  ✅ Item added to your cart.
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" id="productGrid">
+  {% for p in products %}
+  <div class="bg-white rounded-xl shadow p-4 flex flex-col"
+       data-name="{{ p.product_name|lower }} {{ (p.brand or '')|lower }}">
+    <div class="flex-1">
+      <h3 class="font-semibold text-gray-800">{{ p.product_name }}</h3>
+      <p class="text-xs text-gray-400 mt-1">{{ p.brand or '—' }}</p>
+      <p class="text-lg font-bold text-[#044635] mt-3">
+        ৳{{ "%.2f"|format(p.unit_price) }}
+        <span class="text-xs text-gray-400 font-normal">/ {{ p.unit }}</span>
+      </p>
+    </div>
+
+    <form action="/customer/cart/add" method="post" class="mt-4 flex items-center gap-2">
+      <input type="hidden" name="product_id" value="{{ p.product_id }}">
+      <input type="number" name="quantity" value="1" min="1"
+             class="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center">
+     <button type="submit"
+  class="flex-1 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold py-2 rounded-lg transition">
+  Add to Cart
+</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+  document.getElementById('searchBox').addEventListener('input', function () {
+    const term = this.value.toLowerCase();
+    document.querySelectorAll('#productGrid > div').forEach(card => {
+      card.style.display = card.dataset.name.includes(term) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

@@ -1,80 +1,214 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SuperShop BD – {% block title %}{% endblock %}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { DEFAULT: '#1e3a5f', light: '#2563eb' }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperShop BD - {% block title %}{% endblock %}</title>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
     :root{
-      --green:    #044635;
-      --orange:   #F17B0D;
-      --dark:     #464646;
-      --mid:      #646464;
-      --cream:    #FFFCF1;
-      --white:    #ffffff;
-      --border:   #e5e7eb;
-      --shadow:   0 4px 24px rgba(4,70,53,.10);
-      --radius:   14px;
+        --green:#044635;
+        --orange:#F17B0D;
+        --cream:#FFFCF1;
     }
-  </style>
+
+    body{
+        background:#f5f7fa;
+    }
+
+    .glass{
+        backdrop-filter:blur(12px);
+        background:rgba(255,255,255,.85);
+    }
+</style>
+
+
 </head>
-<body class="bg-gray-100 min-h-screen">
 
-  <!-- ── NAVBAR ── -->
-  <nav class="bg-[#044635] text-white px-8 py-4 flex justify-between">
+<body class="min-h-screen flex flex-col">
 
-    <a href="/" class="font-bold text-2xl">
-        🛒 SuperShop
+<!-- NAVBAR -->
+
+<nav class="sticky top-0 z-50 bg-[#044635] shadow-lg">
+
+
+<div class="max-w-7xl mx-auto px-6">
+
+    <div class="flex justify-between items-center h-20">
+
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-3">
+
+            <div class="w-12 h-12 rounded-xl bg-[#F17B0D] flex items-center justify-center text-2xl">
+                🛒
+            </div>
+
+            <div>
+                <h1 class="text-white text-xl font-bold">
+                    SuperShop BD
+                </h1>
+
+                <p class="text-green-200 text-xs">
+                    Bangladesh Retail Network
+                </p>
+            </div>
+
+        </a>
+
+        <!-- Menu -->
+        <div class="flex items-center gap-3">
+
+            {% if role == "CUSTOMER" %}
+
+    {% set cart = request.session.get('cart', {}) %}
+    {% set cart_count = cart.values() | sum if cart else 0 %}
+
+    <a href="/customer/dashboard"
+       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+        Dashboard
     </a>
 
-    <div class="flex gap-3">
+    <a href="/customer/shop"
+       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+        Shop
+    </a>
 
-        {% if role %}
+    <a href="/customer/cart"
+       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+        Cart
+        {% if cart_count > 0 %}
+        <span class="bg-[#F17B0D] text-white text-xs rounded-full px-2 py-0.5 ml-1">{{ cart_count }}</span>
+        {% endif %}
+    </a>
 
-            <a href="/products">Products</a>
-            <a href="/sales">Sales</a>
-            <a href="/inventory">Inventory</a>
-            <a href="/branches">Branches</a>
+    <a href="/customer/inventory"
+       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+        Inventory
+    </a>
 
-            <a href="/auth/logout"
-               class="bg-[#F17B0D] px-4 py-2 rounded-lg">
-               Logout
-            </a>
+    <a href="/customer/branches"
+       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+        Branches
+    </a>
 
-        {% else %}
+{% elif role == "EMPLOYEE" %}
+
+                <a href="/products"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Products
+                </a>
+
+                <a href="/sales"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Sales
+                </a>
+
+                <a href="/inventory"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Inventory
+                </a>
+
+            {% elif role == "ADMIN" %}
+
+                <a href="/admin/dashboard"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Dashboard
+                </a>
+
+                <a href="/admin/dashboard/products"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Products
+                </a>
+
+                <a href="/admin/dashboard/sales"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Sales
+                </a>
+
+                <a href="/admin/dashboard/inventory"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Inventory
+                </a>
+
+                <a href="/admin/dashboard/branches"
+                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
+                    Branches
+                </a>
+
+            {% endif %}
+
+            {% if role %}
+
+            <div class="flex items-center gap-3 ml-4">
+
+                <div class="text-right">
+                    <p class="text-white text-sm font-semibold">
+                        {{ user_name or "User" }}
+                    </p>
+
+                    <p class="text-green-200 text-xs">
+                        {{ role }}
+                    </p>
+                </div>
+
+                <a href="/auth/logout"
+                   class="bg-[#F17B0D] hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-semibold transition">
+                    Logout
+                </a>
+
+            </div>
+
+            {% else %}
 
             <a href="/auth/login"
-               class="bg-[#F17B0D] px-4 py-2 rounded-lg">
-               Login
+               class="bg-[#F17B0D] hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-semibold transition">
+                Login
             </a>
 
-        {% endif %}
+            {% endif %}
+
+        </div>
 
     </div>
 
+</div>
+
+
 </nav>
 
-  <!-- ── PAGE CONTENT ── -->
-  <main class="max-w-7xl mx-auto px-6 py-8">
-    {% block content %}{% endblock %}
-  </main>
+<!-- PAGE CONTENT -->
 
-  <!-- ── FOOTER ── -->
-  <footer class="text-center text-gray-400 text-xs py-6 mt-8 border-t border-gray-200">
-    SuperShop Bangladesh · CSE-2201 Lab Project · University of Dhaka 2025
-  </footer>
+<main class="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- FOOTER -->
+
+<footer class="bg-white border-t mt-10">
+
+
+<div class="max-w-7xl mx-auto px-6 py-6 text-center">
+
+    <h3 class="font-bold text-[#044635] text-lg">
+        SuperShop Bangladesh
+    </h3>
+
+    <p class="text-gray-500 mt-2">
+        Multi-Branch Retail Management System
+    </p>
+
+    <p class="text-gray-400 text-sm mt-3">
+        © 2025 SuperShop Bangladesh | University Project
+    </p>
+
+</div>
+
+
+</footer>
 
 </body>
 </html>

@@ -86,43 +86,6 @@
       white-space: nowrap;
     }
 
-    /* ── CATEGORY STRIP ── */
-    .catstrip {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      display: flex;
-      align-items: center;
-      gap: 0;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .catstrip::-webkit-scrollbar { display: none; }
-    .catstrip-item {
-      padding: 13px 18px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--mid);
-      white-space: nowrap;
-      border-bottom: 2px solid transparent;
-      transition: all .15s;
-    }
-    .catstrip-item:hover { color: var(--green); border-color: var(--green); }
-    .catstrip-item.active { color: var(--green); border-color: var(--orange); font-weight: 600; }
-    .catstrip-menu {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 13px 18px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--green);
-      border-right: 1px solid var(--border);
-      white-space: nowrap;
-      margin-right: 4px;
-      cursor: pointer;
-    }
-
     /* ── LAYOUT ── */
     .layout {
       display: flex;
@@ -136,7 +99,7 @@
       flex-shrink: 0;
       background: var(--white);
       border-right: 1px solid var(--border);
-      min-height: calc(100vh - 97px);
+      min-height: calc(100vh - 60px);
     }
     .sidebar-header {
       padding: 14px 18px;
@@ -159,6 +122,12 @@
       transition: background .12s;
     }
     .sidebar-item:hover { background: rgba(4,70,53,.04); color: var(--green); }
+    .sidebar-item.active {
+      background: rgba(4,70,53,.08);
+      color: var(--green);
+      font-weight: 600;
+      box-shadow: inset 3px 0 0 0 var(--orange);
+    }
     .sidebar-item-left { display: flex; align-items: center; gap: 10px; }
     .sidebar-icon { font-size: 16px; width: 22px; text-align: center; }
     .sidebar-arrow { color: var(--mid); font-size: 11px; }
@@ -255,6 +224,10 @@
       transition: transform .15s;
     }
     .cat-tile:hover { transform: translateY(-3px); }
+    .cat-tile.active {
+      box-shadow: 0 0 0 3px var(--orange) inset;
+      transform: translateY(-3px);
+    }
     .cat-tile img {
       width: 100%;
       height: 100px;
@@ -281,6 +254,7 @@
       font-size: 13px;
       color: var(--orange);
       font-weight: 600;
+      cursor: pointer;
     }
     .products-grid {
       display: grid;
@@ -295,7 +269,7 @@
       transition: box-shadow .15s;
     }
     .product-card:hover { box-shadow: 0 6px 24px rgba(4,70,53,.14); }
-    .product-card img { width: 100%; height: 148px; object-fit: cover; display: block; }
+    .product-card img { width: 100%; height: 148px; object-fit: cover; display: block; background: #eef1ee; }
     .product-card-body { padding: 12px 14px 14px; }
     .product-name {
       font-size: 13px;
@@ -322,6 +296,16 @@
       transition: background .15s;
     }
     .btn-add:hover { background: #033828; }
+
+    /* ── NO RESULTS ── */
+    .no-results {
+      display: none;
+      text-align: center;
+      color: var(--mid);
+      font-size: 14px;
+      padding: 50px 0;
+      grid-column: 1 / -1;
+    }
 
     /* ── FEATURE STRIP ── */
     .feature-strip {
@@ -397,19 +381,6 @@
     </div>
   </nav>
 
-  <!-- ══ CATEGORY STRIP ══ -->
-  <div class="catstrip">
-    <div class="catstrip-menu">☰ Shop by Category</div>
-    <a href="#" class="catstrip-item active">🍎 Food</a>
-    <a href="#" class="catstrip-item">🥛 Dairy & Bakery</a>
-    <a href="#" class="catstrip-item">🧴 Health & Beauty</a>
-    <a href="#" class="catstrip-item">📱 Electronics</a>
-    <a href="#" class="catstrip-item">👕 Clothing</a>
-    <a href="#" class="catstrip-item">🍬 Snacks</a>
-    <a href="#" class="catstrip-item">🥤 Beverages</a>
-    <a href="#" class="catstrip-item">🎉 Great Deals</a>
-  </div>
-
   <!-- ══ MAIN LAYOUT ══ -->
   <div class="layout">
 
@@ -417,35 +388,39 @@
     <aside class="sidebar">
       <div class="sidebar-header">Shop by Category</div>
 
-      <div class="sidebar-item">
+      <div class="sidebar-item active" data-category="all" onclick="filterCategory('all', this)">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🛍️</span> All Products</div>
+        <span class="sidebar-arrow">›</span>
+      </div>
+      <div class="sidebar-item" data-category="food" onclick="filterCategory('food', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">🍎</span> Food</div>
         <span class="sidebar-arrow">›</span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" data-category="dairy" onclick="filterCategory('dairy', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">🥛</span> Dairy Products</div>
         <span class="sidebar-arrow">›</span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" data-category="bakery" onclick="filterCategory('bakery', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">🍞</span> Bakery</div>
         <span class="sidebar-arrow">›</span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" data-category="snacks" onclick="filterCategory('snacks', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">🍬</span> Snacks</div>
         <span class="sidebar-arrow">›</span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" data-category="beverages" onclick="filterCategory('beverages', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">🥤</span> Beverages</div>
         <span class="sidebar-arrow">›</span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" data-category="health" onclick="filterCategory('health', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">🧴</span> Health & Beauty</div>
         <span class="sidebar-arrow">›</span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" data-category="electronics" onclick="filterCategory('electronics', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">📱</span> Electronics</div>
         <span class="sidebar-arrow">›</span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" data-category="clothing" onclick="filterCategory('clothing', this)">
         <div class="sidebar-item-left"><span class="sidebar-icon">👕</span> Clothing</div>
         <span class="sidebar-arrow">›</span>
       </div>
@@ -474,37 +449,37 @@
       <!-- Quick Category Tiles -->
       <p class="section-title">Shop by Category</p>
       <div class="cat-tiles">
-        <div class="cat-tile">
-          <img src="https://picsum.photos/200/100?1" alt="Dairy">
+        <div class="cat-tile" data-category="dairy" onclick="filterCategory('dairy', this)">
+          <img src="https://loremflickr.com/200/100/dairy,milk?lock=101" alt="Dairy">
           <div class="cat-tile-label">Dairy</div>
         </div>
-        <div class="cat-tile">
-          <img src="https://picsum.photos/200/100?2" alt="Bakery">
+        <div class="cat-tile" data-category="bakery" onclick="filterCategory('bakery', this)">
+          <img src="https://loremflickr.com/200/100/bread,bakery?lock=102" alt="Bakery">
           <div class="cat-tile-label">Bakery</div>
         </div>
-        <div class="cat-tile">
-          <img src="https://picsum.photos/200/100?3" alt="Snacks">
+        <div class="cat-tile" data-category="snacks" onclick="filterCategory('snacks', this)">
+          <img src="https://loremflickr.com/200/100/snacks,chips?lock=103" alt="Snacks">
           <div class="cat-tile-label">Snacks</div>
         </div>
-        <div class="cat-tile">
-          <img src="https://picsum.photos/200/100?4" alt="Beverages">
+        <div class="cat-tile" data-category="beverages" onclick="filterCategory('beverages', this)">
+          <img src="https://loremflickr.com/200/100/beverages,juice?lock=104" alt="Beverages">
           <div class="cat-tile-label">Beverages</div>
         </div>
-        <div class="cat-tile">
-          <img src="https://picsum.photos/200/100?5" alt="Health">
+        <div class="cat-tile" data-category="health" onclick="filterCategory('health', this)">
+          <img src="https://loremflickr.com/200/100/cosmetics,skincare?lock=105" alt="Health">
           <div class="cat-tile-label">Health</div>
         </div>
       </div>
 
       <!-- Popular Products -->
       <div class="products-header">
-        <p class="section-title" style="margin-bottom:0">Popular Products</p>
-        <a href="#" class="view-all">View All ›</a>
+        <p class="section-title" id="productsHeading" style="margin-bottom:0">Popular Products</p>
+        <a href="#" class="view-all" onclick="filterCategory('all', document.querySelector('.sidebar-item[data-category=\'all\']')); return false;">View All ›</a>
       </div>
       <div class="products-grid" id="productGrid">
         {% for p in products %}
-        <div class="product-card">
-          <img src="https://picsum.photos/300/200?{{ loop.index + 10 }}" alt="{{ p.product_name }}">
+        <div class="product-card" data-category="{{ p.category | lower }}" data-name="{{ p.product_name | lower }}">
+          <img class="product-img" data-lock="{{ loop.index }}" alt="{{ p.product_name }}">
           <div class="product-card-body">
             <p class="product-name">{{ p.product_name }}</p>
             <p class="product-brand">{{ p.brand or 'SuperShop' }}</p>
@@ -522,6 +497,8 @@
           </div>
         </div>
         {% endfor %}
+
+        <p class="no-results" id="noResults">No products found in this category.</p>
       </div>
 
     </main>
@@ -567,12 +544,137 @@
   </footer>
 
   <script>
-    // Live search filters product cards
-    document.getElementById('storeSearch').addEventListener('input', function () {
-      const term = this.value.toLowerCase();
-      document.querySelectorAll('.product-card').forEach(card => {
-        card.style.display = card.innerText.toLowerCase().includes(term) ? '' : 'none';
+    // Each sidebar / tile filter key maps to every possible raw value
+    // that might show up in data-category (cat_id, cat_name, or
+    // a relevant sub-category), all lowercased.
+    const categoryGroups = {
+      food:        ['cat-f1', 'food'],
+      dairy:       ['cat-d1', 'dairy'],
+      bakery:      ['cat-b1', 'bakery'],
+      snacks:      ['cat-s1', 'snacks'],
+      beverages:   ['cat-bv', 'beverages'],
+      health:      ['cat-h1', 'health', 'cat-p1', 'personal care', 'personal-care', 'personalcare'],
+      electronics: ['cat-e1', 'electronics', 'cat-m1', 'mobile access', 'mobile-access', 'mobileaccess'],
+      clothing:    ['cat-c1', 'clothing']
+    };
+
+    function normalize(str) {
+      return (str || '').toString().toLowerCase().trim();
+    }
+
+    function matchesCategory(cardCategory, filterKey) {
+      if (filterKey === 'all') return true;
+      const group = categoryGroups[filterKey];
+      if (!group) return false;
+      return group.includes(normalize(cardCategory));
+    }
+
+    // ── Relevant product photos ──
+    // Map distinctive words in a product name to a good image-search keyword.
+    // Checked longest-key-first so more specific names win over generic ones.
+    const productImageKeywords = {
+      'full cream milk':   'milk',
+      'plain yogurt':      'yogurt',
+      'butter':            'butter',
+      'sliced bread':      'bread',
+      'digestive biscuits':'biscuits',
+      'potato chips':      'chips',
+      'chanachur':         'namkeen',
+      'mango juice':       'mango,juice',
+      'green tea':         'green,tea',
+      'soft drink':        'soda',
+      'basmati rice':      'rice',
+      'soybean oil':       'cooking,oil',
+      'sugar':             'sugar',
+      'antiseptic soap':   'soap',
+      'shampoo':           'shampoo',
+      'toothpaste':        'toothpaste',
+      'usb-c charger':     'phone,charger',
+      'charger':           'phone,charger',
+      'earphone':          'earphones',
+      'cotton t-shirt':    't-shirt',
+      't-shirt':           't-shirt',
+      'jam':               'jam'
+    };
+
+    // Fallback keyword by category (cat_id or cat_name, lowercased)
+    const categoryImageKeywords = {
+      'cat-d1': 'dairy',          'dairy':         'dairy',
+      'cat-b1': 'bread',          'bakery':        'bread',
+      'cat-s1': 'snacks',         'snacks':        'snacks',
+      'cat-bv': 'drinks',         'beverages':     'drinks',
+      'cat-f1': 'groceries',      'food':          'groceries',
+      'cat-h1': 'cosmetics',      'health':        'cosmetics',
+      'cat-p1': 'cosmetics',      'personal care': 'cosmetics',
+      'cat-e1': 'electronics',    'electronics':   'electronics',
+      'cat-m1': 'gadgets',        'mobile access': 'gadgets',
+      'cat-c1': 'fashion',        'clothing':      'fashion'
+    };
+
+    function getImageKeyword(name, category) {
+      const sortedKeys = Object.keys(productImageKeywords).sort((a, b) => b.length - a.length);
+      for (const key of sortedKeys) {
+        if (name.includes(key)) return productImageKeywords[key];
+      }
+      const cat = (category || '').toLowerCase().trim();
+      return categoryImageKeywords[cat] || 'grocery';
+    }
+
+    function loadProductImages() {
+      document.querySelectorAll('.product-card .product-img').forEach(img => {
+        const card = img.closest('.product-card');
+        const keyword = getImageKeyword(card.dataset.name, card.dataset.category);
+        const lock = img.dataset.lock || '1';
+        img.src = `https://loremflickr.com/300/200/${keyword}?lock=${lock}`;
       });
+    }
+    window.addEventListener('DOMContentLoaded', loadProductImages);
+
+
+    let currentSearch   = '';
+
+    // Apply both the active category filter and the search text together
+    function applyFilters() {
+      let visibleCount = 0;
+
+      document.querySelectorAll('.product-card').forEach(card => {
+        const matchesCat    = matchesCategory(card.dataset.category, currentCategory);
+        const matchesSearch = card.dataset.name.includes(currentSearch);
+        const show = matchesCat && matchesSearch;
+
+        card.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+      });
+
+      document.getElementById('noResults').style.display = (visibleCount === 0) ? 'block' : 'none';
+    }
+
+    // Called when a sidebar item or category tile is clicked
+    function filterCategory(category, element) {
+      currentCategory = category;
+
+      // update active highlight on sidebar + tiles
+      document.querySelectorAll('.sidebar-item, .cat-tile').forEach(el => el.classList.remove('active'));
+      if (element) element.classList.add('active');
+
+      // update heading text
+      const heading = document.getElementById('productsHeading');
+      if (category === 'all') {
+        heading.textContent = 'Popular Products';
+      } else {
+        heading.textContent = 'Showing: ' + category.charAt(0).toUpperCase() + category.slice(1);
+      }
+
+      applyFilters();
+
+      // scroll product grid into view (handy on mobile)
+      document.getElementById('productGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Live search, works together with the active category
+    document.getElementById('storeSearch').addEventListener('input', function () {
+      currentSearch = this.value.toLowerCase();
+      applyFilters();
     });
   </script>
 </body>

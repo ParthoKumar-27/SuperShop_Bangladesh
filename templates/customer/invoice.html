@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice — {{ sale.sale_id }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            /* Ensures background colors print perfectly */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#f4f7f6] min-h-screen p-6 sm:p-12 text-gray-800 antialiased">
+
+    <div class="max-w-4xl mx-auto mb-6 no-print flex justify-end">
+        <button onclick="window.print()" class="inline-flex items-center gap-2 bg-[#F17B0D] hover:bg-[#d66a07] text-white font-bold px-6 py-3 rounded-xl shadow-md transition cursor-pointer text-sm tracking-wide">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4H7v4a2 2 0 002 2zM9 9V5a2 2 0 012-2h2a2 2 0 012 2v4" />
+            </svg>
+            Print
+        </button>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden relative">
+        
+        <div class="bg-[#044635] text-white px-8 py-12 sm:px-12 flex flex-col sm:flex-row justify-between items-start gap-6">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight">SuperShop Bangladesh</h1>
+                <p class="text-emerald-200 text-sm mt-1 font-medium">{{ sale.branch_name }} Branch Atelier</p>
+                <div class="text-xs text-emerald-100/80 mt-4 space-y-0.5 font-light">
+                    <p>{{ sale.branch_address }}</p>
+                    <p>Hotline: <span class="font-semibold text-white">{{ sale.branch_phone }}</span></p>
+                </div>
+            </div>
+            
+            <div class="sm:text-right">
+                <p class="text-xs uppercase tracking-widest text-emerald-200 font-bold">Invoice Reference</p>
+                <p class="text-3xl font-mono font-bold text-[#F17B0D] mt-1">#{{ sale.sale_id }}</p>
+                <p class="text-xs text-emerald-100/90 mt-2">Date: <span class="font-medium text-white">{{ sale.sale_date }}</span></p>
+            </div>
+        </div>
+
+        <div class="p-8 sm:p-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-gray-50 border border-gray-100 p-5 rounded-2xl">
+                    <h3 class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Customer Paton</h3>
+                    <p class="text-lg font-bold text-[#044635]">{{ user_name }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Verified Account Profile</p>
+                </div>
+                
+                <div class="bg-gray-50 border border-gray-100 p-5 rounded-2xl">
+                    <h3 class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Verification Status</h3>
+                    <div class="mt-1">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                            {% if sale.payment_status == 'PAID' %} bg-green-100 text-green-800 {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
+                            <span class="w-2 h-2 rounded-full {% if sale.payment_status == 'PAID' %} bg-green-600 {% else %} bg-yellow-500 {% endif %}"></span>
+                            {{ sale.payment_status }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 border border-gray-100 p-5 rounded-2xl">
+                    <h3 class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Collection Channel</h3>
+                    <p class="text-base font-semibold text-gray-700">Priority Secure Pickup</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Direct From Branch Inventory</p>
+                </div>
+            </div>
+
+            <div class="mb-10 overflow-hidden rounded-2xl border border-gray-100">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#044635] text-white text-xs font-bold tracking-wide uppercase">
+                            <th class="p-4">Items Selection</th>
+                            <th class="p-4 text-center">Qty</th>
+                            <th class="p-4 text-right">Unit Rate</th>
+                            <th class="p-4 text-right">Net Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for item in items %}
+                        <tr class="text-sm hover:bg-gray-50/70 transition">
+                            <td class="p-4 font-semibold text-[#044635]">{{ item.product_name }}</td>
+                            <td class="p-4 text-center text-gray-600 font-medium">{{ item.quantity }}</td>
+                            <td class="p-4 text-right text-gray-500 font-mono">৳{{ "{:,.2f}".format(item.unit_price|float) }}</td>
+                            <td class="p-4 text-right font-bold text-gray-900 font-mono">৳{{ "{:,.2f}".format(item.line_total|float) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <div class="w-full sm:w-80 space-y-3 text-sm bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                    <div class="flex justify-between text-gray-600">
+                        <span>Cart Subtotal:</span>
+                        <span class="font-mono font-medium text-gray-900">৳{{ "{:,.2f}".format(sale.subtotal|float) }}</span>
+                    </div>
+                    
+                    {% if sale.discount_amt|float > 0 %}
+                    <div class="flex justify-between text-emerald-700">
+                        <span>Loyalty Deductions:</span>
+                        <span class="font-mono font-medium">-৳{{ "{:,.2f}".format(sale.discount_amt|float) }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex justify-between text-gray-600">
+                        <span>Statutory VAT / Tax:</span>
+                        <span class="font-mono font-medium text-gray-900">৳{{ "{:,.2f}".format(sale.tax_amt|float) }}</span>
+                    </div>
+                    
+                    <div class="pt-3 border-t border-gray-200 flex justify-between items-baseline">
+                        <span class="text-sm font-bold text-[#044635]">Grand Settlement</span>
+                        <span class="text-2xl font-black text-[#F17B0D] font-mono tracking-tight">৳{{ "{:,.2f}".format(sale.total_amt|float) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-16 pt-6 border-t border-gray-100 text-center">
+                <p class="text-sm font-bold text-[#044635]">Thank you for shopping with SuperShop Bangladesh!</p>
+                <p class="text-xs text-gray-400 mt-1">This document serves as an authorized receipt configuration dashboard file.</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

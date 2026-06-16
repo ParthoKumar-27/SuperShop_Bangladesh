@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}My Cart{% endblock %}
+
+{% block content %}
+
+<div class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-10 text-white mb-10 shadow-xl">
+
+    <h1 class="text-4xl font-bold">
+        🛒 My Cart
+    </h1>
+
+    <p class="mt-2 text-green-100">
+        Review your items before checkout.
+    </p>
+
+</div>
+
+{% if not items %}
+
+<div class="bg-white rounded-2xl shadow-lg p-10 text-center text-gray-500">
+    Your cart is empty.
+    <a href="/customer/shop" class="text-[#F17B0D] font-semibold ml-1 hover:underline">Start shopping →</a>
+</div>
+
+{% else %}
+
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+{% for item in items %}
+
+<div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition">
+
+    <h2 class="text-xl font-bold text-[#044635]">
+        {{ item.product_name }}
+    </h2>
+
+    <p class="text-gray-500 mt-1">
+        {{ item.brand or '—' }} • ৳{{ "%.2f"|format(item.unit_price) }} / {{ item.unit }}
+    </p>
+
+    <div class="mt-5">
+
+        <div class="flex justify-between items-center mb-3">
+            <span>Quantity</span>
+            <form action="/customer/cart/update" method="post" class="flex items-center gap-2">
+                <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                <input type="number" name="quantity" value="{{ item.quantity }}" min="0"
+                       class="w-16 border border-gray-300 rounded-lg px-2 py-1 text-center text-sm">
+                <button type="submit" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">
+                    Update
+                </button>
+            </form>
+        </div>
+
+        <div class="flex justify-between items-center bg-green-400 text-green-1000 px-4 py-2 rounded-xl mb-4">
+    <span class="text-sm font-semibold">Subtotal</span>
+    <span class="font-bold">৳{{ "%.2f"|format(item.line_total) }}</span>
+</div>
+
+<form action="/customer/cart/remove" method="post">
+    <input type="hidden" name="product_id" value="{{ item.product_id }}">
+    <button type="submit"
+        class="w-full bg-red-200 text-red-800 hover:bg-red-300 px-4 py-2 rounded-xl text-center text-sm font-semibold transition">
+        ✕ Remove
+    </button>
+</form>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+<div class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-8 mt-8 text-white shadow-xl
+            flex flex-col sm:flex-row items-center justify-between gap-4">
+
+    <div>
+        <p class="text-green-100 text-sm">Total Amount</p>
+        <p class="text-3xl font-bold">৳{{ "%.2f"|format(grand_total) }}</p>
+    </div>
+
+    <a href="/customer/checkout"
+       class="bg-[#F17B0D] hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl transition text-center">
+        Proceed to Checkout →
+    </a>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

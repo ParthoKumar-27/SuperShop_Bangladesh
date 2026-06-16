@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperShop Bangladesh – {{ category.cat_name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/storefront.css">
+</head>
+<body>
+
+  <!-- ══ TOP NAVBAR ══ -->
+  <nav class="topnav">
+    <a href="/" class="topnav-logo">🛒 SuperShop <span>BD</span></a>
+
+    <!-- Search -->
+    <div class="topnav-search">
+      <input type="text" placeholder="Search your products…" id="storeSearch">
+      <button>🔍</button>
+    </div>
+
+    <!-- Actions -->
+    <div class="topnav-actions">
+      <span class="topnav-hotline">📞 Help: 16516</span>
+      {% if role == 'CUSTOMER' %}
+        <a href="/customer/dashboard" class="btn-signin">My Account</a>
+      {% elif role == 'ADMIN' %}
+        <a href="/admin/dashboard" class="btn-signin">Dashboard</a>
+      {% else %}
+        <a href="/auth/login" class="btn-signin">Sign in / Sign up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- ══ MAIN LAYOUT ══ -->
+  <div class="layout">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">Shop by Category</div>
+
+      <a href="/category/CAT-F1" class="sidebar-item{% if category.cat_id == 'CAT-F1' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🍎</span> Food</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+      <a href="/category/CAT-D1" class="sidebar-item{% if category.cat_id == 'CAT-D1' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🥛</span> Dairy Products</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+      <a href="/category/CAT-B1" class="sidebar-item{% if category.cat_id == 'CAT-B1' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🍞</span> Bakery</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+      <a href="/category/CAT-S1" class="sidebar-item{% if category.cat_id == 'CAT-S1' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🍬</span> Snacks</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+      <a href="/category/CAT-BV" class="sidebar-item{% if category.cat_id == 'CAT-BV' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🥤</span> Beverages</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+      <a href="/category/CAT-H1" class="sidebar-item{% if category.cat_id == 'CAT-H1' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">🧴</span> Health & Beauty</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+      <a href="/category/CAT-E1" class="sidebar-item{% if category.cat_id == 'CAT-E1' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">📱</span> Electronics</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+      <a href="/category/CAT-C1" class="sidebar-item{% if category.cat_id == 'CAT-C1' %} active{% endif %}">
+        <div class="sidebar-item-left"><span class="sidebar-icon">👕</span> Clothing</div>
+        <span class="sidebar-arrow">›</span>
+      </a>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <a href="/">Home</a> › {{ category.cat_name }}
+      </div>
+
+      <!-- Category Header -->
+      <div class="category-header">
+        <p class="category-title">{{ category.cat_name }}</p>
+        {% if category.description %}
+          <p class="category-desc">{{ category.description }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Products -->
+      {% if products %}
+      <div class="products-grid" id="productGrid">
+        {% for p in products %}
+        <div class="product-card">
+          <img src="https://picsum.photos/300/200?{{ loop.index + 30 }}" alt="{{ p.product_name }}">
+          <div class="product-card-body">
+            <p class="product-name">{{ p.product_name }}</p>
+            <p class="product-brand">{{ p.brand or 'SuperShop' }}</p>
+            <div class="product-footer">
+              <span class="product-price">৳ {{ "%.0f"|format(p.unit_price) }}</span>
+              {% if logged_in %}
+                <button class="btn-add">+ Add</button>
+              {% else %}
+                <a href="/auth/login?role=customer"
+                   style="background:var(--green); color:#fff; padding:6px 14px; border-radius:8px; font-size:12px; font-weight:600">
+                  Login
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="no-products">
+        No products found in this category yet.
+      </div>
+      {% endif %}
+
+    </main>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <footer>
+    SuperShop Bangladesh &nbsp;·&nbsp; CSE-2201 &nbsp;·&nbsp;
+    University of Dhaka 2025 &nbsp;·&nbsp;
+    <span>Powered by FastAPI + PostgreSQL</span>
+  </footer>
+
+  <script>
+    // Live search filters product cards
+    const searchBox = document.getElementById('storeSearch');
+    if (searchBox) {
+      searchBox.addEventListener('input', function () {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll('.product-card').forEach(card => {
+          card.style.display = card.innerText.toLowerCase().includes(term) ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</body>
+</html>

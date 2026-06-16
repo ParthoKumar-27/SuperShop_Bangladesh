@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}My Orders{% endblock %}
+
+{% block content %}
+
+<h1 class="text-3xl font-bold text-[#044635] mb-6">
+    Welcome {{ user_name }}
+</h1>
+
+<div class="grid md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-[#646464]">Membership</p>
+        <h3 class="text-2xl font-bold text-[#F17B0D]">
+            {{ membership }}
+        </h3>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-[#646464]">Loyalty Points</p>
+        <h3 class="text-2xl font-bold text-[#044635]">
+            {{ loyalty_points }}
+        </h3>
+    </div>
+</div>
+
+<div class="bg-white rounded-2xl shadow overflow-hidden">
+    <table class="w-full text-left border-collapse">
+        <thead class="bg-[#044635] text-white">
+            <tr>
+                <th class="p-4">Sale ID</th>
+                <th class="p-4">Status</th>
+                <th class="p-4">Total</th>
+                <th class="p-4 text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in my_orders %}
+            <tr class="border-b hover:bg-gray-50 transition">
+                <td class="p-4 font-medium">{{ o.sale_id }}</td>
+                <td class="p-4">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold 
+                        {% if o.order_status == 'PLACED' or o.order_status == 'PENDING' %} bg-yellow-100 text-yellow-800 
+                        {% elif o.order_status == 'DELIVERED' or o.payment_status == 'PAID' %} bg-green-100 text-green-800 
+                        {% else %} bg-gray-100 text-gray-800 {% endif %}">
+                        {{ o.order_status or 'PROCESSING' }}
+                    </span>
+                </td>
+                <td class="p-4 font-semibold">৳{{ o.total_amt }}</td>
+                <td class="p-4 text-center">
+                    <a href="/customer/invoice/{{ o.sale_id }}" 
+                       target="_blank"
+                       class="inline-flex items-center gap-1 bg-[#F17B0D] hover:bg-[#d66a07] text-white text-sm font-medium px-4 py-2 rounded-xl shadow-sm transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Get Bill
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-8 text-center">
+    <form action="/customer/delete-account"
+          method="post"
+          onsubmit="return confirm('Are you sure you want to permanently delete your account?');">
+        <button type="submit"
+                class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition shadow">
+            Delete My Account
+        </button>
+    </form>
+</div>
+
+{% endblock %}
