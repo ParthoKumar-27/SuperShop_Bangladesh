@@ -486,44 +486,141 @@ def discounts_page(request: Request, session=Depends(require_admin)):
             d.discount_name,
             d.discount_type,
             d.discount_value,
-
+            d.product_id,
+            d.cat_id,
             p.product_name,
             c.cat_name,
-
-            TO_CHAR(d.start_date,'DD Mon YYYY') AS start_date,
-            TO_CHAR(d.end_date,'DD Mon YYYY')   AS end_date,
-
+            TO_CHAR(d.start_date, 'DD Mon YYYY')  AS start_date,
+            TO_CHAR(d.end_date,   'DD Mon YYYY')  AS end_date,
+            TO_CHAR(d.start_date, 'YYYY-MM-DD')   AS start_date_raw,
+            TO_CHAR(d.end_date,   'YYYY-MM-DD')   AS end_date_raw,
             CASE
-                WHEN CURRENT_DATE BETWEEN d.start_date
-                                     AND d.end_date
-                    THEN 'ACTIVE'
-
-                WHEN CURRENT_DATE < d.start_date
-                    THEN 'UPCOMING'
-
+                WHEN CURRENT_DATE BETWEEN d.start_date AND d.end_date THEN 'ACTIVE'
+                WHEN CURRENT_DATE < d.start_date                      THEN 'UPCOMING'
                 ELSE 'EXPIRED'
             END AS status
-
         FROM discount d
-
-        LEFT JOIN product p
-            ON d.product_id = p.product_id
-
-        LEFT JOIN category c
-            ON d.cat_id = c.cat_id
-
+        LEFT JOIN product  p ON d.product_id = p.product_id
+        LEFT JOIN category c ON d.cat_id     = c.cat_id
         ORDER BY d.start_date DESC
     """)
+
+    categories = query("""
+        SELECT cat_id, cat_name FROM category ORDER BY cat_name
+    """)
+
+    products = query("""
+        SELECT product_id, product_name, cat_id
+        FROM   product
+        WHERE  is_active = 'Y'
+        ORDER BY product_name
+    """)
+
+    # Generate next discount ID in DIS-XXX format
+    last = query("""
+        SELECT discount_id FROM discount ORDER BY discount_id DESC LIMIT 1
+    """)
+    if last:
+        last_num = int(last[0]["discount_id"].split("-")[1])
+        next_discount_id = f"DIS-{last_num + 1:03d}"
+    else:
+        next_discount_id = "DIS-001"
 
     return templates.TemplateResponse(
         request,
         "admin/discounts.html",
         {
-            "discounts": discounts,
-            "user_name": session.get("user_name"),
-            "role": "ADMIN",
+            "discounts":        discounts,
+            "categories":       categories,
+            "products":         products,
+            "next_discount_id": next_discount_id,
+            "user_name":        session.get("user_name"),
+            "role":             "ADMIN",
         }
     )
+
+@app.post("/discounts/add")
+def add_discount(
+    request:        Request,
+    discount_id:    str   = Form(...),
+    discount_name:  str   = Form(...),
+    discount_type:  str   = Form(...),
+    discount_value: float = Form(...),
+    product_id:     str   = Form(""),
+    cat_id:         str   = Form(""),        # hidden — product scope
+    cat_id_scope:   str   = Form(""),        # visible select — category scope
+    start_date:     str   = Form(...),
+    end_date:       str   = Form(...),
+    session=Depends(require_admin),
+):
+    # cat_id_scope wins when "Entire Category" tab is active
+    final_cat = cat_id_scope or cat_id or None
+    final_pid = product_id or None
+
+    execute("""
+        INSERT INTO discount
+            (discount_id, discount_name, discount_type, discount_value,
+             product_id, cat_id, start_date, end_date)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        discount_id,
+        discount_name.strip(),
+        discount_type,
+        discount_value,
+        final_pid,
+        final_cat,
+        start_date,
+        end_date,
+    ))
+
+    return RedirectResponse("/discounts?success=Discount+created", status_code=302)
+
+
+@app.post("/discounts/modify")
+def modify_discount(
+    request:        Request,
+    discount_id:    str   = Form(...),
+    discount_name:  str   = Form(...),
+    discount_type:  str   = Form(...),
+    discount_value: float = Form(...),
+    start_date:     str   = Form(...),
+    end_date:       str   = Form(...),
+    session=Depends(require_admin),
+):
+    execute("""
+        UPDATE discount
+        SET discount_name  = %s,
+            discount_type  = %s,
+            discount_value = %s,
+            start_date     = %s,
+            end_date       = %s
+        WHERE discount_id = %s
+    """, (
+        discount_name.strip(),
+        discount_type,
+        discount_value,
+        start_date,
+        end_date,
+        discount_id,
+    ))
+
+    return RedirectResponse("/discounts?success=Discount+updated", status_code=302)
+
+
+@app.post("/discounts/delete")
+def delete_discount(
+    request:    Request,
+    discount_id: str = Form(...),
+    confirm_id:  str = Form(...),
+    session=Depends(require_admin),
+):
+    if discount_id.strip() != confirm_id.strip():
+        return RedirectResponse("/discounts?error=ID+mismatch", status_code=302)
+
+    execute("DELETE FROM discount WHERE discount_id = %s", (discount_id,))
+
+    return RedirectResponse("/discounts?success=Discount+deleted", status_code=302)
+
 
 @app.get("/admin/dashboard/sales", response_class=HTMLResponse)
 def admin_sales(

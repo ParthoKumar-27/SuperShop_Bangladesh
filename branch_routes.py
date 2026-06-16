@@ -9,7 +9,9 @@ Add to main.py:
 """
 
 from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.templating import Jinja2Templates
 from urllib.parse import quote
 from database import query, execute
 from auth import require_admin
@@ -369,7 +371,7 @@ def _next_user_id() -> str:
     return f"U-{num:06d}"
  
  
-@branch_router.post("/manager/create")
+
 @branch_router.post("/manager/create")
 def create_manager(
     request:          Request,
@@ -431,4 +433,67 @@ def create_manager(
     return redir(
         f"Manager account created for '{emp_name.strip()}' (ID: {emp_id}). "
         f"Now use 'Assign Manager' to link them to a branch."
+    )
+
+
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  6. EDIT BRANCH (POST — save changes)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@branch_router.post("/{branch_id}/edit")
+def edit_branch_save(
+    request:     Request,
+    branch_id:   str,
+    branch_name: str   = Form(...),
+    phone:       str   = Form(""),
+    open_time:   str   = Form("09:00"),
+    close_time:  str   = Form("22:00"),
+    is_active:   str   = Form("Y"),
+    session=Depends(require_admin),
+):
+    branch_id = branch_id.strip()
+
+    # Check branch exists
+    existing = query("SELECT 1 FROM branch WHERE branch_id = %s", (branch_id,))
+    if not existing:
+        return redir("Branch not found.", ok=False)
+
+    # Phone uniqueness — exclude the branch being edited
+    phone = phone.strip()
+    if phone:
+        dup = query(
+            "SELECT 1 FROM branch WHERE phone = %s AND branch_id <> %s",
+            (phone, branch_id)
+        )
+        if dup:
+            return redir(
+                f"Phone '{phone}' is already used by another branch.",
+                ok=False
+            )
+
+    execute(
+        """UPDATE branch
+           SET branch_name = %s,
+               phone       = %s,
+               open_time   = %s,
+               close_time  = %s,
+               is_active   = %s
+           WHERE branch_id = %s""",
+        (
+            branch_name.strip(),
+            phone or None,
+            open_time,
+            close_time,
+            is_active,
+            branch_id,
+        )
+    )
+
+    from urllib.parse import quote
+    return RedirectResponse(
+        f"/admin/dashboard/branches/manage?success={quote(f'Branch {branch_id} updated successfully.')}",
+        status_code=302
     )

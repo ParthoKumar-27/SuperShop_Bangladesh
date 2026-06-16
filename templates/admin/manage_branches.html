@@ -497,18 +497,22 @@ request.query_params.get('error') %} {% if msg_ok %}
             {% endif %}
           </td>
           <td>
-            <a
-              href="/admin/dashboard/branches/{{ b.branch_id }}/edit"
-              class="badge"
-              style="
-                background: #e0f2fe;
-                color: #0369a1;
-                text-decoration: none;
-                cursor: pointer;
-              "
-            >
-              <i class="fas fa-edit" style="font-size: 10px"></i> Edit
-            </a>
+            <button
+  onclick="openEditDrawer(
+    '{{ b.branch_id }}',
+    '{{ b.branch_name | replace("'", "\\'") }}',
+    '{{ b.city_name }}',
+    '{{ b.address | replace("'", "\\'") }}',
+    '{{ b.phone or "" }}',
+    '{{ b.open_time }}',
+    '{{ b.close_time }}',
+    '{{ b.is_active }}'
+  )"
+  class="badge"
+  style="background:#e0f2fe;color:#0369a1;border:none;cursor:pointer;"
+>
+  <i class="fas fa-edit" style="font-size:10px"></i> Edit
+</button>
           </td>
         </tr>
         {% endfor %}
@@ -1822,6 +1826,113 @@ request.query_params.get('error') %} {% if msg_ok %}
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════════════
+     DRAWER 6: EDIT BRANCH
+══════════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawer-edit-branch" onclick="closeOnOverlay(event, this)">
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <h3>Edit Branch</h3>
+        <p id="editDrawerSubtitle">Update branch details</p>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer('drawer-edit-branch')">✕</button>
+    </div>
+    <div class="drawer-body">
+
+      <!-- Read-only info strip -->
+      <div style="background:rgba(4,70,53,.05);border:1.5px solid rgba(4,70,53,.15);
+                  border-radius:9px;padding:12px 14px;margin-bottom:20px;font-size:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                        letter-spacing:.05em;color:var(--mid);">Branch ID</div>
+            <div id="editBranchIdDisplay" style="font-weight:700;color:var(--green);
+                 font-family:monospace;font-size:13px;margin-top:2px;"></div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                        letter-spacing:.05em;color:var(--mid);">City</div>
+            <div id="editCityDisplay" style="font-weight:600;color:var(--dark);margin-top:2px;"></div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                        letter-spacing:.05em;color:var(--mid);">Address</div>
+            <div id="editAddressDisplay" style="color:var(--dark);margin-top:2px;"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(4,70,53,.10);
+                    font-size:11px;color:var(--mid);">
+          <i class="fas fa-lock" style="font-size:10px;margin-right:4px;"></i>
+          Branch ID, city, and address are read-only.
+        </div>
+      </div>
+
+      <form id="editBranchForm" method="POST" action="">
+
+        <div class="df-group">
+          <label class="df-label">Branch Name</label>
+          <input class="df-input" type="text" name="branch_name"
+                 id="editBranchName" required>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">
+            Phone
+            <span style="color:var(--mid);font-weight:400;text-transform:none;">(optional)</span>
+          </label>
+          <input class="df-input" type="tel" name="phone"
+                 id="editPhone" placeholder="02-XXXXXXX">
+        </div>
+
+        <div class="df-row">
+          <div class="df-group">
+            <label class="df-label">Opens at</label>
+            <input class="df-input" type="time" name="open_time" id="editOpenTime">
+          </div>
+          <div class="df-group">
+            <label class="df-label">Closes at</label>
+            <input class="df-input" type="time" name="close_time" id="editCloseTime">
+          </div>
+        </div>
+
+        <div class="df-group">
+          <label class="df-label">Status</label>
+          <div style="display:flex;gap:10px;">
+            <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;
+                          border-radius:9px;cursor:pointer;border:1.5px solid var(--border);
+                          background:#fafafa;" id="editLabelActive">
+              <input type="radio" name="is_active" value="Y" id="editStatusY"
+                     onchange="editHighlightStatus()">
+              <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>
+              <span style="font-size:13px;font-weight:600;color:var(--dark);">Active</span>
+            </label>
+            <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;
+                          border-radius:9px;cursor:pointer;border:1.5px solid var(--border);
+                          background:#fafafa;" id="editLabelInactive">
+              <input type="radio" name="is_active" value="N" id="editStatusN"
+                     onchange="editHighlightStatus()">
+              <span style="width:8px;height:8px;border-radius:50%;background:#9ca3af;flex-shrink:0;"></span>
+              <span style="font-size:13px;font-weight:600;color:var(--dark);">Inactive</span>
+            </label>
+          </div>
+        </div>
+
+        <hr class="df-divider">
+        <button type="submit" class="df-btn">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+        <button type="button" class="df-btn df-btn-outline"
+                onclick="closeDrawer('drawer-edit-branch')">
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
 <script>
   function openDrawer(id) {
     document.getElementById(id).classList.add("open");
@@ -1847,6 +1958,42 @@ request.query_params.get('error') %} {% if msg_ok %}
     }
   });
 
+  function openEditDrawer(branchId, branchName, cityName, address, phone, openTime, closeTime, isActive) {
+  // Populate read-only info
+  document.getElementById('editBranchIdDisplay').textContent = branchId;
+  document.getElementById('editCityDisplay').textContent     = cityName;
+  document.getElementById('editAddressDisplay').textContent  = address;
+  document.getElementById('editDrawerSubtitle').textContent  = branchId + ' — ' + branchName;
+
+  // Set form action to the branch-specific POST URL
+  document.getElementById('editBranchForm').action = '/admin/branches/' + branchId + '/edit';
+
+  // Fill editable fields
+  document.getElementById('editBranchName').value = branchName;
+  document.getElementById('editPhone').value       = phone;
+  document.getElementById('editOpenTime').value    = openTime;
+  document.getElementById('editCloseTime').value   = closeTime;
+
+  // Set status radio
+  document.getElementById('editStatusY').checked = (isActive === 'Y');
+  document.getElementById('editStatusN').checked = (isActive === 'N');
+  editHighlightStatus();
+
+  openDrawer('drawer-edit-branch');
+}
+
+function editHighlightStatus() {
+  const isActive = document.getElementById('editStatusY').checked;
+  const labelA   = document.getElementById('editLabelActive');
+  const labelI   = document.getElementById('editLabelInactive');
+  if (isActive) {
+    labelA.style.borderColor = '#22c55e'; labelA.style.background = '#f0fdf4';
+    labelI.style.borderColor = 'var(--border)'; labelI.style.background = '#fafafa';
+  } else {
+    labelI.style.borderColor = '#9ca3af'; labelI.style.background = '#f9fafb';
+    labelA.style.borderColor = 'var(--border)'; labelA.style.background = '#fafafa';
+  }
+}
   function onBranchSelected(select) {
     const empSelect = document.getElementById("assignEmpSelect");
     const dateInput = document.getElementById("assignDateInput");
