@@ -8,8 +8,8 @@ endblock %} {% block content %}
     background: rgba(0, 0, 0, 0.35);
     z-index: 200;
     display: none;
-    align-items: flex-start;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: center;
   }
   .drawer-overlay.open {
     display: flex;
@@ -17,22 +17,20 @@ endblock %} {% block content %}
 
   .drawer {
     background: var(--white);
-    width: 420px;
-    height: 100vh;
+    width: 50%;
+    height: 90vh;
+    max-height: 700px;
     overflow-y: auto;
-    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
     display: flex;
     flex-direction: column;
-    animation: slideIn 0.22s ease;
+    animation: modalIn 0.18s ease;
   }
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
+  @keyframes modalIn {
+  from { transform: scale(0.95) translateY(8px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);   opacity: 1; }
+}
 
   .drawer-head {
     background: var(--green);
@@ -1935,28 +1933,32 @@ request.query_params.get('error') %} {% if msg_ok %}
 
 <script>
   function openDrawer(id) {
-    document.getElementById(id).classList.add("open");
-    document.body.style.overflow = "hidden";
+  document.getElementById(id).classList.add("open");
+  const pa = document.querySelector('.page-area');
+  if (pa) pa.style.overflow = 'hidden';
+}
+function closeDrawer(id) {
+  document.getElementById(id).classList.remove("open");
+  const pa = document.querySelector('.page-area');
+  if (pa) pa.style.overflow = 'auto';
+}
+function closeOnOverlay(e, overlay) {
+  if (e.target === overlay) {
+    overlay.classList.remove("open");
+    const pa = document.querySelector('.page-area');
+    if (pa) pa.style.overflow = 'auto';
   }
-  function closeDrawer(id) {
-    document.getElementById(id).classList.remove("open");
-    document.body.style.overflow = "";
-  }
-  function closeOnOverlay(e, overlay) {
-    if (e.target === overlay) {
-      overlay.classList.remove("open");
-      document.body.style.overflow = "";
-    }
-  }
+}
   // ESC key closes any open drawer
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      document.querySelectorAll(".drawer-overlay.open").forEach((d) => {
-        d.classList.remove("open");
-        document.body.style.overflow = "";
-      });
-    }
-  });
+  if (e.key === "Escape") {
+    document.querySelectorAll(".drawer-overlay.open").forEach((d) => {
+      d.classList.remove("open");
+    });
+    const pa = document.querySelector('.page-area');
+    if (pa) pa.style.overflow = 'auto';
+  }
+});
 
   function openEditDrawer(branchId, branchName, cityName, address, phone, openTime, closeTime, isActive) {
   // Populate read-only info
