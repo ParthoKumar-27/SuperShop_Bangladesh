@@ -1,34 +1,41 @@
-{% extends "admin/base_admin.html" %}
-{% block title %}Discounts{% endblock %}
-
+{% extends "admin/base_admin.html" %} {% block title %}Discounts{% endblock %}
 {% block content %}
 <style>
   /* ── Centered modal (shared) ── */
   .dm-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.42);
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
     z-index: 400;
     display: none;
     align-items: center;
     justify-content: center;
   }
-  .dm-overlay.open { display: flex; }
+  .dm-overlay.open {
+    display: flex;
+  }
 
   .dm-modal {
     background: var(--white);
     border-radius: var(--radius);
-    box-shadow: 0 24px 64px rgba(0,0,0,.18);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
     width: 100%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    animation: dmIn .18s ease;
+    animation: dmIn 0.18s ease;
     display: flex;
     flex-direction: column;
   }
   @keyframes dmIn {
-    from { transform: scale(.95) translateY(8px); opacity: 0; }
-    to   { transform: scale(1)   translateY(0);   opacity: 1; }
+    from {
+      transform: scale(0.95) translateY(8px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
   }
 
   .dm-head {
@@ -48,180 +55,291 @@
     gap: 9px;
   }
   .dm-head-icon {
-    width: 30px; height: 30px;
+    width: 30px;
+    height: 30px;
     border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 13px;
   }
   .dm-close {
-    width: 28px; height: 28px;
+    width: 28px;
+    height: 28px;
     border-radius: 7px;
     background: #f3f4f6;
-    border: none; cursor: pointer;
-    font-size: 14px; color: var(--mid);
-    display: flex; align-items: center; justify-content: center;
-    transition: background .12s;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
   }
-  .dm-close:hover { background: #e5e7eb; color: var(--dark); }
+  .dm-close:hover {
+    background: #e5e7eb;
+    color: var(--dark);
+  }
 
-  .dm-body { padding: 20px 22px; flex: 1; }
+  .dm-body {
+    padding: 20px 22px;
+    flex: 1;
+  }
 
   /* Form elements */
-  .dm-group { margin-bottom: 14px; }
+  .dm-group {
+    margin-bottom: 14px;
+  }
   .dm-label {
     display: block;
-    font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .06em;
-    color: var(--mid); margin-bottom: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mid);
+    margin-bottom: 5px;
   }
-  .dm-input, .dm-select {
+  .dm-input,
+  .dm-select {
     width: 100%;
     padding: 9px 12px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: "DM Sans", sans-serif;
     font-size: 13px;
     color: var(--dark);
     background: #fafafa;
     outline: none;
-    transition: border-color .15s, background .15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
   }
-  .dm-input:focus, .dm-select:focus {
+  .dm-input:focus,
+  .dm-select:focus {
     border-color: var(--green);
     background: white;
   }
   .dm-input[readonly] {
-    background: rgba(4,70,53,.05);
-    border-color: rgba(4,70,53,.20);
+    background: rgba(4, 70, 53, 0.05);
+    border-color: rgba(4, 70, 53, 0.2);
     color: var(--green);
     font-weight: 600;
     cursor: default;
   }
-  .dm-hint { font-size: 11px; color: var(--mid); margin-top: 4px; }
-  .dm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dm-hint {
+    font-size: 11px;
+    color: var(--mid);
+    margin-top: 4px;
+  }
+  .dm-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
 
   /* Type pills */
-  .type-row { display: flex; gap: 8px; }
-  .type-pill {
-    flex: 1; padding: 9px; text-align: center;
-    border: 1.5px solid var(--border);
-    border-radius: 8px; cursor: pointer;
-    font-size: 12px; font-weight: 600;
-    color: var(--mid); transition: all .15s;
+  .type-row {
+    display: flex;
+    gap: 8px;
   }
-  .type-pill:hover { border-color: var(--green); color: var(--green); }
+  .type-pill {
+    flex: 1;
+    padding: 9px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mid);
+    transition: all 0.15s;
+  }
+  .type-pill:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
   .type-pill.selected-percent {
-    border-color: #2563eb; background: #eff6ff; color: #1d4ed8;
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #1d4ed8;
   }
   .type-pill.selected-flat {
-    border-color: var(--orange); background: #fff7ed; color: var(--orange);
+    border-color: var(--orange);
+    background: #fff7ed;
+    color: var(--orange);
   }
-  input[name="discount_type"] { display: none; }
+  input[name="discount_type"] {
+    display: none;
+  }
 
   /* Value input with suffix */
-  .dm-val-wrap { position: relative; }
-  .dm-val-wrap input { padding-right: 48px; }
+  .dm-val-wrap {
+    position: relative;
+  }
+  .dm-val-wrap input {
+    padding-right: 48px;
+  }
   .dm-val-suffix {
-    position: absolute; right: 12px; top: 50%;
+    position: absolute;
+    right: 12px;
+    top: 50%;
     transform: translateY(-50%);
-    font-size: 12px; font-weight: 700;
-    color: var(--mid); pointer-events: none;
-    transition: color .15s;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mid);
+    pointer-events: none;
+    transition: color 0.15s;
   }
 
   /* Footer */
   .dm-foot {
     padding: 14px 22px;
     border-top: 1px solid var(--border);
-    display: flex; gap: 8px;
+    display: flex;
+    gap: 8px;
     background: #fafafa;
     border-radius: 0 0 var(--radius) var(--radius);
     flex-shrink: 0;
   }
   .dm-btn {
-    flex: 1; padding: 10px;
-    border: none; border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600;
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background .13s, transform .1s;
+    transition:
+      background 0.13s,
+      transform 0.1s;
   }
-  .dm-btn:hover { transform: translateY(-1px); }
-  .dm-btn-primary { background: var(--green); color: white; }
-  .dm-btn-primary:hover { background: #033828; }
-  .dm-btn-danger  { background: #dc2626; color: white; }
-  .dm-btn-danger:hover { background: #b91c1c; }
+  .dm-btn:hover {
+    transform: translateY(-1px);
+  }
+  .dm-btn-primary {
+    background: var(--green);
+    color: white;
+  }
+  .dm-btn-primary:hover {
+    background: #033828;
+  }
+  .dm-btn-danger {
+    background: #dc2626;
+    color: white;
+  }
+  .dm-btn-danger:hover {
+    background: #b91c1c;
+  }
   .dm-btn-outline {
     background: transparent;
     border: 1.5px solid var(--border);
     color: var(--dark);
   }
-  .dm-btn-outline:hover { background: #f3f4f6; transform: none; }
+  .dm-btn-outline:hover {
+    background: #f3f4f6;
+    transform: none;
+  }
 
   /* Scope toggle */
-  .scope-row { display: flex; gap: 8px; margin-bottom: 14px; }
-  .scope-tab {
-    flex: 1; padding: 8px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px; cursor: pointer;
-    font-size: 12px; font-weight: 600;
-    color: var(--mid); text-align: center;
-    transition: all .15s; background: #fafafa;
+  .scope-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
   }
-  .scope-tab:hover { border-color: var(--green); color: var(--green); }
+  .scope-tab {
+    flex: 1;
+    padding: 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mid);
+    text-align: center;
+    transition: all 0.15s;
+    background: #fafafa;
+  }
+  .scope-tab:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
   .scope-tab.active {
     border-color: var(--green);
-    background: rgba(4,70,53,.07);
+    background: rgba(4, 70, 53, 0.07);
     color: var(--green);
   }
 
   /* Warning box */
   .dm-danger-box {
-    background: #fef2f2; border: 1px solid #fecaca;
-    border-radius: 8px; padding: 11px 13px;
-    font-size: 12px; color: #7f1d1d;
-    margin-bottom: 14px; line-height: 1.6;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 11px 13px;
+    font-size: 12px;
+    color: #7f1d1d;
+    margin-bottom: 14px;
+    line-height: 1.6;
   }
 
   /* Action buttons next to search */
   .disc-action-btn {
-    display: flex; align-items: center; gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     padding: 8px 15px;
     border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; border: none;
-    transition: background .13s, transform .1s;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition:
+      background 0.13s,
+      transform 0.1s;
     white-space: nowrap;
   }
-  .disc-action-btn:hover { transform: translateY(-1px); }
+  .disc-action-btn:hover {
+    transform: translateY(-1px);
+  }
 </style>
 
 <div class="page-heading">Discount Management</div>
 <div class="page-subheading">View and manage all promotional discounts.</div>
 
 <!-- ── Filter bar + 3 action buttons ── -->
-<div class="filter-bar" style="margin-bottom:20px;">
+<div class="filter-bar" style="margin-bottom: 20px">
   <div class="filter-input-wrap">
     <i class="fas fa-search"></i>
-    <input type="text" class="filter-input" id="discountSearch"
-           placeholder="Search by name, product, category…" />
+    <input
+      type="text"
+      class="filter-input"
+      id="discountSearch"
+      placeholder="Search by name, product, category…"
+    />
   </div>
 
   <!-- 3 buttons flush right of the search -->
-  <button class="disc-action-btn"
-          style="background:var(--green);color:white;"
-          onclick="openDM('dm-add')">
+  <button
+    class="disc-action-btn"
+    style="background: var(--green); color: white"
+    onclick="openDM('dm-add')"
+  >
     <i class="fas fa-plus"></i> Add
   </button>
-  <button class="disc-action-btn"
-          style="background:#2563eb;color:white;"
-          onclick="openDM('dm-modify')">
+  <button
+    class="disc-action-btn"
+    style="background: #2563eb; color: white"
+    onclick="openDM('dm-modify')"
+  >
     <i class="fas fa-edit"></i> Modify
   </button>
-  <button class="disc-action-btn"
-          style="background:#dc2626;color:white;"
-          onclick="openDM('dm-delete')">
+  <button
+    class="disc-action-btn"
+    style="background: #dc2626; color: white"
+    onclick="openDM('dm-delete')"
+  >
     <i class="fas fa-trash-alt"></i> Delete
   </button>
 </div>
@@ -229,16 +347,38 @@
 <!-- ── Discounts table ── -->
 <div class="card">
   <div class="card-header">
-    <h3 style="color:var(--green);font-weight:800;display:flex;align-items:center;gap:10px;">
-      <span style="width:10px;height:10px;background:var(--orange);border-radius:50%;display:inline-block;"></span>
+    <h3
+      style="
+        color: var(--green);
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      <span
+        style="
+          width: 10px;
+          height: 10px;
+          background: var(--orange);
+          border-radius: 50%;
+          display: inline-block;
+        "
+      ></span>
       All Discounts
     </h3>
-    <span style="font-size:12px;color:var(--mid)">Total: {{ discounts|length }}</span>
+    <span style="font-size: 12px; color: var(--mid)"
+      >Total: {{ discounts|length }}</span
+    >
   </div>
 
-  <div style="overflow-x:hidden;
-  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.1);
-  border-radius: 12px;">
+  <div
+    style="
+      overflow-x: hidden;
+      box-shadow: 0 8px 20px rgba(16, 24, 40, 0.1);
+      border-radius: 12px;
+    "
+  >
     <table class="data-table" id="discountTable">
       <thead>
         <tr>
@@ -256,30 +396,43 @@
       <tbody>
         {% for d in discounts %}
         <tr>
-          <td><strong style="color:var(--green);font-family:monospace;font-size:11px;">{{ d.discount_id }}</strong></td>
+          <td>
+            <strong
+              style="
+                color: var(--green);
+                font-family: monospace;
+                font-size: 11px;
+              "
+              >{{ d.discount_id }}</strong
+            >
+          </td>
           <td><strong>{{ d.discount_name }}</strong></td>
           <td>
             {% if d.discount_type == 'PERCENT' %}
-              <span class="badge badge-blue">PERCENT</span>
+            <span class="badge badge-blue">PERCENT</span>
             {% else %}
-              <span class="badge badge-orange">FLAT</span>
+            <span class="badge badge-orange">FLAT</span>
             {% endif %}
           </td>
-          <td style="font-weight:600;">
-            {% if d.discount_type == 'PERCENT' %}{{ d.discount_value }}%
-            {% else %}৳{{ d.discount_value }}{% endif %}
+          <td style="font-weight: 600">
+            {% if d.discount_type == 'PERCENT' %}{{ d.discount_value }}% {% else
+            %}৳{{ d.discount_value }}{% endif %}
           </td>
-          <td style="color:var(--mid);font-size:12px;">{{ d.product_name or '—' }}</td>
-          <td style="color:var(--mid);font-size:12px;">{{ d.cat_name or '—' }}</td>
-          <td style="font-size:12px;">{{ d.start_date }}</td>
-          <td style="font-size:12px;">{{ d.end_date }}</td>
+          <td style="color: var(--mid); font-size: 12px">
+            {{ d.product_name or '—' }}
+          </td>
+          <td style="color: var(--mid); font-size: 12px">
+            {{ d.cat_name or '—' }}
+          </td>
+          <td style="font-size: 12px">{{ d.start_date }}</td>
+          <td style="font-size: 12px">{{ d.end_date }}</td>
           <td>
             {% if d.status == 'ACTIVE' %}
-              <span class="badge badge-green">Active</span>
+            <span class="badge badge-green">Active</span>
             {% elif d.status == 'UPCOMING' %}
-              <span class="badge badge-yellow">Upcoming</span>
+            <span class="badge badge-yellow">Upcoming</span>
             {% else %}
-              <span class="badge badge-red">Expired</span>
+            <span class="badge badge-red">Expired</span>
             {% endif %}
           </td>
         </tr>
@@ -289,52 +442,65 @@
   </div>
 </div>
 
-
 <!-- ══════════════════════════════════════
      MODAL 1 — ADD DISCOUNT
 ══════════════════════════════════════ -->
-<div class="dm-overlay" id="dm-add" onclick="closeDMOnOverlay(event,this)">
+<div class="dm-overlay" id="dm-add" onclick="closeDMOnOverlay(event, this)">
   <div class="dm-modal">
-
     <div class="dm-head">
       <div class="dm-head-title">
-        <div class="dm-head-icon" style="background:#dcfce7;">
-          <i class="fas fa-plus" style="color:#16a34a;"></i>
+        <div class="dm-head-icon" style="background: #dcfce7">
+          <i class="fas fa-plus" style="color: #16a34a"></i>
         </div>
         Add New Discount
       </div>
       <button class="dm-close" onclick="closeDM('dm-add')">✕</button>
     </div>
 
-    <form method="POST" action="/discounts/add">
+    <form method="POST" action="/admin/dashboard/discounts/add">
       <div class="dm-body">
-
         <!-- Auto-generated ID -->
         <div class="dm-group">
           <label class="dm-label">Discount ID (auto-generated)</label>
-          <input class="dm-input" name="discount_id" id="addDiscountId"
-                 readonly value="{{ next_discount_id }}">
+          <input
+            class="dm-input"
+            name="discount_id"
+            id="addDiscountId"
+            readonly
+            value="{{ next_discount_id }}"
+          />
           <p class="dm-hint">Assigned automatically — format DIS-XXX</p>
         </div>
 
         <!-- Name -->
         <div class="dm-group">
           <label class="dm-label">Discount Name</label>
-          <input class="dm-input" name="discount_name"
-                 placeholder="e.g. Eid Special 10%" required>
+          <input
+            class="dm-input"
+            name="discount_name"
+            placeholder="e.g. Eid Special 10%"
+            required
+          />
         </div>
 
         <!-- Type pills -->
         <div class="dm-group">
           <label class="dm-label">Discount Type</label>
-          <input type="hidden" name="discount_type" id="addDiscType" value="PERCENT">
+          <input
+            type="hidden"
+            name="discount_type"
+            id="addDiscType"
+            value="PERCENT"
+          />
           <div class="type-row">
-            <div class="type-pill selected-percent" id="pill-percent"
-                 onclick="selectType('PERCENT')">
+            <div
+              class="type-pill selected-percent"
+              id="pill-percent"
+              onclick="selectType('PERCENT')"
+            >
               <i class="fas fa-percent"></i> Percentage
             </div>
-            <div class="type-pill" id="pill-flat"
-                 onclick="selectType('FLAT')">
+            <div class="type-pill" id="pill-flat" onclick="selectType('FLAT')">
               ৳ Flat Amount
             </div>
           </div>
@@ -344,9 +510,16 @@
         <div class="dm-group">
           <label class="dm-label">Discount Value</label>
           <div class="dm-val-wrap">
-            <input class="dm-input" type="number" step="0.01" min="0.01"
-                   name="discount_value" placeholder="10" required
-                   oninput="updateSuffix()">
+            <input
+              class="dm-input"
+              type="number"
+              step="0.01"
+              min="0.01"
+              name="discount_value"
+              placeholder="10"
+              required
+              oninput="updateSuffix()"
+            />
             <span class="dm-val-suffix" id="addSuffix">%</span>
           </div>
         </div>
@@ -355,73 +528,88 @@
         <div class="dm-group">
           <label class="dm-label">Applies To</label>
           <div class="scope-row">
-            <div class="scope-tab active" id="scopeTabProduct"
-                 onclick="setScope('product')">
+            <div
+              class="scope-tab active"
+              id="scopeTabProduct"
+              onclick="setScope('product')"
+            >
               <i class="fas fa-tag"></i> Specific Product
             </div>
-            <div class="scope-tab" id="scopeTabCat"
-                 onclick="setScope('category')">
+            <div
+              class="scope-tab"
+              id="scopeTabCat"
+              onclick="setScope('category')"
+            >
               <i class="fas fa-layer-group"></i> Entire Category
             </div>
           </div>
 
           <!-- Product scope: category first, then product -->
           <div id="scopeProduct">
-            <div class="dm-group" style="margin-bottom:8px;">
+            <div class="dm-group" style="margin-bottom: 8px">
               <label class="dm-label">Category</label>
-              <select class="dm-select" id="addCatFilter" onchange="filterProductsByCategory()" >
+              <select
+                class="dm-select"
+                id="addCatFilter"
+                onchange="filterProductsByCategory()"
+              >
                 <option value="">— All categories —</option>
                 {% for cat in categories %}
                 <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="dm-group" style="margin-bottom:0;">
+            <div class="dm-group" style="margin-bottom: 0">
               <label class="dm-label">Product</label>
               <select class="dm-select" name="product_id" id="addProductSelect">
                 <option value="">— Select category first —</option>
                 {% for p in products %}
-                <option value="{{ p.product_id }}"
-                        data-cat="{{ p.cat_id }}"
-                        data-name="{{ p.product_name }}">
+                <option
+                  value="{{ p.product_id }}"
+                  data-cat="{{ p.cat_id }}"
+                  data-name="{{ p.product_name }}"
+                >
                   {{ p.product_name }}
                 </option>
                 {% endfor %}
               </select>
-              <input type="hidden" name="cat_id" value="">
+              <input type="hidden" name="cat_id" value="" />
             </div>
           </div>
 
           <!-- Category scope -->
-          <div id="scopeCategory" style="display:none;">
+          <div id="scopeCategory" style="display: none">
             <select class="dm-select" name="cat_id_scope" id="addCatScope">
               <option value="">— Select category —</option>
               {% for cat in categories %}
               <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
               {% endfor %}
             </select>
-            <input type="hidden" name="product_id" value="">
+            <input type="hidden" name="product_id" value="" />
           </div>
         </div>
 
         <!-- Date range -->
         <div class="dm-row">
-          <div class="dm-group" style="margin-bottom:0;">
+          <div class="dm-group" style="margin-bottom: 0">
             <label class="dm-label">Start Date</label>
-            <input class="dm-input" type="date" name="start_date" required>
+            <input class="dm-input" type="date" name="start_date" required />
           </div>
-          <div class="dm-group" style="margin-bottom:0;">
+          <div class="dm-group" style="margin-bottom: 0">
             <label class="dm-label">End Date</label>
-            <input class="dm-input" type="date" name="end_date" required>
+            <input class="dm-input" type="date" name="end_date" required />
           </div>
         </div>
-
       </div>
       <div class="dm-foot">
         <button type="submit" class="dm-btn dm-btn-primary">
           <i class="fas fa-plus"></i> Create Discount
         </button>
-        <button type="button" class="dm-btn dm-btn-outline" onclick="closeDM('dm-add')">
+        <button
+          type="button"
+          class="dm-btn dm-btn-outline"
+          onclick="closeDM('dm-add')"
+        >
           Cancel
         </button>
       </div>
@@ -429,68 +617,86 @@
   </div>
 </div>
 
-
 <!-- ══════════════════════════════════════
      MODAL 2 — MODIFY DISCOUNT
 ══════════════════════════════════════ -->
-<div class="dm-overlay" id="dm-modify" onclick="closeDMOnOverlay(event,this)">
+<div class="dm-overlay" id="dm-modify" onclick="closeDMOnOverlay(event, this)">
   <div class="dm-modal">
-
     <div class="dm-head">
       <div class="dm-head-title">
-        <div class="dm-head-icon" style="background:#dbeafe;">
-          <i class="fas fa-edit" style="color:#1d4ed8;"></i>
+        <div class="dm-head-icon" style="background: #dbeafe">
+          <i class="fas fa-edit" style="color: #1d4ed8"></i>
         </div>
         Modify Discount
       </div>
       <button class="dm-close" onclick="closeDM('dm-modify')">✕</button>
     </div>
 
-    <form method="POST" action="/discounts/modify" id="modifyForm">
+    <form
+      method="POST"
+      action="/admin/dashboard/discounts/modify"
+      id="modifyForm"
+    >
       <div class="dm-body">
-
         <!-- Select which discount to edit -->
         <div class="dm-group">
           <label class="dm-label">Select Discount to Modify</label>
-          <select class="dm-select" name="discount_id" id="modifySelect"
-                  onchange="prefillModify(this)" required>
+          <select
+            class="dm-select"
+            name="discount_id"
+            id="modifySelect"
+            onchange="prefillModify(this)"
+            required
+          >
             <option value="">— Choose discount —</option>
             {% for d in discounts %}
-            <option value="{{ d.discount_id }}"
-                    data-name="{{ d.discount_name }}"
-                    data-type="{{ d.discount_type }}"
-                    data-value="{{ d.discount_value }}"
-                    data-start="{{ d.start_date_raw }}"
-                    data-end="{{ d.end_date_raw }}"
-                    data-pid="{{ d.product_id or '' }}"
-                    data-cid="{{ d.cat_id or '' }}"
-                    data-status="{{ d.status }}">
-              {{ d.discount_id }} — {{ d.discount_name }}
-              {% if d.status == 'EXPIRED' %} (Expired){% endif %}
+            <option
+              value="{{ d.discount_id }}"
+              data-name="{{ d.discount_name }}"
+              data-type="{{ d.discount_type }}"
+              data-value="{{ d.discount_value }}"
+              data-start="{{ d.start_date_raw }}"
+              data-end="{{ d.end_date_raw }}"
+              data-pid="{{ d.product_id or '' }}"
+              data-cid="{{ d.cat_id or '' }}"
+              data-status="{{ d.status }}"
+            >
+              {{ d.discount_id }} — {{ d.discount_name }} {% if d.status ==
+              'EXPIRED' %} (Expired){% endif %}
             </option>
             {% endfor %}
           </select>
         </div>
 
-        <div id="modifyFields" style="display:none;">
-
+        <div id="modifyFields" style="display: none">
           <!-- Name -->
           <div class="dm-group">
             <label class="dm-label">Discount Name</label>
-            <input class="dm-input" name="discount_name" id="modName" required>
+            <input
+              class="dm-input"
+              name="discount_name"
+              id="modName"
+              required
+            />
           </div>
 
           <!-- Type pills -->
           <div class="dm-group">
             <label class="dm-label">Discount Type</label>
-            <input type="hidden" name="discount_type" id="modDiscType">
+            <input type="hidden" name="discount_type" id="modDiscType" />
             <div class="type-row">
-              <div class="type-pill" id="modPillPercent"
-                   onclick="selectModType('PERCENT')">
+              <div
+                class="type-pill"
+                id="modPillPercent"
+                onclick="selectModType('PERCENT')"
+              >
                 <i class="fas fa-percent"></i> Percentage
               </div>
-              <div class="type-pill" id="modPillFlat"
-                   onclick="selectModType('FLAT')">
+              <div
+                class="type-pill"
+                id="modPillFlat"
+                onclick="selectModType('FLAT')"
+              >
                 ৳ Flat Amount
               </div>
             </div>
@@ -500,38 +706,66 @@
           <div class="dm-group">
             <label class="dm-label">Discount Value</label>
             <div class="dm-val-wrap">
-              <input class="dm-input" type="number" step="0.01" min="0.01"
-                     name="discount_value" id="modValue" required
-                     oninput="updateModSuffix()">
+              <input
+                class="dm-input"
+                type="number"
+                step="0.01"
+                min="0.01"
+                name="discount_value"
+                id="modValue"
+                required
+                oninput="updateModSuffix()"
+              />
               <span class="dm-val-suffix" id="modSuffix">%</span>
             </div>
           </div>
 
           <!-- Date range -->
           <div class="dm-row">
-            <div class="dm-group" style="margin-bottom:0;">
+            <div class="dm-group" style="margin-bottom: 0">
               <label class="dm-label">Start Date</label>
-              <input class="dm-input" type="date" name="start_date" id="modStart" required>
+              <input
+                class="dm-input"
+                type="date"
+                name="start_date"
+                id="modStart"
+                required
+              />
             </div>
-            <div class="dm-group" style="margin-bottom:0;">
+            <div class="dm-group" style="margin-bottom: 0">
               <label class="dm-label">End Date</label>
-              <input class="dm-input" type="date" name="end_date" id="modEnd" required>
+              <input
+                class="dm-input"
+                type="date"
+                name="end_date"
+                id="modEnd"
+                required
+              />
             </div>
           </div>
 
-          <p class="dm-hint" style="margin-top:10px;">
+          <p class="dm-hint" style="margin-top: 10px">
             <i class="fas fa-info-circle"></i>
-            Product/category scope cannot be changed — delete and re-add to change scope.
+            Product/category scope cannot be changed — delete and re-add to
+            change scope.
           </p>
-
         </div>
       </div>
       <div class="dm-foot">
-        <button type="submit" class="dm-btn dm-btn-primary" id="modSubmit" disabled
-                style="opacity:.4;cursor:not-allowed;">
+        <button
+          type="submit"
+          class="dm-btn dm-btn-primary"
+          id="modSubmit"
+          disabled
+          style="opacity: 0.4; cursor: not-allowed"
+        >
           <i class="fas fa-save"></i> Save Changes
         </button>
-        <button type="button" class="dm-btn dm-btn-outline" onclick="closeDM('dm-modify')">
+        <button
+          type="button"
+          class="dm-btn dm-btn-outline"
+          onclick="closeDM('dm-modify')"
+        >
           Cancel
         </button>
       </div>
@@ -539,26 +773,23 @@
   </div>
 </div>
 
-
 <!-- ══════════════════════════════════════
      MODAL 3 — DELETE DISCOUNT
 ══════════════════════════════════════ -->
-<div class="dm-overlay" id="dm-delete" onclick="closeDMOnOverlay(event,this)">
-  <div class="dm-modal" style="max-width:420px;">
-
+<div class="dm-overlay" id="dm-delete" onclick="closeDMOnOverlay(event, this)">
+  <div class="dm-modal" style="max-width: 420px">
     <div class="dm-head">
       <div class="dm-head-title">
-        <div class="dm-head-icon" style="background:#fee2e2;">
-          <i class="fas fa-trash-alt" style="color:#dc2626;"></i>
+        <div class="dm-head-icon" style="background: #fee2e2">
+          <i class="fas fa-trash-alt" style="color: #dc2626"></i>
         </div>
         Delete Discount
       </div>
       <button class="dm-close" onclick="closeDM('dm-delete')">✕</button>
     </div>
 
-    <form method="POST" action="/discounts/delete">
+    <form method="POST" action="/admin/dashboard/discounts/delete">
       <div class="dm-body">
-
         <div class="dm-danger-box">
           <strong>This cannot be undone.</strong> The discount record will be
           permanently deleted. Any sale items referencing this discount will
@@ -567,15 +798,22 @@
 
         <div class="dm-group">
           <label class="dm-label">Select Discount to Delete</label>
-          <select class="dm-select" name="discount_id" id="deleteSelect"
-                  onchange="showDeletePreview(this)" required>
+          <select
+            class="dm-select"
+            name="discount_id"
+            id="deleteSelect"
+            onchange="showDeletePreview(this)"
+            required
+          >
             <option value="">— Choose discount —</option>
             {% for d in discounts %}
-            <option value="{{ d.discount_id }}"
-                    data-name="{{ d.discount_name }}"
-                    data-type="{{ d.discount_type }}"
-                    data-value="{{ d.discount_value }}"
-                    data-status="{{ d.status }}">
+            <option
+              value="{{ d.discount_id }}"
+              data-name="{{ d.discount_name }}"
+              data-type="{{ d.discount_type }}"
+              data-value="{{ d.discount_value }}"
+              data-status="{{ d.status }}"
+            >
               {{ d.discount_id }} — {{ d.discount_name }}
             </option>
             {% endfor %}
@@ -583,36 +821,61 @@
         </div>
 
         <!-- Preview card -->
-        <div id="deletePreview" style="
-          display:none;
-          background:#fafafa;
-          border:1px solid var(--border);
-          border-radius:9px;
-          padding:12px 14px;
-          font-size:12px;
-          line-height:1.8;
-        ">
-          <div style="font-weight:700;color:var(--dark);margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;">
+        <div
+          id="deletePreview"
+          style="
+            display: none;
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 12px 14px;
+            font-size: 12px;
+            line-height: 1.8;
+          "
+        >
+          <div
+            style="
+              font-weight: 700;
+              color: var(--dark);
+              margin-bottom: 6px;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
             About to delete:
           </div>
           <div id="delPreviewBody"></div>
         </div>
 
-        <div class="dm-group" style="margin-top:14px;margin-bottom:0;">
+        <div class="dm-group" style="margin-top: 14px; margin-bottom: 0">
           <label class="dm-label">Type discount ID to confirm</label>
-          <input class="dm-input" name="confirm_id" id="deleteConfirm"
-                 placeholder="e.g. DIS-001" required
-                 oninput="checkDeleteConfirm()">
+          <input
+            class="dm-input"
+            name="confirm_id"
+            id="deleteConfirm"
+            placeholder="e.g. DIS-001"
+            required
+            oninput="checkDeleteConfirm()"
+          />
           <p class="dm-hint">Type the exact discount ID shown above.</p>
         </div>
-
       </div>
       <div class="dm-foot">
-        <button type="submit" class="dm-btn dm-btn-danger" id="deleteSubmit"
-                disabled style="opacity:.4;cursor:not-allowed;">
+        <button
+          type="submit"
+          class="dm-btn dm-btn-danger"
+          id="deleteSubmit"
+          disabled
+          style="opacity: 0.4; cursor: not-allowed"
+        >
           <i class="fas fa-trash-alt"></i> Delete Permanently
         </button>
-        <button type="button" class="dm-btn dm-btn-outline" onclick="closeDM('dm-delete')">
+        <button
+          type="button"
+          class="dm-btn dm-btn-outline"
+          onclick="closeDM('dm-delete')"
+        >
           Cancel
         </button>
       </div>
@@ -620,36 +883,39 @@
   </div>
 </div>
 
-{% endblock %}
-
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   // ── Modal open / close ────────────────────────────────────────────────────
   function openDM(id) {
-    document.getElementById(id).classList.add('open');
-    document.body.style.overflow = 'hidden';
+    document.getElementById(id).classList.add("open");
+    document.body.style.overflow = "hidden";
   }
   function closeDM(id) {
-    document.getElementById(id).classList.remove('open');
-    document.body.style.overflow = '';
+    document.getElementById(id).classList.remove("open");
+    document.body.style.overflow = "";
   }
   function closeDMOnOverlay(e, el) {
-    if (e.target === el) { closeDM(el.id); }
+    if (e.target === el) {
+      closeDM(el.id);
+    }
   }
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape')
-      document.querySelectorAll('.dm-overlay.open')
-              .forEach(m => { m.classList.remove('open'); document.body.style.overflow = ''; });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape")
+      document.querySelectorAll(".dm-overlay.open").forEach((m) => {
+        m.classList.remove("open");
+        document.body.style.overflow = "";
+      });
   });
 
   // ── Table search ─────────────────────────────────────────────────────────
-  document.getElementById('discountSearch').addEventListener('keyup', function () {
-    const v = this.value.toLowerCase();
-    document.querySelectorAll('#discountTable tbody tr').forEach(r => {
-      r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none';
+  document
+    .getElementById("discountSearch")
+    .addEventListener("keyup", function () {
+      const v = this.value.toLowerCase();
+      document.querySelectorAll("#discountTable tbody tr").forEach((r) => {
+        r.style.display = r.innerText.toLowerCase().includes(v) ? "" : "none";
+      });
     });
-  });
 
   // ══════════════════════════════
   //  ADD MODAL
@@ -657,41 +923,87 @@
 
   // Type selection
   function selectType(type) {
-    document.getElementById('addDiscType').value = type;
-    document.getElementById('pill-percent').className = 'type-pill' + (type === 'PERCENT' ? ' selected-percent' : '');
-    document.getElementById('pill-flat').className    = 'type-pill' + (type === 'FLAT'    ? ' selected-flat'    : '');
+    document.getElementById("addDiscType").value = type;
+    document.getElementById("pill-percent").className =
+      "type-pill" + (type === "PERCENT" ? " selected-percent" : "");
+    document.getElementById("pill-flat").className =
+      "type-pill" + (type === "FLAT" ? " selected-flat" : "");
     updateSuffix();
   }
   function updateSuffix() {
-    const t = document.getElementById('addDiscType').value;
-    document.getElementById('addSuffix').textContent = t === 'PERCENT' ? '%' : '৳';
-    document.getElementById('addSuffix').style.color = t === 'PERCENT' ? '#2563eb' : 'var(--orange)';
+    const t = document.getElementById("addDiscType").value;
+    document.getElementById("addSuffix").textContent =
+      t === "PERCENT" ? "%" : "৳";
+    document.getElementById("addSuffix").style.color =
+      t === "PERCENT" ? "#2563eb" : "var(--orange)";
   }
 
   // Scope toggle
-  let currentScope = 'product';
+  let currentScope = "product";
   function setScope(scope) {
     currentScope = scope;
-    document.getElementById('scopeTabProduct').className = 'scope-tab' + (scope === 'product'  ? ' active' : '');
-    document.getElementById('scopeTabCat').className     = 'scope-tab' + (scope === 'category' ? ' active' : '');
-    document.getElementById('scopeProduct').style.display  = scope === 'product'  ? '' : 'none';
-    document.getElementById('scopeCategory').style.display = scope === 'category' ? '' : 'none';
+
+    const productPanel = document.getElementById("scopeProduct");
+    const categoryPanel = document.getElementById("scopeCategory");
+
+    if (scope === "product") {
+      productPanel.style.display = "";
+      categoryPanel.style.display = "none";
+      // Enable product scope fields so they submit
+      productPanel
+        .querySelectorAll("select, input")
+        .forEach((el) => (el.disabled = false));
+      // Disable + clear category scope so it doesn't submit
+      categoryPanel.querySelectorAll("select, input").forEach((el) => {
+        el.disabled = true;
+        el.value = "";
+      });
+    } else {
+      categoryPanel.style.display = "";
+      productPanel.style.display = "none";
+      // Enable category scope fields so they submit
+      categoryPanel
+        .querySelectorAll("select, input")
+        .forEach((el) => (el.disabled = false));
+      // Disable + clear product scope so it doesn't submit
+      productPanel.querySelectorAll("select, input").forEach((el) => {
+        el.disabled = true;
+        el.value = "";
+      });
+    }
+
+    document.getElementById("scopeTabProduct").className =
+      "scope-tab" + (scope === "product" ? " active" : "");
+    document.getElementById("scopeTabCat").className =
+      "scope-tab" + (scope === "category" ? " active" : "");
   }
+  // Initialize: disable category scope inputs on page load (product is default)
+  document.addEventListener("DOMContentLoaded", () => {
+    document
+      .getElementById("scopeCategory")
+      .querySelectorAll("select, input")
+      .forEach((el) => {
+        el.disabled = true;
+        el.value = "";
+      });
+  });
 
   // Cascading: filter products by category
   function filterProductsByCategory() {
-    const catId   = document.getElementById('addCatFilter').value;
-    const select  = document.getElementById('addProductSelect');
-    const options = select.querySelectorAll('option');
+    const catId = document.getElementById("addCatFilter").value;
+    const select = document.getElementById("addProductSelect");
+    const options = select.querySelectorAll("option");
 
-    options.forEach(opt => {
-      if (!opt.value) return;  // keep the placeholder
-      opt.style.display = (!catId || opt.dataset.cat === catId) ? '' : 'none';
+    options.forEach((opt) => {
+      if (!opt.value) return; // keep the placeholder
+      opt.style.display = !catId || opt.dataset.cat === catId ? "" : "none";
     });
 
     // Reset product selection when category changes
-    select.value = '';
-    select.options[0].textContent = catId ? '— Select product —' : '— Select category first —';
+    select.value = "";
+    select.options[0].textContent = catId
+      ? "— Select product —"
+      : "— Select category first —";
   }
 
   // ══════════════════════════════
@@ -700,75 +1012,87 @@
   function prefillModify(select) {
     const opt = select.options[select.selectedIndex];
     if (!opt.value) {
-      document.getElementById('modifyFields').style.display = 'none';
-      const btn = document.getElementById('modSubmit');
-      btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
+      document.getElementById("modifyFields").style.display = "none";
+      const btn = document.getElementById("modSubmit");
+      btn.disabled = true;
+      btn.style.opacity = ".4";
+      btn.style.cursor = "not-allowed";
       return;
     }
 
-    document.getElementById('modName').value    = opt.dataset.name;
-    document.getElementById('modValue').value   = opt.dataset.value;
-    document.getElementById('modStart').value   = opt.dataset.start;
-    document.getElementById('modEnd').value     = opt.dataset.end;
+    document.getElementById("modName").value = opt.dataset.name;
+    document.getElementById("modValue").value = opt.dataset.value;
+    document.getElementById("modStart").value = opt.dataset.start;
+    document.getElementById("modEnd").value = opt.dataset.end;
 
     // Set type
     selectModType(opt.dataset.type);
 
-    document.getElementById('modifyFields').style.display = '';
-    const btn = document.getElementById('modSubmit');
-    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+    document.getElementById("modifyFields").style.display = "";
+    const btn = document.getElementById("modSubmit");
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
   }
 
   function selectModType(type) {
-    document.getElementById('modDiscType').value = type;
-    document.getElementById('modPillPercent').className = 'type-pill' + (type === 'PERCENT' ? ' selected-percent' : '');
-    document.getElementById('modPillFlat').className    = 'type-pill' + (type === 'FLAT'    ? ' selected-flat'    : '');
+    document.getElementById("modDiscType").value = type;
+    document.getElementById("modPillPercent").className =
+      "type-pill" + (type === "PERCENT" ? " selected-percent" : "");
+    document.getElementById("modPillFlat").className =
+      "type-pill" + (type === "FLAT" ? " selected-flat" : "");
     updateModSuffix();
   }
   function updateModSuffix() {
-    const t = document.getElementById('modDiscType').value;
-    document.getElementById('modSuffix').textContent = t === 'PERCENT' ? '%' : '৳';
-    document.getElementById('modSuffix').style.color = t === 'PERCENT' ? '#2563eb' : 'var(--orange)';
+    const t = document.getElementById("modDiscType").value;
+    document.getElementById("modSuffix").textContent =
+      t === "PERCENT" ? "%" : "৳";
+    document.getElementById("modSuffix").style.color =
+      t === "PERCENT" ? "#2563eb" : "var(--orange)";
   }
 
   // ══════════════════════════════
   //  DELETE MODAL
   // ══════════════════════════════
-  let _selectedDelId = '';
+  let _selectedDelId = "";
 
   function showDeletePreview(select) {
     const opt = select.options[select.selectedIndex];
-    _selectedDelId = opt.value || '';
-    document.getElementById('deleteConfirm').value = '';
+    _selectedDelId = opt.value || "";
+    document.getElementById("deleteConfirm").value = "";
     checkDeleteConfirm();
 
     if (!opt.value) {
-      document.getElementById('deletePreview').style.display = 'none';
+      document.getElementById("deletePreview").style.display = "none";
       return;
     }
 
-    const statusColors = { ACTIVE: '#16a34a', UPCOMING: '#b45309', EXPIRED: '#dc2626' };
-    document.getElementById('delPreviewBody').innerHTML = `
+    const statusColors = {
+      ACTIVE: "#16a34a",
+      UPCOMING: "#b45309",
+      EXPIRED: "#dc2626",
+    };
+    document.getElementById("delPreviewBody").innerHTML = `
       <div><strong style="color:var(--green);font-family:monospace;">${opt.value}</strong></div>
       <div>${opt.dataset.name}</div>
       <div style="color:var(--mid);">
-        ${opt.dataset.type === 'PERCENT' ? opt.dataset.value + '%' : '৳' + opt.dataset.value} off
+        ${opt.dataset.type === "PERCENT" ? opt.dataset.value + "%" : "৳" + opt.dataset.value} off
         &nbsp;·&nbsp;
-        <span style="color:${statusColors[opt.dataset.status] || 'var(--mid)'}">
+        <span style="color:${statusColors[opt.dataset.status] || "var(--mid)"}">
           ${opt.dataset.status}
         </span>
       </div>
     `;
-    document.getElementById('deletePreview').style.display = '';
+    document.getElementById("deletePreview").style.display = "";
   }
 
   function checkDeleteConfirm() {
-    const typed  = document.getElementById('deleteConfirm').value.trim();
-    const btn    = document.getElementById('deleteSubmit');
-    const match  = typed === _selectedDelId && _selectedDelId !== '';
+    const typed = document.getElementById("deleteConfirm").value.trim();
+    const btn = document.getElementById("deleteSubmit");
+    const match = typed === _selectedDelId && _selectedDelId !== "";
     btn.disabled = !match;
-    btn.style.opacity = match ? '1' : '.4';
-    btn.style.cursor  = match ? 'pointer' : 'not-allowed';
+    btn.style.opacity = match ? "1" : ".4";
+    btn.style.cursor = match ? "pointer" : "not-allowed";
   }
 </script>
 {% endblock %}

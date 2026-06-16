@@ -903,8 +903,8 @@ body.sidebar-collapsed .sidebar-user .user-avatar {
       </a>
 
       <a
-        href="/discounts"
-        class="nav-item {{ 'active' if path == '/discounts' else '' }}"
+        href="/admin/dashboard/discounts"
+        class="nav-item {{ 'active' if path == '/admin/dashboard/discounts' else '' }}"
       >
         <i class="fas fa-percent"></i> <span class="nav-text">Discounts</span>
       </a>
@@ -942,7 +942,7 @@ body.sidebar-collapsed .sidebar-user .user-avatar {
     <span class="nav-text">Suppliers</span>
 </a>
 
-      <div class="nav-label">System</div>
+      <!-- <div class="nav-label">System</div>
 
       <a href="/docs" target="_blank" class="nav-item">
         <i class="fas fa-code"></i> <span class="nav-text">API Docs</span>
@@ -950,7 +950,7 @@ body.sidebar-collapsed .sidebar-user .user-avatar {
           class="fas fa-external-link-alt"
           style="font-size: 10px; margin-left: auto; color: var(--border)"
         ></i>
-      </a>
+      </a> -->
 
       <!-- EMPLOYEE nav -->
       {% elif role == 'EMPLOYEE' %}
