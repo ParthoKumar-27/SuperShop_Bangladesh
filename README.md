@@ -37,7 +37,7 @@ Open VS Code → press Ctrl+Shift+X → search and install:
 
 ## 2. FOLDER STRUCTURE
 
-Create a folder called `supershop-web` anywhere on your PC.
+Create a folder called `supershop-web` anywhere on your PC
 Inside it, create exactly this layout:
 
 ```
