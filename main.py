@@ -79,45 +79,6 @@ def storefront(request: Request):
         }
     )
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  CATEGORY PAGE — products filtered by category (and its subcategories)
-# ══════════════════════════════════════════════════════════════════════════════
-@app.get("/category/{cat_id}", response_class=HTMLResponse)
-def category_page(request: Request, cat_id: str):
-    category = query("""
-        SELECT cat_id, cat_name, parent_cat_id, description
-        FROM category
-        WHERE cat_id = %s
-    """, (cat_id,))
-
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-
-    products = query("""
-        SELECT p.product_id,
-               p.product_name,
-               p.brand,
-               p.unit_price,
-               p.unit
-        FROM product p
-        WHERE p.is_active = 'Y'
-          AND (
-                p.cat_id = %s
-             OR p.cat_id IN (SELECT cat_id FROM category WHERE parent_cat_id = %s)
-          )
-        ORDER BY p.product_name
-    """, (cat_id, cat_id))
-
-    return templates.TemplateResponse(
-        request,
-        "category.html",
-        {
-            "products": products,
-            "category": category[0],
-            "logged_in": bool(request.session.get("role")),
-            "role": request.session.get("role"),
-        }
-    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
