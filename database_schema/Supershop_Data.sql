@@ -538,3 +538,87 @@ INSERT INTO delivery VALUES ('DEL-008', 'O-00008', 'E-R002', '2025-05-08 10:00:0
 --  delivery         :  8
 -- ============================================================
 
+-- ============================================================
+--  SEED: admin_account  (1 super-admin)
+--
+--  Password: admin123  (bcrypt hash below)
+--  Generate a fresh hash in Python:
+--      import bcrypt
+--      bcrypt.hashpw(b'admin123', bcrypt.gensalt()).decode()
+-- ============================================================
+INSERT INTO admin_account VALUES (
+    'ADM-001',
+    'Super Admin',
+    'admin@supershop.com.bd',
+    '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S',
+    'Y',
+    CURRENT_TIMESTAMP
+);
+
+
+-- ============================================================
+--  SEED: app_user for EMPLOYEES  (20 rows)
+--  Password for all: employee123  (replace hash in production)
+--
+--  Each row links to an emp_id from the employee table.
+--  The phone here MUST match employee.phone exactly.
+-- ============================================================
+INSERT INTO app_user VALUES ('U-000001', '01711-100001', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00001', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000002', '01812-100002', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00002', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000003', '01911-100003', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00003', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000004', '01611-100004', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00004', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000005', '01711-100005', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00005', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000006', '01812-100006', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00006', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000007', '01911-100007', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00007', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000008', '01611-100008', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00008', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000009', '01711-100009', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00009', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000010', '01812-100010', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00010', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000011', '01911-100011', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00011', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000012', '01611-100012', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00012', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000013', '01711-100013', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00013', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000014', '01812-100014', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00014', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000015', '01911-100015', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00015', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000016', '01611-100016', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00016', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000017', '01711-100017', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-00017', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000018', '01812-200001', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R001',  'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000019', '01911-200002', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R002',  'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000020', '01611-200003', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R003',  'Y', CURRENT_TIMESTAMP);
+
+
+-- ============================================================
+--  SEED: app_user for CUSTOMERS  (15 rows)
+--  Password for all sample customers: customer123
+-- ============================================================
+INSERT INTO app_user VALUES ('U-000021', '01711-000001', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00001', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000022', '01812-000002', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00002', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000023', '01911-000003', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00003', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000024', '01611-000004', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00004', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000026', '01812-000006', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00006', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000025', '01711-000005', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00005', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000027', '01911-000007', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00007', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000028', '01611-000008', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00008', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000029', '01711-000009', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00009', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000030', '01812-000010', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00010', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000031', '01911-000011', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00011', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000032', '01611-000012', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00012', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000033', '01711-000013', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00013', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000034', '01812-000014', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00014', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000035', '01911-000015', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00015', 'Y', CURRENT_TIMESTAMP);
+
+-- ============================================================
+--  HOW TO GENERATE REAL HASHES FOR SEED DATA
+--  Run this Python script once before importing:
+--
+--  import bcrypt
+--
+--  emp_hash  = bcrypt.hashpw(b'employee123', bcrypt.gensalt()).decode()
+--  cust_hash = bcrypt.hashpw(b'customer123', bcrypt.gensalt()).decode()
+--  adm_hash  = bcrypt.hashpw(b'admin123',    bcrypt.gensalt()).decode()
+--
+--  print("Employee hash:", emp_hash)
+--  print("Customer hash:", cust_hash)
+--  print("Admin hash:   ", adm_hash)
+--
+--  Then replace the placeholder $2b$12$emphashreplaceXXX...
+--  values above with the real hashes.
+-- ============================================================

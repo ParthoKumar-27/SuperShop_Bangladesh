@@ -446,6 +446,56 @@ CREATE TABLE delivery (
 
 
 -- ============================================================
+--  TABLE 18: APP_USER
+--  Single auth table for EMPLOYEE and CUSTOMER login.
+--  Admin uses admin_account directly (different credential type).
+--
+--  role  : 'EMPLOYEE' → ref_id = employee.emp_id
+--          'CUSTOMER' → ref_id = customer.cust_id
+--
+--  phone UNIQUE — employees and customers cannot share a phone
+--  (they are stored in different domain tables, but the login
+--   portal disambiguates by the role chosen on the login page)
+-- ============================================================
+CREATE TABLE app_user (
+    user_id         VARCHAR(12)     NOT NULL,
+    phone           VARCHAR(15)     NOT NULL,
+    password_hash   VARCHAR(255)    NOT NULL,
+    role            VARCHAR(10)     NOT NULL,
+    ref_id          VARCHAR(12)     NOT NULL,
+    is_active       CHAR(1)         DEFAULT 'Y',
+    created_at      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT  au_pk       PRIMARY KEY (user_id),
+    CONSTRAINT  check_au_id CHECK (user_id LIKE 'U-%'),
+    CONSTRAINT  au_phone    UNIQUE (phone),
+    CONSTRAINT  au_role     CHECK (role IN ('EMPLOYEE', 'CUSTOMER')),
+    CONSTRAINT  au_active   CHECK (is_active IN ('Y', 'N'))
+);
+
+
+-- ============================================================
+--  TABLE 19: ADMIN_ACCOUNT
+--  Separate table for super-admin credentials.
+--  Uses admin_id + password (not phone).
+--  Not linked to employee table — admins are head-office users
+--  who may not be branch staff.
+-- ============================================================
+CREATE TABLE admin_account (
+    admin_id        VARCHAR(10)     NOT NULL,
+    admin_name      VARCHAR(60)     NOT NULL,
+    email           VARCHAR(100)    NOT NULL,
+    password_hash   VARCHAR(255)    NOT NULL,
+    is_active       CHAR(1)         DEFAULT 'Y',
+    created_at      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT  adm_pk      PRIMARY KEY (admin_id),
+    CONSTRAINT  check_adm   CHECK (admin_id LIKE 'ADM-%'),
+    CONSTRAINT  adm_email   UNIQUE (email),
+    CONSTRAINT  adm_active  CHECK (is_active IN ('Y', 'N'))
+);
+
+-- ============================================================
 --  END OF DDL — SuperShop Bangladesh
 --  Total tables : 17
 --

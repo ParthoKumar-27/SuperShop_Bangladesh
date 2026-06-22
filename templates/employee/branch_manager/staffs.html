@@ -1,9 +1,9 @@
-{% extends "admin/base_admin.html" %} {% block title %}Employees{% endblock %}
+{% extends "employee/branch_manager/base_employee.html" %} {% block title %}Employees{% endblock %}
 {% block content %}
 
-<div class="page-heading">Employees</div>
+<div class="page-heading">Staffs</div>
 
-<div class="page-subheading">View and manage all employees.</div>
+<div class="page-subheading">View and manage all staff members.</div>
 
 <div
   class="filter-bar"
@@ -17,13 +17,13 @@
       id="searchBox"
       type="text"
       class="filter-input"
-      placeholder="Search employees..."
+      placeholder="Search staff..."
     />
   </div>
 
   <!-- Sort -->
   <select id="sortSelect" class="filter-select">
-    <option value="">Sort Employees</option>
+    <option value="">Sort Staff</option>
     <option value="name_asc">Name ↑</option>
     <option value="name_desc">Name ↓</option>
     <option value="salary_asc">Salary ↑</option>
@@ -54,7 +54,7 @@
           display: inline-block;
         "
       ></span>
-      Employee List
+      Staff List
     </h3>
 
     <span style="font-size: 12px; color: var(--mid)">

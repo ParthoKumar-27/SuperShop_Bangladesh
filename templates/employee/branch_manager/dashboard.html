@@ -1,0 +1,308 @@
+{% extends "employee/branch_manager/base_employee.html" %}
+{% block title %}Branch Manager Dashboard{% endblock %}
+
+{% block content %}
+
+{% if no_branch %}
+<div class="card" style="padding:40px; text-align:center;">
+  <i class="fas fa-store-slash" style="font-size:32px; color:var(--mid); margin-bottom:14px; display:block;"></i>
+  <h3 style="color:var(--dark); margin-bottom:6px;">No Branch Assigned</h3>
+  <p style="color:var(--mid); font-size:13px;">
+    You don't currently manage a branch. Contact an administrator to be assigned to one.
+  </p>
+</div>
+{% else %}
+
+<!-- ── Welcome banner ── -->
+<div style="
+  background: var(--green);
+  border-radius: var(--radius);
+  padding: 28px 30px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+">
+  <div>
+    <p style="font-size: 22px; font-weight: 700;">
+      Welcome back, <span style="color: var(--orange);">{{ user_name }}</span>!
+    </p>
+    <p style="font-size: 13px; opacity: .75; margin-top: 4px;">
+      {{ branch.branch_name }} · {{ branch.city_name }} — here's what's happening today.
+    </p>
+  </div>
+  <div style="
+    background: rgba(255,255,255,.1);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 12px;
+    text-align: right;
+  ">
+    <div style="opacity:.7;">Branch Hours</div>
+    <div style="font-weight:700; font-size:14px;">{{ branch.open_time }} – {{ branch.close_time }}</div>
+  </div>
+</div>
+
+<!-- ── 4 colorful stat cards ── -->
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
+
+  <!-- Today's Sales -->
+  <div style="background:#dbeafe; border-radius:var(--radius); padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="width:38px; height:38px; background:white; border-radius:10px;
+                  display:flex; align-items:center; justify-content:center;">
+        <i class="fas fa-shopping-cart" style="color:#1d4ed8; font-size:15px;"></i>
+      </div>
+    </div>
+    <p style="font-size:22px; font-weight:700; color:#1e3a8a;">৳{{ "{:,.0f}".format(today_revenue) }}</p>
+    <p style="font-size:12px; color:#1d4ed8; margin-top:4px;">{{ today_orders }} orders today</p>
+    <a href="/employee/branch/sales" style="font-size:11px; color:#1d4ed8; font-weight:600; text-decoration:none;">
+      View Sales →
+    </a>
+  </div>
+
+  <!-- Pending Online Orders -->
+  <div style="background:#fff3e0; border-radius:var(--radius); padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="width:38px; height:38px; background:white; border-radius:10px;
+                  display:flex; align-items:center; justify-content:center;">
+        <i class="fas fa-truck" style="color:var(--orange); font-size:15px;"></i>
+      </div>
+    </div>
+    <p style="font-size:22px; font-weight:700; color:#9a3412;">{{ pending_orders }}</p>
+    <p style="font-size:12px; color:var(--orange); margin-top:4px;">Need confirmation</p>
+    <a href="/employee/branch/orders" style="font-size:11px; color:var(--orange); font-weight:600; text-decoration:none;">
+      View Orders →
+    </a>
+  </div>
+
+  <!-- Low Stock Alerts -->
+  <div style="background:#fee2e2; border-radius:var(--radius); padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="width:38px; height:38px; background:white; border-radius:10px;
+                  display:flex; align-items:center; justify-content:center;">
+        <i class="fas fa-exclamation-triangle" style="color:#dc2626; font-size:15px;"></i>
+      </div>
+    </div>
+    <p style="font-size:22px; font-weight:700; color:#7f1d1d;">{{ low_stock_count }}</p>
+    <p style="font-size:12px; color:#dc2626; margin-top:4px;">Items need restocking</p>
+    <a href="/employee/branch/inventory" style="font-size:11px; color:#dc2626; font-weight:600; text-decoration:none;">
+      View Inventory →
+    </a>
+  </div>
+
+  <!-- Staff On Duty -->
+  <div style="background:rgba(4,70,53,.08); border-radius:var(--radius); padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="width:38px; height:38px; background:white; border-radius:10px;
+                  display:flex; align-items:center; justify-content:center;">
+        <i class="fas fa-users" style="color:var(--green); font-size:15px;"></i>
+      </div>
+    </div>
+    <p style="font-size:22px; font-weight:700; color:var(--green);">{{ staff_count }}</p>
+    <p style="font-size:12px; color:var(--green); margin-top:4px;">Active employees</p>
+    <a href="/employee/branch/staff" style="font-size:11px; color:var(--green); font-weight:600; text-decoration:none;">
+      View Staff →
+    </a>
+  </div>
+
+</div>
+
+<!-- ── Chart + Monthly Target ── -->
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:24px;">
+
+  <!-- Sales activity chart -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Sales Activity</h3>
+      <span style="font-size:12px; color:var(--mid); display:flex; align-items:center; gap:5px;">
+        <span style="width:9px; height:9px; border-radius:50%; background:var(--orange); display:inline-block;"></span>
+        Last 7 days
+      </span>
+    </div>
+    <div style="padding:18px 20px;">
+      <canvas id="salesChart" height="110"></canvas>
+    </div>
+  </div>
+
+  <!-- Monthly target donut -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Monthly Target</h3>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; align-items:center;">
+      <div style="position:relative; width:140px; height:140px;">
+        <canvas id="targetDonut" width="140" height="140"></canvas>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column;
+                    align-items:center; justify-content:center;">
+          <span style="font-size:22px; font-weight:700; color:var(--green);">{{ target_pct }}%</span>
+          <span style="font-size:10px; color:var(--mid);">of target</span>
+        </div>
+      </div>
+
+      <div style="width:100%; margin-top:18px;">
+        <!-- In-store bar -->
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+          <span style="color:var(--mid);"><i class="fas fa-store" style="font-size:9px; margin-right:4px;"></i>In-store</span>
+          <span style="font-weight:700; color:var(--dark);">{{ in_store_count }}</span>
+        </div>
+        <div style="height:5px; background:#f1f5f9; border-radius:4px; margin-bottom:14px;">
+          <div style="height:100%; width:{{ (in_store_count / (in_store_count + online_count) * 100) if (in_store_count + online_count) > 0 else 0 }}%;
+                      background:var(--green); border-radius:4px;"></div>
+        </div>
+
+        <!-- Online bar -->
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+          <span style="color:var(--mid);"><i class="fas fa-globe" style="font-size:9px; margin-right:4px;"></i>Online</span>
+          <span style="font-weight:700; color:var(--dark);">{{ online_count }}</span>
+        </div>
+        <div style="height:5px; background:#f1f5f9; border-radius:4px;">
+          <div style="height:100%; width:{{ (online_count / (in_store_count + online_count) * 100) if (in_store_count + online_count) > 0 else 0 }}%;
+                      background:var(--orange); border-radius:4px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Low stock + Recent sales ── -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+  <!-- Low stock list -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Low Stock Items</h3>
+      <a href="/employee/branch/inventory" class="card-link">View All</a>
+    </div>
+    <div>
+      {% if low_stock|length == 0 %}
+      <div style="padding:30px; text-align:center; color:var(--mid); font-size:13px;">
+        <i class="fas fa-check-circle" style="color:#16a34a; font-size:20px; display:block; margin-bottom:8px;"></i>
+        All stock levels look healthy.
+      </div>
+      {% endif %}
+      {% for item in low_stock %}
+      <div style="display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid #f3f4f6;">
+        <div style="width:34px; height:34px; background:#fee2e2; border-radius:9px;
+                    display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i class="fas fa-box" style="color:#dc2626; font-size:13px;"></i>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <p style="font-size:12.5px; font-weight:600; color:var(--dark);
+                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            {{ item.product_name }}
+          </p>
+          <p style="font-size:11px; color:var(--mid);">Reorder level: {{ item.reorder_level }}</p>
+        </div>
+        <span class="badge badge-red">{{ item.quantity }} left</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recent sales -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Recent Sales</h3>
+      <a href="/employee/branch/sales" class="card-link">View All</a>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Sale ID</th>
+            <th>Customer</th>
+            <th style="text-align:right;">Total</th>
+            <th style="text-align:center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in recent_sales %}
+          <tr>
+            <td style="font-family:monospace; font-size:11px; color:var(--green); font-weight:700;">
+              {{ s.sale_id }}
+            </td>
+            <td style="font-size:12px;">{{ s.customer }}</td>
+            <td style="text-align:right; font-weight:600; font-size:12px;">
+              ৳{{ "%.0f"|format(s.total_amt) }}
+            </td>
+            <td style="text-align:center;">
+              {% if s.payment_status == 'PAID' %}
+                <span class="badge badge-green">Paid</span>
+              {% elif s.payment_status == 'PENDING' %}
+                <span class="badge badge-yellow">Pending</span>
+              {% else %}
+                <span class="badge badge-red">Cancelled</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if not no_branch %}
+<script>
+  // ── Sales activity bar chart ──
+  const salesCtx = document.getElementById('salesChart');
+  if (salesCtx) {
+    new Chart(salesCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels | tojson }},
+        datasets: [{
+          data: {{ chart_data | tojson }},
+          backgroundColor: '#F17B0D',
+          borderRadius: 6,
+          maxBarThickness: 36,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#044635', titleColor: '#fff',
+            bodyColor: 'rgba(255,255,255,.7)', padding: 10, cornerRadius: 8,
+            callbacks: { label: c => ' ৳ ' + c.parsed.y.toLocaleString() }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9ca3af' } },
+          y: { grid: { color: '#f3f4f6' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9ca3af', callback: v => '৳' + v } }
+        }
+      }
+    });
+  }
+
+  // ── Monthly target donut ──
+  const donutCtx = document.getElementById('targetDonut');
+  if (donutCtx) {
+    const pct = {{ target_pct }};
+    new Chart(donutCtx, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [pct, 100 - pct],
+          backgroundColor: ['#F17B0D', '#f1f5f9'],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        cutout: '78%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      }
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}

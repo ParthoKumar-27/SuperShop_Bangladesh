@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SuperShop BD – {% block title %}{% endblock %}</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      :root {
+        --green: #044635;
+        --orange: #f17b0d;
+        --dark: #464646;
+        --mid: #646464;
+        --cream: #fffcf1;
+        --white: #ffffff;
+        --border: #e5e7eb;
+        --shadow: 0 4px 24px rgba(4, 70, 53, 0.1);
+        --radius: 14px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: #f5f5f0;
+        color: var(--dark);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .header-dropdown { position: relative; }
+      .dropdown-menu {
+        position: absolute; top: 48px; right: 0; width: 260px;
+        background: white; border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        border: 1px solid var(--border); overflow: hidden;
+        display: none; z-index: 999;
+      }
+      .dropdown-menu.show { display: block; }
+      .dropdown-title { padding: 14px 16px; font-size: 13px; font-weight: 700; border-bottom: 1px solid var(--border); }
+      .dropdown-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 16px; color: var(--dark); text-decoration: none;
+        font-size: 13px; transition: background 0.15s;
+      }
+      .dropdown-item:hover { background: #f9fafb; }
+      .dropdown-empty { padding: 18px; text-align: center; color: var(--mid); font-size: 13px; }
+      .logout-item { color: #dc2626; }
+      .notif-count {
+        position: absolute; top: -2px; right: -2px;
+        min-width: 18px; height: 18px; border-radius: 50%;
+        background: var(--orange); color: white; font-size: 10px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+      }
+
+      .data-table tbody tr { transition: all 0.15s ease; }
+      .data-table tbody tr:hover { background: rgba(4, 70, 53, 0.04); }
+
+      .badge {
+        display: inline-block; padding: 3px 9px; border-radius: 20px;
+        font-size: 11px; font-weight: 600; white-space: nowrap;
+      }
+      .badge-green  { background: #dcfce7; color: #15803d; }
+      .badge-red    { background: #fee2e2; color: #dc2626; }
+      .badge-yellow { background: #fef9c3; color: #a16207; }
+      .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+      .badge-gray   { background: #f1f5f9; color: var(--mid); }
+      .badge-orange { background: #fff3e0; color: var(--orange); }
+
+      /* ══════════════════ SIDEBAR ══════════════════ */
+      .sidebar {
+        width: 240px; flex-shrink: 0; background: var(--white);
+        border-right: 1px solid var(--border);
+        display: flex; flex-direction: column; height: auto;
+        overflow-y: auto; position: fixed; left: 10px; top: 10px; bottom: 10px;
+        z-index: 50; border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(1, 26, 20, 0.15);
+      }
+      .sidebar::-webkit-scrollbar { width: 4px; }
+      .sidebar::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+
+      .sidebar-logo {
+        padding: 18px 20px; border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; gap: 10px;
+      }
+      .sidebar-logo-icon {
+        width: 34px; height: 34px; background: var(--green); border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0;
+      }
+      .sidebar-logo-text { font-size: 17px; font-weight: 700; line-height: 1; }
+      .sidebar-logo-text span { color: var(--orange); }
+
+      .nav-label {
+        font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.1em; color: #b0b8c1; padding: 18px 20px 6px;
+      }
+
+      .nav-item {
+        display: flex; align-items: center; gap: 11px;
+        padding: 10px 14px 10px 20px; margin: 0 10px; border-radius: 10px;
+        font-size: 13.5px; font-weight: 500; color: var(--mid);
+        cursor: pointer; transition: all 0.15s; position: relative;
+        text-decoration: none;
+      }
+      .nav-item:hover { background: rgba(4, 70, 53, 0.05); color: var(--green); }
+      .nav-item.active { background: var(--orange); color: #fff; }
+      .nav-item.active i { color: #fff; }
+      .nav-item i { width: 16px; text-align: center; font-size: 13px; }
+
+      .sidebar-user {
+        margin-top: auto; padding: 14px 20px; border-top: 1px solid var(--border);
+        display: flex; align-items: center; gap: 10px;
+      }
+      .sidebar-user-link {
+        flex: 1; display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 10px; text-decoration: none; color: inherit;
+        transition: all 0.15s;
+      }
+      .sidebar-user-link:hover { background: rgba(4, 70, 53, 0.05); }
+      .user-avatar {
+        width: 36px; height: 36px; border-radius: 50%; background: var(--green);
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700; flex-shrink: 0;
+      }
+      .user-name { font-size: 13px; font-weight: 600; color: var(--dark); }
+      .user-role { font-size: 11px; color: var(--mid); }
+      .logout-btn {
+        margin-left: auto; width: 30px; height: 30px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        color: #e53e3e; cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+        text-decoration: none;
+      }
+      .logout-btn:hover { background: #fff5f5; }
+
+      /* ══════════════════ MAIN CONTENT ══════════════════ */
+      .main-wrap {
+        margin-left: 262px; flex: 1; display: flex; flex-direction: column;
+        height: 100vh; overflow: hidden;
+      }
+
+      .stats-header {
+        background: var(--green); padding: 18px 28px;
+        display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+      }
+      .stats-header-search {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255, 255, 255, 0.12); border-radius: 8px;
+        padding: 8px 14px; max-width: 280px; flex: 1;
+      }
+      .stats-header-search input {
+        background: none; border: none; outline: none; color: #fff;
+        font-family: "DM Sans", sans-serif; font-size: 13px; width: 100%;
+      }
+      .stats-header-search input::placeholder { color: rgba(255, 255, 255, 0.45); }
+      .stats-header-search i { color: rgba(255, 255, 255, 0.45); font-size: 13px; }
+      .stats-header-date { margin-left: auto; font-size: 13px; color: rgba(255, 255, 255, 0.65); white-space: nowrap; }
+      .stats-header-user {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 700; cursor: pointer;
+      }
+      .stats-header-bell {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; cursor: pointer; position: relative;
+      }
+      .stats-header-bell::after {
+        content: ""; width: 7px; height: 7px; background: var(--orange);
+        border-radius: 50%; position: absolute; top: 6px; right: 7px;
+      }
+
+      .page-area { flex: 1; overflow-y: auto; padding: 24px 28px; }
+      .page-area::-webkit-scrollbar { width: 5px; }
+      .page-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+      .page-heading { font-size: 20px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+      .page-subheading { font-size: 13px; color: var(--mid); margin-bottom: 20px; }
+
+      .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); }
+      .card-header {
+        padding: 16px 20px; border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      .card-header h3 { font-size: 14px; font-weight: 700; color: var(--dark); }
+      .card-link { font-size: 12px; color: var(--orange); font-weight: 600; text-decoration: none; }
+      .card-link:hover { text-decoration: underline; }
+
+      .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .data-table thead tr { background: #f9fafb; }
+      .data-table th {
+        padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.05em; color: var(--mid);
+        white-space: nowrap; border-bottom: 1px solid var(--border);
+      }
+      .data-table td { padding: 11px 14px; border-bottom: 1px solid #f3f4f6; color: var(--dark); vertical-align: middle; }
+      .data-table tbody tr:last-child td { border-bottom: none; }
+
+      #sidebarToggle {
+        position: fixed; left: 238px; top: 50%; transform: translateY(-50%);
+        z-index: 100; width: 24px; height: 48px; background: var(--white);
+        border: 1px solid var(--border); border-left: none; border-radius: 0 8px 8px 0;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        color: var(--mid); font-size: 11px; box-shadow: 3px 0 8px rgba(4,70,53,.08);
+        transition: left 0.25s ease, background 0.15s;
+      }
+      #sidebarToggle:hover { background: var(--cream); color: var(--green); }
+
+      body.sidebar-collapsed .sidebar { width: 64px; overflow-x: hidden; }
+      body.sidebar-collapsed .main-wrap { margin-left: 86px; }
+      body.sidebar-collapsed #sidebarToggle { left: 62px; }
+      body.sidebar-collapsed .nav-text,
+      body.sidebar-collapsed .nav-label,
+      body.sidebar-collapsed .sidebar-logo-text,
+      body.sidebar-collapsed .user-name,
+      body.sidebar-collapsed .user-role,
+      body.sidebar-collapsed .logout-btn { display: none !important; }
+      body.sidebar-collapsed .nav-item { justify-content: center; padding: 12px 0; margin: 2px 8px; gap: 0; }
+      body.sidebar-collapsed .nav-item i { width: 20px; font-size: 16px; text-align: center; }
+      body.sidebar-collapsed .sidebar-logo { justify-content: center; padding: 16px 0; }
+      body.sidebar-collapsed .sidebar-user { justify-content: center; padding: 12px 0; gap: 0; }
+      body.sidebar-collapsed .sidebar-user .user-avatar { margin: 0 auto; }
+
+      .sidebar       { transition: width 0.25s ease; }
+      .main-wrap     { transition: margin-left 0.25s ease; }
+      #sidebarToggle { transition: left 0.25s ease, background 0.15s; }
+
+      .top-bg {
+        position: fixed; top: 0; left: 0; right: 0; height: 70px;
+        background: var(--green); z-index: -1;
+      }
+
+      /* ── Search + filter bar ── */
+      .filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .filter-input {
+        padding: 9px 14px 9px 36px;
+        border: 1.5px solid var(--border);
+        border-radius: 9px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        color: var(--dark);
+        outline: none;
+        transition: border-color 0.15s;
+        background: var(--white);
+      }
+      .filter-input:focus {
+        border-color: var(--green);
+      }
+      .filter-input-wrap {
+        position: relative;
+      }
+      .filter-input-wrap i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #b0b8c1;
+        font-size: 12px;
+      }
+      .filter-select {
+        padding: 9px 14px;
+        border: 1.5px solid var(--border);
+        border-radius: 9px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        color: var(--dark);
+        outline: none;
+        background: var(--white);
+        cursor: pointer;
+        transition: border-color 0.15s;
+      }
+      .filter-select:focus {
+        border-color: var(--green);
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
+      }
+    </script>
+
+    <div class="top-bg"></div>
+
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">S</div>
+        <div class="sidebar-logo-text">SuperShop<span> BD</span></div>
+      </div>
+
+      {% set path = request.url.path %}
+
+      <div class="nav-label">Main</div>
+      <a href="/employee/dashboard"
+         class="nav-item {{ 'active' if path == '/employee/dashboard' or path == '/employee/dashboard/branch_manager' else '' }}">
+        <i class="fas fa-th-large"></i> <span class="nav-text">Dashboard</span>
+      </a>
+
+      {% if position == 'BRANCH_MANAGER' %}
+      <div class="nav-label">My Branch</div>
+      <a href="/employee/branch/sales"
+         class="nav-item {{ 'active' if path == '/employee/branch/sales' else '' }}">
+        <i class="fas fa-receipt"></i> <span class="nav-text">Branch Sales</span>
+      </a>
+      <a href="/employee/branch/inventory"
+         class="nav-item {{ 'active' if path == '/employee/branch/inventory' else '' }}">
+        <i class="fas fa-warehouse"></i> <span class="nav-text">Inventory</span>
+      </a>
+      <a href="/employee/branch/orders"
+         class="nav-item {{ 'active' if path == '/employee/branch/orders' else '' }}">
+        <i class="fas fa-truck"></i> <span class="nav-text">Online Orders</span>
+      </a>
+
+      <div class="nav-label">People</div>
+      <a href="/employee/branch/staff"
+         class="nav-item {{ 'active' if path == '/employee/branch/staff' else '' }}">
+        <i class="fas fa-users"></i> <span class="nav-text">Staff</span>
+      </a>
+
+      {% elif position == 'CASHIER' %}
+      <div class="nav-label">Counter</div>
+      <a href="/employee/sales/new" class="nav-item">
+        <i class="fas fa-cash-register"></i> <span class="nav-text">New Sale</span>
+      </a>
+
+      {% elif position == 'SALES_STAFF' %}
+      <div class="nav-label">Floor</div>
+      <a href="/employee/products" class="nav-item">
+        <i class="fas fa-tag"></i> <span class="nav-text">Products</span>
+      </a>
+
+      {% elif position == 'DELIVERY_RIDER' %}
+      <div class="nav-label">Deliveries</div>
+      <a href="/employee/deliveries" class="nav-item">
+        <i class="fas fa-motorcycle"></i> <span class="nav-text">My Deliveries</span>
+      </a>
+      {% endif %}
+
+      <div class="sidebar-user">
+        <a href="/employee/profile" class="sidebar-user-link">
+          <div class="user-avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
+          <div>
+            <p class="user-name">{{ user_name or 'User' }}</p>
+            <p class="user-role">{{ position or role or '' }}</p>
+          </div>
+        </a>
+        <a href="/auth/logout" class="logout-btn" title="Log out">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+
+      <button id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">
+        <i class="fas fa-chevron-left" id="toggleIcon"></i>
+      </button>
+    </aside>
+
+    <div class="main-wrap">
+      <div class="stats-header">
+        <div class="stats-header-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search…" id="globalSearch" />
+        </div>
+        <span class="stats-header-date" id="headerDate"></span>
+
+        <div class="header-dropdown">
+          <div class="stats-header-bell" onclick="toggleDropdown('notificationMenu')">
+            <i class="fas fa-bell"></i>
+          </div>
+          <div class="dropdown-menu" id="notificationMenu">
+            <div class="dropdown-title">Notifications</div>
+            <div class="dropdown-empty">No notifications</div>
+          </div>
+        </div>
+
+        <div class="header-dropdown">
+          <div class="stats-header-user" onclick="toggleDropdown('profileMenu')">
+            {{ user_name[0]|upper if user_name else 'U' }}
+          </div>
+          <div class="dropdown-menu" id="profileMenu">
+            <a href="/employee/profile" class="dropdown-item">
+              <i class="fas fa-user"></i> View Profile
+            </a>
+            <a href="/auth/logout" class="dropdown-item logout-item">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-area">{% block content %}{% endblock %}</div>
+    </div>
+
+    <script>
+      const el = document.getElementById("headerDate");
+      if (el) {
+        el.textContent = new Date().toLocaleDateString("en-US", {
+          weekday: "long", day: "numeric", month: "long",
+        });
+      }
+
+      function toggleDropdown(id) {
+        const menu = document.getElementById(id);
+        document.querySelectorAll(".dropdown-menu").forEach((d) => {
+          if (d.id !== id) d.classList.remove("show");
+        });
+        menu.classList.toggle("show");
+      }
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest(".header-dropdown")) {
+          document.querySelectorAll(".dropdown-menu").forEach((d) => d.classList.remove("show"));
+        }
+      });
+
+      function toggleSidebar() {
+        document.body.classList.toggle('sidebar-collapsed');
+        const icon = document.getElementById('toggleIcon');
+        if (document.body.classList.contains('sidebar-collapsed')) {
+          icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+        } else {
+          icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+        }
+        localStorage.setItem('sidebarCollapsed', document.body.classList.contains('sidebar-collapsed'));
+      }
+      if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        document.getElementById('toggleIcon').classList.replace('fa-chevron-left', 'fa-chevron-right');
+      }
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
