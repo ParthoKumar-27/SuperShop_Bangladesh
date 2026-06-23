@@ -3,6 +3,267 @@
 {% block title %}Products{% endblock %}
 
 {% block content %}
+<style>
+  /* ── Centered modal (shared, same pattern as discounts page) ── */
+  .dm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .dm-overlay.open {
+    display: flex;
+  }
+
+  .dm-modal {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: dmIn 0.18s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  @keyframes dmIn {
+    from {
+      transform: scale(0.95) translateY(8px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .dm-head {
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .dm-head-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .dm-head-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .dm-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: #f3f4f6;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
+  }
+  .dm-close:hover {
+    background: #e5e7eb;
+    color: var(--dark);
+  }
+
+  .dm-body {
+    padding: 20px 22px;
+    flex: 1;
+  }
+
+  /* Form elements */
+  .dm-group {
+    margin-bottom: 14px;
+  }
+  .dm-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mid);
+    margin-bottom: 5px;
+  }
+  .dm-input,
+  .dm-select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    color: var(--dark);
+    background: #fafafa;
+    outline: none;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+  }
+  .dm-input:focus,
+  .dm-select:focus {
+    border-color: var(--green);
+    background: white;
+  }
+  .dm-input[readonly] {
+    background: rgba(4, 70, 53, 0.05);
+    border-color: rgba(4, 70, 53, 0.2);
+    color: var(--green);
+    font-weight: 600;
+    cursor: default;
+  }
+  .dm-hint {
+    font-size: 11px;
+    color: var(--mid);
+    margin-top: 4px;
+  }
+  .dm-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Status / type pills (reused for Active-Inactive toggle) */
+  .type-row {
+    display: flex;
+    gap: 8px;
+  }
+  .type-pill {
+    flex: 1;
+    padding: 9px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mid);
+    transition: all 0.15s;
+  }
+  .type-pill:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .type-pill.selected-active {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    color: #15803d;
+  }
+  .type-pill.selected-inactive {
+    border-color: #dc2626;
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+  input[name="is_active"] {
+    display: none;
+  }
+
+  /* Footer */
+  .dm-foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    background: #fafafa;
+    border-radius: 0 0 var(--radius) var(--radius);
+    flex-shrink: 0;
+  }
+  .dm-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 0.13s,
+      transform 0.1s;
+  }
+  .dm-btn:hover {
+    transform: translateY(-1px);
+  }
+  .dm-btn-primary {
+    background: var(--green);
+    color: white;
+  }
+  .dm-btn-primary:hover {
+    background: #033828;
+  }
+  .dm-btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--dark);
+  }
+  .dm-btn-outline:hover {
+    background: #f3f4f6;
+    transform: none;
+  }
+
+  /* Action button next to search (Add only now) */
+  .prod-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition:
+      background 0.13s,
+      transform 0.1s;
+    white-space: nowrap;
+  }
+  .prod-action-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Per-row Edit button */
+  .row-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 7px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: "DM Sans", sans-serif;
+    transition:
+      background 0.13s,
+      transform 0.1s;
+    white-space: nowrap;
+  }
+  .row-edit-btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+</style>
 
 <div class="page-heading">Products</div>
 <div class="page-subheading">
@@ -11,7 +272,7 @@
 
 <div
   class="filter-bar"
-  style="display:flex;justify-content:space-between;align-items:center"
+  style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"
 >
   <!-- Search -->
   <div class="filter-input-wrap">
@@ -24,14 +285,25 @@
     />
   </div>
 
-  <!-- Sort -->
-  <select id="sortSelect" class="filter-select">
-    <option value="">Sort Products</option>
-    <option value="name_asc">Name ↑</option>
-    <option value="name_desc">Name ↓</option>
-    <option value="price_asc">Price ↑</option>
-    <option value="price_desc">Price ↓</option>
-  </select>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <!-- Sort -->
+    <select id="sortSelect" class="filter-select">
+      <option value="">Sort Products</option>
+      <option value="name_asc">Name ↑</option>
+      <option value="name_desc">Name ↓</option>
+      <option value="price_asc">Price ↑</option>
+      <option value="price_desc">Price ↓</option>
+    </select>
+
+    <!-- Add button -->
+    <button
+      class="prod-action-btn"
+      style="background: var(--green); color: white"
+      onclick="openPM('pm-add')"
+    >
+      <i class="fas fa-plus"></i> Add
+    </button>
+  </div>
 </div>
 
 <div class="card">
@@ -76,6 +348,7 @@
           <th style="text-align:right">Price</th>
           <th>Unit</th>
           <th>Status</th>
+          <th style="text-align:center">Action</th>
         </tr>
       </thead>
 
@@ -139,10 +412,264 @@
             {% endif %}
           </td>
 
+          <!-- Action -->
+          <td style="text-align:center">
+            <button
+              class="row-edit-btn"
+              onclick="editProduct(this)"
+              data-id="{{ p.product_id }}"
+              data-name="{{ p.product_name }}"
+              data-catid="{{ p.cat_id or '' }}"
+              data-supplierid="{{ p.supplier_id or '' }}"
+              data-price="{{ p.unit_price }}"
+              data-unit="{{ p.unit }}"
+              data-status="{{ p.is_active }}"
+
+              class="badge"
+              style="background:#e0f2fe;color:#0369a1;border:none;cursor:pointer;"
+            >
+              <i class="fas fa-edit"></i> Edit
+            </button>
+          </td>
+
         </tr>
         {% endfor %}
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL 1 — ADD PRODUCT
+══════════════════════════════════════ -->
+<div class="dm-overlay" id="pm-add" onclick="closePMOnOverlay(event, this)">
+  <div class="dm-modal">
+    <div class="dm-head">
+      <div class="dm-head-title">
+        <div class="dm-head-icon" style="background: #dcfce7">
+          <i class="fas fa-plus" style="color: #16a34a"></i>
+        </div>
+        Add New Product
+      </div>
+      <button class="dm-close" onclick="closePM('pm-add')">✕</button>
+    </div>
+
+    <form method="POST" action="/admin/dashboard/products/add">
+      <div class="dm-body">
+        <!-- Auto-generated ID -->
+        <div class="dm-group">
+          <label class="dm-label">Product ID (auto-generated)</label>
+          <input
+            class="dm-input"
+            name="product_id"
+            readonly
+            value="{{ next_product_id }}"
+          />
+          <p class="dm-hint">Assigned automatically.</p>
+        </div>
+
+        <!-- Name -->
+        <div class="dm-group">
+          <label class="dm-label">Product Name</label>
+          <input
+            class="dm-input"
+            name="product_name"
+            placeholder="e.g. Fresh Milk 1L"
+            required
+          />
+        </div>
+
+        <!-- Brand -->
+        <div class="dm-group">
+          <label class="dm-label">Brand</label>
+          <input
+            class="dm-input"
+            name="brand"
+            placeholder="e.g. Pran (optional)"
+          />
+        </div>
+
+        <!-- Category dropdown -->
+        <div class="dm-group">
+          <label class="dm-label">Category</label>
+          <select class="dm-select" name="cat_id">
+            <option value="">— No category —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Supplier dropdown -->
+        <div class="dm-group">
+          <label class="dm-label">Supplier</label>
+          <select class="dm-select" name="supplier_id">
+            <option value="">— No supplier —</option>
+            {% for s in suppliers %}
+            <option value="{{ s.supplier_id }}">{{ s.supplier_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Price + Unit -->
+        <div class="dm-row">
+          <div class="dm-group" style="margin-bottom: 0">
+            <label class="dm-label">Unit Price (৳)</label>
+            <input
+              class="dm-input"
+              type="number"
+              step="0.01"
+              min="0.01"
+              name="unit_price"
+              placeholder="120.00"
+              required
+            />
+          </div>
+          <div class="dm-group" style="margin-bottom: 0">
+            <label class="dm-label">Unit</label>
+            <input
+              class="dm-input"
+              name="unit"
+              placeholder="e.g. kg, pcs, liter"
+              required
+            />
+          </div>
+        </div>
+      </div>
+      <div class="dm-foot">
+        <button type="submit" class="dm-btn dm-btn-primary">
+          <i class="fas fa-plus"></i> Create Product
+        </button>
+        <button
+          type="button"
+          class="dm-btn dm-btn-outline"
+          onclick="closePM('pm-add')"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL 2 — UPDATE PRODUCT (opened from row Edit button)
+     (only Category, Supplier, Price, Unit, Status are editable —
+      ID and Product name/brand stay locked)
+══════════════════════════════════════ -->
+<div class="dm-overlay" id="pm-modify" onclick="closePMOnOverlay(event, this)">
+  <div class="dm-modal">
+    <div class="dm-head">
+      <div class="dm-head-title">
+        <div class="dm-head-icon" style="background: #dbeafe">
+          <i class="fas fa-edit" style="color: #1d4ed8"></i>
+        </div>
+        Update Product
+      </div>
+      <button class="dm-close" onclick="closePM('pm-modify')">✕</button>
+    </div>
+
+    <form
+      method="POST"
+      action="/admin/dashboard/products/modify"
+      id="modifyProductForm"
+    >
+      <div class="dm-body">
+        <!-- Locked: which product is being edited -->
+        <div class="dm-group">
+          <label class="dm-label">Product</label>
+          <input class="dm-input" id="modProductName" readonly />
+          <input type="hidden" name="product_id" id="modProductId" />
+        </div>
+
+        <!-- Category dropdown -->
+        <div class="dm-group">
+          <label class="dm-label">Category</label>
+          <select class="dm-select" name="cat_id" id="modProductCat">
+            <option value="">— No category —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Supplier dropdown -->
+        <div class="dm-group">
+          <label class="dm-label">Supplier</label>
+          <select class="dm-select" name="supplier_id" id="modProductSupplier">
+            <option value="">— No supplier —</option>
+            {% for s in suppliers %}
+            <option value="{{ s.supplier_id }}">{{ s.supplier_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Price + Unit -->
+        <div class="dm-row">
+          <div class="dm-group" style="margin-bottom: 0">
+            <label class="dm-label">Unit Price (৳)</label>
+            <input
+              class="dm-input"
+              type="number"
+              step="0.01"
+              min="0.01"
+              name="unit_price"
+              id="modProductPrice"
+              required
+            />
+          </div>
+          <div class="dm-group" style="margin-bottom: 0">
+            <label class="dm-label">Unit</label>
+            <input
+              class="dm-input"
+              name="unit"
+              id="modProductUnit"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Status pills -->
+        <div class="dm-group" style="margin-top: 14px; margin-bottom: 0">
+          <label class="dm-label">Status</label>
+          <input type="hidden" name="is_active" id="modProductStatus" />
+          <div class="type-row">
+            <div
+              class="type-pill"
+              id="pillActive"
+              onclick="selectProductStatus('Y')"
+            >
+              <i class="fas fa-check-circle"></i> Active
+            </div>
+            <div
+              class="type-pill"
+              id="pillInactive"
+              onclick="selectProductStatus('N')"
+            >
+              <i class="fas fa-ban"></i> Inactive
+            </div>
+          </div>
+        </div>
+
+        <p class="dm-hint" style="margin-top: 10px">
+          <i class="fas fa-info-circle"></i>
+          Product name and brand are locked here — delete and re-add to
+          rename a product.
+        </p>
+      </div>
+      <div class="dm-foot">
+        <button type="submit" class="dm-btn dm-btn-primary">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+        <button
+          type="button"
+          class="dm-btn dm-btn-outline"
+          onclick="closePM('pm-modify')"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -202,6 +729,54 @@ document.getElementById("sortSelect").addEventListener("change", function () {
 
   sorted.forEach(row => tbody.appendChild(row));
 });
+
+// ── Modal open / close ────────────────────────────────────────────────────
+function openPM(id) {
+  document.getElementById(id).classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closePM(id) {
+  document.getElementById(id).classList.remove("open");
+  document.body.style.overflow = "";
+}
+function closePMOnOverlay(e, el) {
+  if (e.target === el) {
+    closePM(el.id);
+  }
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape")
+    document.querySelectorAll(".dm-overlay.open").forEach((m) => {
+      m.classList.remove("open");
+      document.body.style.overflow = "";
+    });
+});
+
+// ══════════════════════════════
+//  ROW EDIT → opens Update modal pre-filled
+// ══════════════════════════════
+function editProduct(btn) {
+  const d = btn.dataset;
+
+  document.getElementById("modProductId").value = d.id;
+  document.getElementById("modProductName").value = `${d.id} — ${d.name}`;
+  document.getElementById("modProductCat").value = d.catid || "";
+  document.getElementById("modProductSupplier").value = d.supplierid || "";
+  document.getElementById("modProductPrice").value = d.price;
+  document.getElementById("modProductUnit").value = d.unit;
+
+  selectProductStatus(d.status === "N" ? "N" : "Y");
+
+  openPM("pm-modify");
+}
+
+function selectProductStatus(status) {
+  document.getElementById("modProductStatus").value = status;
+  document.getElementById("pillActive").className =
+    "type-pill" + (status === "Y" ? " selected-active" : "");
+  document.getElementById("pillInactive").className =
+    "type-pill" + (status === "N" ? " selected-inactive" : "");
+}
 
 </script>
 {% endblock %}

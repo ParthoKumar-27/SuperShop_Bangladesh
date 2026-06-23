@@ -137,22 +137,22 @@ def admin_dashboard(request: Request, session=Depends(require_admin)):
     )
 
 
-@admin_router.get("/dashboard/products", response_class=HTMLResponse)
-def admin_products_page(request: Request, session=Depends(require_admin)):
-    products = query("""
-        SELECT p.product_id, p.product_name, p.brand,
-               p.unit_price, p.unit, p.is_active,
-               c.cat_name, s.supplier_name
-        FROM   product p
-               LEFT JOIN category c  USING (cat_id)
-               LEFT JOIN supplier s  USING (supplier_id)
-        ORDER BY p.product_name
-    """)
-    return templates.TemplateResponse(request, "admin/products.html", {
-        "products":  products,
-        "user_name": session.get("user_name"),
-        "role":      session.get("role"),
-    })
+# @admin_router.get("/dashboard/products", response_class=HTMLResponse)
+# def admin_products_page(request: Request, session=Depends(require_admin)):
+#     products = query("""
+#         SELECT p.product_id, p.product_name, p.brand,
+#                p.unit_price, p.unit, p.is_active,
+#                c.cat_name, s.supplier_name
+#         FROM   product p
+#                LEFT JOIN category c  USING (cat_id)
+#                LEFT JOIN supplier s  USING (supplier_id)
+#         ORDER BY p.product_name
+#     """)
+#     return templates.TemplateResponse(request, "admin/products.html", {
+#         "products":  products,
+#         "user_name": session.get("user_name"),
+#         "role":      session.get("role"),
+#     })
 
 
 @admin_router.get("/dashboard/customers", response_class=HTMLResponse)
@@ -632,3 +632,110 @@ def suppliers_page(
         },
         
     )
+
+# ════════════════════════════════════════════════════════════════════════════
+#  PRODUCTS — replace the existing admin_products_page() with this version,
+#  and add the two new POST routes below it. Everything else in admin.py
+#  (imports, admin_router, etc.) stays exactly as you already have it.
+# ════════════════════════════════════════════════════════════════════════════
+
+@admin_router.get("/dashboard/products", response_class=HTMLResponse)
+def admin_products_page(request: Request, session=Depends(require_admin)):
+    products = query("""
+        SELECT p.product_id, p.product_name, p.brand,
+               p.cat_id, p.supplier_id,
+               p.unit_price, p.unit, p.is_active,
+               c.cat_name, s.supplier_name
+        FROM   product p
+               LEFT JOIN category c  USING (cat_id)
+               LEFT JOIN supplier s  USING (supplier_id)
+        ORDER BY p.product_name
+    """)
+
+    categories = query("""
+        SELECT cat_id, cat_name FROM category ORDER BY cat_name
+    """)
+
+    suppliers = query("""
+        SELECT supplier_id, supplier_name FROM supplier ORDER BY supplier_name
+    """)
+
+    # Generate next product ID in P-XXXXX format
+    last = query("""
+        SELECT product_id FROM product ORDER BY product_id DESC LIMIT 1
+    """)
+    if last:
+        last_num = int(last[0]["product_id"].split("-")[1])
+        next_product_id = f"P-{last_num + 1:05d}"
+    else:
+        next_product_id = "P-00001"
+
+    return templates.TemplateResponse(request, "admin/products.html", {
+        "products":        products,
+        "categories":      categories,
+        "suppliers":       suppliers,
+        "next_product_id": next_product_id,
+        "user_name": session.get("user_name"),
+        "role":      session.get("role"),
+    })
+
+
+@admin_router.post("/dashboard/products/add")
+def add_product(
+    request:      Request,
+    product_id:   str   = Form(...),
+    product_name: str   = Form(...),
+    brand:        str   = Form(""),
+    cat_id:       str   = Form(""),
+    supplier_id:  str   = Form(""),
+    unit_price:   float = Form(...),
+    unit:         str   = Form(...),
+    session=Depends(require_admin),
+):
+    execute("""
+        INSERT INTO product
+            (product_id, product_name, brand, cat_id, supplier_id,
+             unit_price, unit)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (
+        product_id,
+        product_name.strip(),
+        brand.strip() if brand and brand.strip() else None,
+        cat_id.strip() if cat_id and cat_id.strip() else None,
+        supplier_id.strip() if supplier_id and supplier_id.strip() else None,
+        unit_price,
+        unit.strip(),
+    ))
+
+    return RedirectResponse("/admin/dashboard/products?success=Product+created", status_code=302)
+
+
+@admin_router.post("/dashboard/products/modify")
+def modify_product(
+    request:     Request,
+    product_id:  str   = Form(...),
+    cat_id:      str   = Form(""),
+    supplier_id: str   = Form(""),
+    unit_price:  float = Form(...),
+    unit:        str   = Form(...),
+    is_active:   str   = Form(...),
+    session=Depends(require_admin),
+):
+    execute("""
+        UPDATE product
+        SET cat_id      = %s,
+            supplier_id = %s,
+            unit_price  = %s,
+            unit        = %s,
+            is_active   = %s
+        WHERE product_id = %s
+    """, (
+        cat_id.strip() if cat_id and cat_id.strip() else None,
+        supplier_id.strip() if supplier_id and supplier_id.strip() else None,
+        unit_price,
+        unit.strip(),
+        is_active,
+        product_id,
+    ))
+
+    return RedirectResponse("/admin/dashboard/products?success=Product+updated", status_code=302)
