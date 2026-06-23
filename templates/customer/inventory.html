@@ -2,62 +2,72 @@
 {% block title %}Inventory{% endblock %}
 
 {% block content %}
-
 <div class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-10 text-white mb-10 shadow-xl">
-
     <h1 class="text-4xl font-bold">
         📦 Product Availability
     </h1>
-
     <p class="mt-2 text-green-100">
         Check stock availability across all branches.
     </p>
-
 </div>
+
+<form method="GET" action="/customer/inventory" class="flex items-center gap-4 bg-white rounded-2xl shadow p-5 mb-8">
+    <label for="branch_id" class="font-semibold text-[#044635] whitespace-nowrap">
+        Filter by branch
+    </label>
+    <select name="branch_id" id="branch_id" class="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635]">
+        <option value="">All branches</option>
+        {% for branch in branches %}
+        <option value="{{ branch.branch_id }}" {% if selected_branch == branch.branch_id %}selected{% endif %}>
+            {{ branch.branch_name }}
+        </option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="bg-[#044635] text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-[#0a6b50] transition">
+        Apply
+    </button>
+    {% if selected_branch %}
+    <a href="/customer/inventory" class="text-sm text-gray-500 hover:text-[#044635] underline">
+        Clear
+    </a>
+    {% endif %}
+</form>
 
 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for item in inventory %}
+    <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition">
+        <h2 class="text-xl font-bold text-[#044635]">{{ item.product_name }}</h2>
+        <p class="text-gray-500 mt-1">Branch: {{ item.branch_name }}</p>
 
-{% for item in inventory %}
-
-<div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition">
-
-    <h2 class="text-xl font-bold text-[#044635]">
-        {{ item.product_name }}
-    </h2>
-
-    <p class="text-gray-500 mt-1">
-        Branch: {{ item.branch_name }}
-    </p>
-
-    <div class="mt-5">
-
-        <div class="flex justify-between mb-2">
-            <span>Available Quantity</span>
-            <span class="font-bold">
-                {{ item.quantity }}
-            </span>
+        <div class="mt-3">
+            {% if item.disc_label %}
+            <span class="text-sm line-through text-gray-400">৳{{ "%.2f"|format(item.unit_price) }}</span>
+            <span class="ml-1 text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">{{ item.disc_label }}</span>
+            <p class="text-lg font-bold text-[#044635]">৳{{ "%.2f"|format(item.disc_price) }}</p>
+            {% else %}
+            <p class="text-lg font-bold text-[#044635]">৳{{ "%.2f"|format(item.unit_price) }}</p>
+            {% endif %}
         </div>
 
-        {% if item.stock_status == 'LOW' %}
-
-        <div class="bg-red-100 text-red-700 px-4 py-2 rounded-xl text-center">
-            ⚠ Low Stock
+        <div class="mt-4">
+            <div class="flex justify-between mb-2">
+                <span>Available Quantity</span>
+                <span class="font-bold">{{ item.quantity }}</span>
+            </div>
+            {% if item.stock_status == 'LOW' %}
+            <div class="bg-red-100 text-red-700 px-4 py-2 rounded-xl text-center">⚠ Low Stock</div>
+            {% else %}
+            <div class="bg-green-100 text-green-700 px-4 py-2 rounded-xl text-center">✅ Available</div>
+            {% endif %}
         </div>
-
-        {% else %}
-
-        <div class="bg-green-100 text-green-700 px-4 py-2 rounded-xl text-center">
-            ✅ Available
-        </div>
-
-        {% endif %}
-
     </div>
-
+    {% endfor %}
 </div>
 
-{% endfor %}
-
-</div>
+{% if not inventory %}
+<p class="text-center text-gray-400 mt-16">
+    No inventory found for the selected branch.
+</p>
+{% endif %}
 
 {% endblock %}

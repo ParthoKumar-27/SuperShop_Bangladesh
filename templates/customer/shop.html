@@ -2,6 +2,38 @@
 {% block title %}Shop{% endblock %}
 
 {% block content %}
+
+{# ── Branch selector bar ── #}
+<div class="bg-white rounded-2xl shadow p-5 mb-8 flex flex-wrap items-center gap-4">
+  <div class="flex items-center gap-2">
+    <span class="text-xl">🏪</span>
+    <span class="font-semibold text-[#044635]">Shopping from:</span>
+  </div>
+
+  {% if selected_branch %}
+  <span class="bg-[#e6f4ef] text-[#044635] font-semibold px-4 py-1 rounded-full text-sm">
+    {{ selected_branch.branch_name }}
+  </span>
+  {% endif %}
+
+  <form method="POST" action="/customer/select-branch" class="flex items-center gap-2 ml-auto">
+    <select name="branch_id"
+            class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635]">
+      {% for branch in branches %}
+      <option value="{{ branch.branch_id }}"
+        {% if selected_branch and selected_branch.branch_id == branch.branch_id %}selected{% endif %}>
+        {{ branch.branch_name }}
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit"
+            class="bg-[#044635] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#0a6b50] transition">
+      Switch
+    </button>
+  </form>
+</div>
+
+{# ── Header + search ── #}
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-2xl font-bold text-gray-800">🛍️ Grocery Shop</h1>
   <input id="searchBox" type="text" placeholder="Search groceries..."
@@ -15,6 +47,7 @@
 </div>
 {% endif %}
 
+{# ── Product grid ── #}
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" id="productGrid">
   {% for p in products %}
   <div class="bg-white rounded-xl shadow p-4 flex flex-col"
@@ -22,20 +55,32 @@
     <div class="flex-1">
       <h3 class="font-semibold text-gray-800">{{ p.product_name }}</h3>
       <p class="text-xs text-gray-400 mt-1">{{ p.brand or '—' }}</p>
+
+      {% if p.disc_label %}
+      <div class="mt-3">
+        <span class="text-xs line-through text-gray-400">৳{{ "%.2f"|format(p.unit_price) }}</span>
+        <span class="ml-1 text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">{{ p.disc_label }}</span>
+        <p class="text-lg font-bold text-[#044635]">
+          ৳{{ "%.2f"|format(p.disc_price) }}
+          <span class="text-xs text-gray-400 font-normal">/ {{ p.unit }}</span>
+        </p>
+      </div>
+      {% else %}
       <p class="text-lg font-bold text-[#044635] mt-3">
         ৳{{ "%.2f"|format(p.unit_price) }}
         <span class="text-xs text-gray-400 font-normal">/ {{ p.unit }}</span>
       </p>
+      {% endif %}
     </div>
 
     <form action="/customer/cart/add" method="post" class="mt-4 flex items-center gap-2">
       <input type="hidden" name="product_id" value="{{ p.product_id }}">
       <input type="number" name="quantity" value="1" min="1"
              class="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center">
-     <button type="submit"
-  class="flex-1 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold py-2 rounded-lg transition">
-  Add to Cart
-</button>
+      <button type="submit"
+              class="flex-1 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold py-2 rounded-lg transition">
+        Add to Cart
+      </button>
     </form>
   </div>
   {% endfor %}
