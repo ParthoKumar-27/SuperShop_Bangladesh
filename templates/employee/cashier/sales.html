@@ -1,0 +1,374 @@
+{% extends "employee/branch_manager/base_employee.html" %}
+{% block title %}Sales History{% endblock %}
+{% block content %}
+
+<style>
+  /* ── Receipt modal ── */
+  .receipt-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 500; display: none; align-items: center; justify-content: center;
+  }
+  .receipt-overlay.open { display: flex; }
+
+  .receipt-modal {
+    background: #fff; border-radius: 14px;
+    width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+    animation: popIn .18s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(.95) translateY(8px); opacity: 0; }
+    to   { transform: scale(1)   translateY(0);   opacity: 1; }
+  }
+
+  .receipt-head {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .receipt-logo { font-size: 16px; font-weight: 800; color: var(--green); }
+  .receipt-logo span { color: var(--orange); }
+  .receipt-close {
+    width: 28px; height: 28px; border-radius: 7px; background: #f3f4f6;
+    border: none; cursor: pointer; font-size: 14px; color: var(--mid);
+    display: flex; align-items: center; justify-content: center; transition: background .12s;
+  }
+  .receipt-close:hover { background: #e5e7eb; }
+
+  .receipt-body { padding: 20px 22px; }
+
+  .receipt-meta {
+    font-size: 12px; color: var(--mid); line-height: 1.9;
+    background: #f9fafb; border-radius: 9px; padding: 10px 14px;
+    margin-bottom: 16px;
+  }
+  .receipt-meta strong { color: var(--dark); }
+
+  .receipt-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+  .receipt-table th {
+    border-bottom: 1px solid var(--border); padding: 6px 8px;
+    text-align: left; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--mid); background: #f9fafb;
+  }
+  .receipt-table td { padding: 8px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+  .receipt-table tbody tr:last-child td { border-bottom: none; }
+  .receipt-table td:nth-child(2),
+  .receipt-table td:nth-child(3),
+  .receipt-table td:nth-child(4) { text-align: right; }
+  .receipt-table th:nth-child(2),
+  .receipt-table th:nth-child(3),
+  .receipt-table th:nth-child(4) { text-align: right; }
+
+  .receipt-totals { border-top: 1px dashed var(--border); padding-top: 10px; }
+  .receipt-total-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; padding: 3px 0; color: var(--dark);
+  }
+  .receipt-total-row.grand {
+    font-weight: 800; font-size: 15px; color: var(--green);
+    border-top: 2px solid var(--border); margin-top: 8px; padding-top: 10px;
+  }
+  .receipt-total-row.muted { color: var(--mid); }
+
+  .receipt-footer {
+    text-align: center; font-size: 11px; color: var(--mid);
+    margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border);
+    line-height: 1.8;
+  }
+
+  .receipt-actions {
+    display: flex; gap: 8px; padding: 14px 22px;
+    border-top: 1px solid var(--border); background: #fafafa;
+    border-radius: 0 0 14px 14px;
+  }
+  .receipt-btn {
+    flex: 1; padding: 10px; border: none; border-radius: 8px;
+    font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .13s;
+  }
+  .receipt-btn-print { background: var(--green); color: #fff; }
+  .receipt-btn-print:hover { background: #033828; }
+  .receipt-btn-close { background: #f3f4f6; color: var(--dark); }
+  .receipt-btn-close:hover { background: #e5e7eb; }
+
+  /* Loading state */
+  .receipt-loading {
+    padding: 40px; text-align: center; color: var(--mid); font-size: 13px;
+  }
+  .receipt-loading i { font-size: 24px; margin-bottom: 10px; display: block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Bill button in table */
+  .bill-btn {
+    padding: 5px 12px; border: none; border-radius: 7px;
+    background: rgba(4,70,53,.1); color: var(--green);
+    font-family: "DM Sans", sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background .13s; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .bill-btn:hover { background: rgba(4,70,53,.18); }
+
+  /* Discount badge on item row */
+  .disc-tag {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    background: #dcfce7; color: #15803d; border-radius: 5px;
+    padding: 1px 5px; margin-left: 4px;
+  }
+
+  @media print {
+    body > *:not(.receipt-overlay) { display: none !important; }
+    .receipt-overlay { position: static !important; background: none !important; display: block !important; }
+    .receipt-modal { box-shadow: none !important; max-height: none !important; }
+    .receipt-actions, .receipt-close { display: none !important; }
+  }
+</style>
+
+<div class="page-heading">Sales History</div>
+<div class="page-subheading">All sales processed at your branch. Click Bill to view the receipt.</div>
+
+<!-- Filter bar -->
+<div class="filter-bar" style="margin-bottom:20px;">
+  <div class="filter-input-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" id="salesSearch" class="filter-input" placeholder="Search by sale ID, customer, cashier…" />
+  </div>
+  <select class="filter-select" id="typeFilter" onchange="applyFilters()">
+    <option value="">All Types</option>
+    <option value="IN_STORE">In-Store</option>
+    <option value="ONLINE">Online</option>
+  </select>
+  <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+    <option value="">All Statuses</option>
+    <option value="PAID">Paid</option>
+    <option value="PENDING">Pending</option>
+    <option value="CANCELLED">Cancelled</option>
+  </select>
+  <a href="/employee/cashier/dashboard" style="margin-left:auto;">
+    <button class="inv-action-btn" style="background:var(--green);color:white;padding:8px 16px;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+      <i class="fas fa-plus"></i> New Sale
+    </button>
+  </a>
+</div>
+
+<!-- Sales table -->
+<div class="card">
+  <div class="card-header">
+    <h3 style="color:var(--green);font-weight:800;display:flex;align-items:center;gap:10px;">
+      <span style="width:10px;height:10px;background:var(--orange);border-radius:50%;display:inline-block;"></span>
+      Branch Sales
+    </h3>
+    <span style="font-size:12px;color:var(--mid);">Total: {{ sales|length }}</span>
+  </div>
+
+  <div style="overflow-x:auto;box-shadow:0 8px 20px rgba(16,24,40,.1);border-radius:12px;">
+    <table class="data-table" id="salesTable">
+      <thead>
+        <tr>
+          <th>Sale ID</th>
+          <th>Date & Time</th>
+          <th>Customer</th>
+          <th>Cashier</th>
+          <th>Type</th>
+          <th style="text-align:right;">Total</th>
+          <th>Status</th>
+          <th style="text-align:center;">Receipt</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sales %}
+        <tr data-type="{{ s.order_type }}" data-status="{{ s.payment_status }}">
+          <td><strong style="color:var(--green);font-family:monospace;font-size:11px;">{{ s.sale_id }}</strong></td>
+          <td style="font-size:12px;color:var(--mid);">{{ s.sale_date }}</td>
+          <td><strong>{{ s.customer }}</strong></td>
+          <td style="font-size:12px;color:var(--mid);">{{ s.emp_name }}</td>
+          <td>
+            {% if s.order_type == 'IN_STORE' %}
+            <span class="badge badge-blue">In-Store</span>
+            {% else %}
+            <span class="badge badge-orange">Online</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right;font-weight:700;">৳ {{ "%.2f"|format(s.total_amt) }}</td>
+          <td>
+            {% if s.payment_status == 'PAID' %}
+            <span class="badge badge-green">Paid</span>
+            {% elif s.payment_status == 'PENDING' %}
+            <span class="badge badge-yellow">Pending</span>
+            {% else %}
+            <span class="badge badge-red">Cancelled</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;">
+            <button class="bill-btn" onclick="showBill('{{ s.sale_id }}')">
+              <i class="fas fa-receipt"></i> Bill
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ Receipt Modal ══ -->
+<div class="receipt-overlay" id="receiptOverlay" onclick="closeOnOverlay(event)">
+  <div class="receipt-modal" id="receiptModal">
+    <!-- content injected by JS -->
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ── Filters ───────────────────────────────────────────────────────────────
+  function applyFilters() {
+    const text   = document.getElementById('salesSearch').value.toLowerCase();
+    const type   = document.getElementById('typeFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    document.querySelectorAll('#salesTable tbody tr').forEach(row => {
+      const matchText   = row.innerText.toLowerCase().includes(text);
+      const matchType   = !type   || row.dataset.type   === type;
+      const matchStatus = !status || row.dataset.status === status;
+      row.style.display = (matchText && matchType && matchStatus) ? '' : 'none';
+    });
+  }
+  document.getElementById('salesSearch').addEventListener('keyup', applyFilters);
+
+  // ── Bill modal ────────────────────────────────────────────────────────────
+  const overlay = document.getElementById('receiptOverlay');
+  const modal   = document.getElementById('receiptModal');
+
+  function showBill(saleId) {
+    // Show loading
+    modal.innerHTML = `
+      <div class="receipt-head">
+        <div class="receipt-logo">SuperShop<span> BD</span></div>
+        <button class="receipt-close" onclick="closeBill()">✕</button>
+      </div>
+      <div class="receipt-loading">
+        <i class="fas fa-circle-notch"></i>
+        Loading receipt…
+      </div>`;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Fetch bill data
+    fetch(`/employee/cashier/bill/${saleId}`)
+      .then(r => r.json())
+      .then(d => renderBill(d))
+      .catch(() => {
+        modal.innerHTML = `
+          <div class="receipt-head">
+            <div class="receipt-logo">SuperShop<span> BD</span></div>
+            <button class="receipt-close" onclick="closeBill()">✕</button>
+          </div>
+          <div class="receipt-loading" style="color:#dc2626;">
+            <i class="fas fa-exclamation-circle" style="animation:none;color:#dc2626;"></i>
+            Failed to load receipt.
+          </div>`;
+      });
+  }
+
+  function renderBill(d) {
+    // Items rows
+    const itemRows = d.items.map(i => {
+      const discBadge = i.discount_name
+        ? `<span class="disc-tag">−${i.disc_display}</span>` : '';
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:600;">${i.product_name}</div>
+            <div style="font-size:10px;color:var(--mid);">${i.unit}</div>
+            ${discBadge}
+          </td>
+          <td>${parseFloat(i.quantity) % 1 === 0 ? parseInt(i.quantity) : parseFloat(i.quantity)}</td>
+          <td>৳ ${parseFloat(i.unit_price).toFixed(2)}</td>
+          <td style="font-weight:700;color:var(--green);">৳ ${parseFloat(i.line_total).toFixed(2)}</td>
+        </tr>`;
+    }).join('');
+
+    // Status color
+    const statusColors = { PAID: '#16a34a', PENDING: '#b45309', CANCELLED: '#dc2626' };
+    const statusColor  = statusColors[d.payment_status] || 'var(--mid)';
+
+    // Payment badge
+    const payBadge = d.payment_method
+      ? `<span style="background:#f3f4f6;border-radius:6px;padding:1px 7px;font-size:11px;">${d.payment_method}</span>` : '—';
+
+    modal.innerHTML = `
+      <div class="receipt-head">
+        <div class="receipt-logo">SuperShop<span> BD</span></div>
+        <button class="receipt-close" onclick="closeBill()">✕</button>
+      </div>
+      <div class="receipt-body">
+        <div class="receipt-meta">
+          <div><strong>Sale ID:</strong> ${d.sale_id}</div>
+          <div><strong>Date:</strong> ${d.sale_date}</div>
+          <div><strong>Branch:</strong> ${d.branch_name}</div>
+          <div><strong>Customer:</strong> ${d.customer} ${d.membership ? `<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:1px 6px;">${d.membership}</span>` : ''}</div>
+          <div><strong>Cashier:</strong> ${d.cashier}</div>
+          <div><strong>Type:</strong> ${d.order_type === 'IN_STORE' ? 'In-Store' : 'Online'}</div>
+          <div><strong>Status:</strong> <span style="color:${statusColor};font-weight:700;">${d.payment_status}</span> ${payBadge}</div>
+        </div>
+
+        <table class="receipt-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Unit ৳</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+
+        <div class="receipt-totals">
+          <div class="receipt-total-row muted">
+            <span>Subtotal</span>
+            <span>৳ ${parseFloat(d.subtotal).toFixed(2)}</span>
+          </div>
+          <div class="receipt-total-row muted">
+            <span>Discount</span>
+            <span>− ৳ ${parseFloat(d.discount_amt).toFixed(2)}</span>
+          </div>
+          <div class="receipt-total-row muted">
+            <span>Tax</span>
+            <span>৳ ${parseFloat(d.tax_amt).toFixed(2)}</span>
+          </div>
+          <div class="receipt-total-row grand">
+            <span>Total Paid</span>
+            <span>৳ ${parseFloat(d.total_amt).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div class="receipt-footer">
+          Thank you for shopping at SuperShop BD!<br/>
+          ${d.branch_name} · ${d.sale_date}
+          ${d.loyalty_earned ? `<br/><span style="color:var(--orange);font-weight:600;">+${d.loyalty_earned} loyalty points earned</span>` : ''}
+        </div>
+      </div>
+      <div class="receipt-actions">
+        <button class="receipt-btn receipt-btn-print" onclick="window.print()">
+          <i class="fas fa-print"></i> Print
+        </button>
+        <button class="receipt-btn receipt-btn-close" onclick="closeBill()">
+          Close
+        </button>
+      </div>`;
+  }
+
+  function closeBill() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function closeOnOverlay(e) {
+    if (e.target === overlay) closeBill();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeBill();
+  });
+</script>
+{% endblock %}

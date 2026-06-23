@@ -309,8 +309,8 @@
       {% set path = request.url.path %}
 
       <div class="nav-label">Main</div>
-      <a href="/employee/dashboard"
-         class="nav-item {{ 'active' if path == '/employee/dashboard' or path == '/employee/dashboard/branch_manager' else '' }}">
+      <a href="/employee/branch/dashboard"
+         class="nav-item {{ 'active' if path == '/employee/branch/dashboard' or path == '/employee/branch/dashboard/branch_manager' else '' }}">
         <i class="fas fa-th-large"></i> <span class="nav-text">Dashboard</span>
       </a>
 
@@ -337,8 +337,8 @@
 
       {% elif position == 'CASHIER' %}
       <div class="nav-label">Counter</div>
-      <a href="/employee/sales/new" class="nav-item">
-        <i class="fas fa-cash-register"></i> <span class="nav-text">New Sale</span>
+      <a href="/employee/cashier/sales" class="nav-item">
+        <i class="fas fa-cash-register"></i> <span class="nav-text">In-store Sales</span>
       </a>
 
       {% elif position == 'SALES_STAFF' %}

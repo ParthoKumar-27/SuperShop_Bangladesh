@@ -81,7 +81,7 @@ CREATE TABLE membership (
 CREATE TABLE customer (
     cust_id         VARCHAR(8)      NOT NULL,
     cust_name       VARCHAR(60)     NOT NULL,
-    email           VARCHAR(100)    NOT NULL,
+    email           VARCHAR(100),
     phone           VARCHAR(15)     NOT NULL,
     address         VARCHAR(200),
     dob             DATE,

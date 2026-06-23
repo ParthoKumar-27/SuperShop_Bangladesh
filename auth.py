@@ -172,7 +172,12 @@ def employee_login(
     request.session["branch_id"] = e["branch_id"]
     request.session["position"]  = e["position"]
 
-    return RedirectResponse("/employee/dashboard", status_code=302)
+    if request.session["position"] == "BRANCH_MANAGER":
+        return RedirectResponse("/employee/branch/dashboard", status_code=302)
+    elif request.session["position"] == "CASHIER":
+        return RedirectResponse("/employee/cashier/dashboard", status_code=302)
+    else:
+        return RedirectResponse("/employee/dashboard", status_code=302)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
