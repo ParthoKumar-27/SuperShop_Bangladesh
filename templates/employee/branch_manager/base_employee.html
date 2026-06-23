@@ -289,6 +289,52 @@
       .filter-select:focus {
         border-color: var(--green);
       }
+      .sidebar-user {
+        margin-top: auto;
+        padding: 14px 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .user-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--dark);
+      }
+      .user-role {
+        font-size: 11px;
+        color: var(--mid);
+      }
+      .logout-btn {
+        margin-left: auto;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #e53e3e;
+        cursor: pointer;
+        transition: background 0.15s;
+        flex-shrink: 0;
+      }
+      .logout-btn:hover {
+        background: #fff5f5;
+      }
     </style>
   </head>
   <body>
@@ -310,7 +356,8 @@
 
       <div class="nav-label">Main</div>
       <a href="/employee/branch/dashboard"
-         class="nav-item {{ 'active' if path == '/employee/branch/dashboard' or path == '/employee/branch/dashboard/branch_manager' else '' }}">
+         class="nav-item {{ 'active' if path == '/employee/branch/dashboard' or path == '/employee/branch/dashboard/branch_manager' 
+         or path == '/employee/cashier/dashboard' else '' }}">
         <i class="fas fa-th-large"></i> <span class="nav-text">Dashboard</span>
       </a>
 
@@ -337,8 +384,8 @@
 
       {% elif position == 'CASHIER' %}
       <div class="nav-label">Counter</div>
-      <a href="/employee/cashier/sales" class="nav-item">
-        <i class="fas fa-cash-register"></i> <span class="nav-text">In-store Sales</span>
+      <a href="/employee/cashier/sales" class="nav-item {{ 'active' if path == '/employee/cashier/sales' else '' }}">
+        <i class="fas fa-users"></i> <span class="nav-text">In-store Sales</span>
       </a>
 
       {% elif position == 'SALES_STAFF' %}
@@ -354,7 +401,7 @@
       </a>
       {% endif %}
 
-      <div class="sidebar-user">
+      <!-- <div class="sidebar-user">
         <a href="/employee/profile" class="sidebar-user-link">
           <div class="user-avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
           <div>
@@ -365,7 +412,28 @@
         <a href="/auth/logout" class="logout-btn" title="Log out">
           <i class="fas fa-sign-out-alt"></i>
         </a>
+      </div> -->
+
+      <div class="sidebar-user">
+        <a
+    href="/employee/profile"
+    class="nav-item {{ 'active' if path == '/employee/profile' else '' }}"
+  >
+        <div class="user-avatar">
+          {{ user_name[0]|upper if user_name else 'U' }}
+        </div>
+
+        <div>
+          <p class="user-name">{{ user_name or 'User' }}</p>
+          <p class="user-role">{{ role or '' }}</p>
+        </div>
+
+        <a href="/auth/logout" class="logout-btn" title="Log out">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
       </div>
+
+
 
       <button id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">
         <i class="fas fa-chevron-left" id="toggleIcon"></i>

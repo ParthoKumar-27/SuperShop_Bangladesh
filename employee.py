@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from database import query, execute
-
+from auth import _hash, _verify
 
 employee_router = APIRouter(prefix="/employee", tags=["Employee"])
 templates = Jinja2Templates(directory="templates")
@@ -1016,3 +1016,131 @@ def get_bill(
 
         "items": formatted_items
     })
+# ══════════════════════════════════════════════════════════════════════════════
+#  EMPLOYEE PROFILE — replace the existing employee_profile() with this version,
+#  and add the two POST routes below it. Paste into employee.py.
+# ══════════════════════════════════════════════════════════════════════════════
+
+@employee_router.get("/profile", response_class=HTMLResponse)
+def employee_profile(
+    request: Request,
+    session=Depends(require_employee)
+):
+    employee = query("""
+        SELECT
+            e.emp_id,
+            e.emp_name,
+            e.email,
+            e.is_active,
+            e.position,
+            TO_CHAR(e.hire_date, 'DD Mon YYYY') AS hire_date,
+            d.dept_name
+        FROM employee e
+        LEFT JOIN department d ON e.dept_id = d.dept_id
+        WHERE e.emp_id = %s
+    """, (session["user_id"],))
+
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    return templates.TemplateResponse(
+        request,
+        "employee/profile.html",
+        {
+            "employee": employee[0],
+            "user_name": session.get("user_name"),
+            "role": "EMPLOYEE",
+            "position": session.get("position")
+        }
+    )
+
+
+# ── POST  /employee/profile/update  — name / email ───────────────────────────
+
+@employee_router.post("/profile/update")
+def employee_profile_update(
+    request:  Request,
+    emp_name: str = Form(...),
+    email:    str = Form(...),
+    session=Depends(require_employee),
+):
+    emp_id = session.get("user_id")
+
+    # email is UNIQUE on the employee table — block collisions with other staff
+    dup = query(
+        "SELECT 1 FROM employee WHERE email = %s AND emp_id != %s",
+        (email.strip(), emp_id)
+    )
+    if dup:
+        return RedirectResponse(
+            "/employee/profile?error=That+email+is+already+in+use",
+            status_code=302
+        )
+
+    execute(
+        "UPDATE employee SET emp_name = %s, email = %s WHERE emp_id = %s",
+        (emp_name.strip(), email.strip(), emp_id)
+    )
+
+    return RedirectResponse(
+        "/employee/profile?success=Profile+updated+successfully",
+        status_code=302
+    )
+
+
+# ── POST  /employee/profile/password  — change login password ───────────────
+#
+# NOTE: password_hash lives on app_user (role='EMPLOYEE', ref_id=emp_id),
+# not on the employee table itself — per your schema's auth design.
+#
+# Add this import near the top of employee.py, alongside the existing
+# `from auth import require_employee` line:
+#
+#     from auth import require_employee, _hash, _verify
+
+@employee_router.post("/profile/password")
+def employee_profile_password(
+    request:          Request,
+    current_password: str = Form(...),
+    new_password:      str = Form(...),
+    confirm_password:  str = Form(...),
+    session=Depends(require_employee),
+):
+    emp_id = session.get("user_id")
+
+    if new_password != confirm_password:
+        return RedirectResponse(
+            "/employee/profile?error=New+passwords+do+not+match",
+            status_code=302
+        )
+    if len(new_password) < 8:
+        return RedirectResponse(
+            "/employee/profile?error=Password+must+be+at+least+8+characters",
+            status_code=302
+        )
+
+    user_row = query(
+        "SELECT user_id, password_hash FROM app_user WHERE role = 'EMPLOYEE' AND ref_id = %s",
+        (emp_id,)
+    )
+    if not user_row:
+        return RedirectResponse(
+            "/employee/profile?error=Login+account+not+found",
+            status_code=302
+        )
+
+    if not _verify(current_password, user_row[0]["password_hash"]):
+        return RedirectResponse(
+            "/employee/profile?error=Current+password+is+incorrect",
+            status_code=302
+        )
+
+    execute(
+        "UPDATE app_user SET password_hash = %s WHERE user_id = %s",
+        (_hash(new_password), user_row[0]["user_id"])
+    )
+
+    return RedirectResponse(
+        "/employee/profile?success=Password+updated+successfully",
+        status_code=302
+    )
