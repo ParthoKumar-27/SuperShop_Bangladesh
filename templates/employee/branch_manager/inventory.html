@@ -2,11 +2,155 @@
 {% block title %}Branch Inventory{% endblock %}
 {% block content %}
 
-<div class="page-heading">Branch Inventory</div>
-<div class="page-subheading">Stock levels for your branch.</div>
+<style>
+  /* ── Centered modal (shared — mirrors discount page) ── */
+  .dm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.42);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .dm-overlay.open { display: flex; }
 
-{% set msg_ok = request.query_params.get('success') %}
-{% if msg_ok %}<div style="padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;">✓ {{ msg_ok }}</div>{% endif %}
+  .dm-modal {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: dmIn 0.18s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  @keyframes dmIn {
+    from { transform: scale(0.95) translateY(8px); opacity: 0; }
+    to   { transform: scale(1)    translateY(0);   opacity: 1; }
+  }
+
+  .dm-head {
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .dm-head-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .dm-head-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .dm-close {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: #f3f4f6;
+    border: none; cursor: pointer;
+    font-size: 14px; color: var(--mid);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s;
+  }
+  .dm-close:hover { background: #e5e7eb; color: var(--dark); }
+
+  .dm-body { padding: 20px 22px; flex: 1; }
+
+  .dm-group { margin-bottom: 14px; }
+  .dm-label {
+    display: block;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--mid); margin-bottom: 5px;
+  }
+  .dm-input, .dm-select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px; color: var(--dark);
+    background: #fafafa; outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .dm-input:focus, .dm-select:focus { border-color: var(--green); background: white; }
+  .dm-input[readonly] {
+    background: rgba(4,70,53,0.05);
+    border-color: rgba(4,70,53,0.2);
+    color: var(--green); font-weight: 600; cursor: default;
+  }
+  .dm-hint { font-size: 11px; color: var(--mid); margin-top: 4px; }
+  .dm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .dm-danger-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 11px 13px;
+    font-size: 12px; color: #7f1d1d;
+    margin-bottom: 14px; line-height: 1.6;
+  }
+
+  .dm-foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px;
+    background: #fafafa;
+    border-radius: 0 0 var(--radius) var(--radius);
+    flex-shrink: 0;
+  }
+  .dm-btn {
+    flex: 1; padding: 10px;
+    border: none; border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: background 0.13s, transform 0.1s;
+  }
+  .dm-btn:hover { transform: translateY(-1px); }
+  .dm-btn-primary   { background: var(--green); color: white; }
+  .dm-btn-primary:hover { background: #033828; }
+  .dm-btn-blue      { background: #2563eb; color: white; }
+  .dm-btn-blue:hover { background: #1d4ed8; }
+  .dm-btn-danger    { background: #dc2626; color: white; }
+  .dm-btn-danger:hover { background: #b91c1c; }
+  .dm-btn-outline   { background: transparent; border: 1.5px solid var(--border); color: var(--dark); }
+  .dm-btn-outline:hover { background: #f3f4f6; transform: none; }
+
+  /* Action buttons (discount-page style) */
+  .inv-action-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 15px; border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none;
+    transition: background 0.13s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .inv-action-btn:hover { transform: translateY(-1px); }
+
+  /* Stock badge row spacing */
+  .badge i { margin-right: 3px; font-size: 10px; }
+</style>
+
+<div class="page-heading">Branch Inventory</div>
+<div class="page-subheading">Stock levels and product records for your branch.</div>
+
+{% set msg_ok  = request.query_params.get('success') %}
+{% set msg_err = request.query_params.get('error') %}
+{% if msg_ok  %}<div style="padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;">✓ {{ msg_ok }}</div>{% endif %}
+{% if msg_err %}<div style="padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;">✕ {{ msg_err }}</div>{% endif %}
 
 {% if no_branch %}
 <div class="card" style="padding:40px; text-align:center;">
@@ -16,23 +160,41 @@
 </div>
 {% else %}
 
-<div class="filter-bar">
+<!-- ── Filter bar + action buttons (mirrors discount page) ── -->
+<div class="filter-bar" style="margin-bottom:20px;">
   <div class="filter-input-wrap">
     <i class="fas fa-search"></i>
-    <input type="text" id="inventorySearch" class="filter-input" placeholder="Search inventory..." />
+    <input type="text" id="inventorySearch" class="filter-input" placeholder="Search by product, shelf, status…" />
   </div>
+
+  <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+    <option value="">All Statuses</option>
+    <option value="LOW">Low Stock</option>
+    <option value="OK">In Stock</option>
+  </select>
+
+  <button class="inv-action-btn" style="background:var(--green);color:white;" onclick="openDM('dm-add')">
+    <i class="fas fa-plus"></i> Add
+  </button>
+  <button class="inv-action-btn" style="background:#2563eb;color:white;" onclick="openDM('dm-edit')">
+    <i class="fas fa-edit"></i> Edit
+  </button>
+  <button class="inv-action-btn" style="background:#dc2626;color:white;" onclick="openDM('dm-delete')">
+    <i class="fas fa-trash-alt"></i> Delete
+  </button>
 </div>
 
+<!-- ── Inventory table ── -->
 <div class="card">
   <div class="card-header">
-    <h3 style="color:var(--green); font-weight:800; letter-spacing:.3px; display:flex; align-items:center; gap:10px;">
-      <span style="width:10px; height:10px; background:var(--orange); border-radius:50%; display:inline-block;"></span>
+    <h3 style="color:var(--green);font-weight:800;display:flex;align-items:center;gap:10px;">
+      <span style="width:10px;height:10px;background:var(--orange);border-radius:50%;display:inline-block;"></span>
       Inventory Records
     </h3>
-    <span style="font-size:12px; color:var(--mid);">Total: {{ inventory|length }}</span>
+    <span style="font-size:12px;color:var(--mid);">Total: {{ inventory|length }}</span>
   </div>
 
-  <div style="overflow-x:hidden; box-shadow:0 8px 20px rgba(16,24,40,.1); border-radius:12px;">
+  <div style="overflow-x:hidden;box-shadow:0 8px 20px rgba(16,24,40,.1);border-radius:12px;">
     <table class="data-table" id="inventoryTable">
       <thead>
         <tr>
@@ -47,13 +209,13 @@
       </thead>
       <tbody>
         {% for i in inventory %}
-        <tr>
-          <td><strong style="color:var(--green);">{{ i.inv_id }}</strong></td>
+        <tr data-status="{{ i.stock_status }}">
+          <td><strong style="color:var(--green);font-family:monospace;font-size:11px;">{{ i.inv_id }}</strong></td>
           <td><strong>{{ i.product_name }}</strong></td>
           <td>{{ i.quantity }}</td>
           <td>{{ i.reorder_level }}</td>
-          <td>{{ i.shelf_location }}</td>
-          <td>{{ i.last_restocked }}</td>
+          <td style="color:var(--mid);font-size:12px;">{{ i.shelf_location or '—' }}</td>
+          <td style="font-size:12px;">{{ i.last_restocked or '—' }}</td>
           <td>
             {% if i.stock_status == 'LOW' %}
             <span class="badge badge-red"><i class="fas fa-exclamation-circle"></i> Low Stock</span>
@@ -68,19 +230,364 @@
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════
+     MODAL 1 — ADD INVENTORY ITEM
+══════════════════════════════════════ -->
+<div class="dm-overlay" id="dm-add" onclick="closeDMOnOverlay(event,this)">
+  <div class="dm-modal">
+    <div class="dm-head">
+      <div class="dm-head-title">
+        <div class="dm-head-icon" style="background:#dcfce7;">
+          <i class="fas fa-plus" style="color:#16a34a;"></i>
+        </div>
+        Add Inventory Item
+      </div>
+      <button class="dm-close" onclick="closeDM('dm-add')">✕</button>
+    </div>
+
+    <form method="POST" action="/employee/branch/inventory/add">
+      <div class="dm-body">
+
+        <!-- Category filter (not submitted — purely for UX cascade) -->
+        <div class="dm-group">
+          <label class="dm-label">Filter by Category</label>
+          <select class="dm-select" id="addCatFilter" onchange="filterProducts()">
+            <option value="">— All categories —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Product dropdown (rebuilt dynamically by filterProducts) -->
+        <div class="dm-group">
+          <label class="dm-label">Product <span style="color:#dc2626;">*</span></label>
+          <select class="dm-select" name="product_id" id="addProductSelect" required>
+            <option value="">— Select a product —</option>
+          </select>
+          <p class="dm-hint">Only products not yet in your branch inventory are shown.</p>
+        </div>
+
+        <!-- Hidden master product list for JS to read from -->
+        <script id="allProductsData" type="application/json">
+          [{% for p in available_products %}{"id":"{{ p.product_id }}","name":"{{ p.product_name | replace('"', '&quot;') }}","unit":"{{ p.unit }}","price":"{{ p.unit_price }}","cat":"{{ p.cat_id }}"}{% if not loop.last %},{% endif %}{% endfor %}]
+        </script>
+
+        <div class="dm-row">
+          <!-- Quantity -->
+          <div class="dm-group" style="margin-bottom:0;">
+            <label class="dm-label">Initial Quantity <span style="color:#dc2626;">*</span></label>
+            <input class="dm-input" type="number" step="0.01" min="0" name="quantity" placeholder="0" required />
+          </div>
+
+          <!-- Reorder Level -->
+          <div class="dm-group" style="margin-bottom:0;">
+            <label class="dm-label">Reorder Level <span style="color:#dc2626;">*</span></label>
+            <input class="dm-input" type="number" step="0.01" min="0" name="reorder_level" placeholder="10" required />
+          </div>
+        </div>
+
+        <div class="dm-row" style="margin-top:14px;">
+          <!-- Shelf Location -->
+          <div class="dm-group" style="margin-bottom:0;">
+            <label class="dm-label">Shelf Location</label>
+            <input class="dm-input" type="text" name="shelf_location" placeholder="e.g. A-12" maxlength="20" />
+          </div>
+
+          <!-- Last Restocked -->
+          <div class="dm-group" style="margin-bottom:0;">
+            <label class="dm-label">Last Restocked</label>
+            <input class="dm-input" type="date" name="last_restocked" id="addRestocked" />
+            <p class="dm-hint">Cannot be a future date. Defaults to today if left blank.</p>
+          </div>
+        </div>
+
+      </div>
+      <div class="dm-foot">
+        <button type="submit" class="dm-btn dm-btn-primary">
+          <i class="fas fa-plus"></i> Add to Inventory
+        </button>
+        <button type="button" class="dm-btn dm-btn-outline" onclick="closeDM('dm-add')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     MODAL 2 — EDIT INVENTORY ITEM
+══════════════════════════════════════ -->
+<div class="dm-overlay" id="dm-edit" onclick="closeDMOnOverlay(event,this)">
+  <div class="dm-modal">
+    <div class="dm-head">
+      <div class="dm-head-title">
+        <div class="dm-head-icon" style="background:#dbeafe;">
+          <i class="fas fa-edit" style="color:#1d4ed8;"></i>
+        </div>
+        Edit Inventory Item
+      </div>
+      <button class="dm-close" onclick="closeDM('dm-edit')">✕</button>
+    </div>
+
+    <form method="POST" action="/employee/branch/inventory/edit" id="editForm">
+      <div class="dm-body">
+
+        <!-- Select which record to edit -->
+        <div class="dm-group">
+          <label class="dm-label">Select Item to Edit</label>
+          <select class="dm-select" name="inv_id" id="editSelect" onchange="prefillEdit(this)" required>
+            <option value="">— Choose inventory record —</option>
+            {% for i in inventory %}
+            <option value="{{ i.inv_id }}"
+                    data-product="{{ i.product_name }}"
+                    data-qty="{{ i.quantity }}"
+                    data-reorder="{{ i.reorder_level }}"
+                    data-shelf="{{ i.shelf_location or '' }}"
+                    data-restocked="{{ (i.last_restocked_raw or '')[:10] }}">
+              {{ i.inv_id }} — {{ i.product_name }}
+              {% if i.stock_status == 'LOW' %} ⚠ Low{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="editFields" style="display:none;">
+
+          <!-- Read-only product name -->
+          <div class="dm-group">
+            <label class="dm-label">Product (read-only)</label>
+            <input class="dm-input" id="editProductName" readonly />
+            <p class="dm-hint"><i class="fas fa-info-circle"></i> To change the product, delete this record and add a new one.</p>
+          </div>
+
+          <div class="dm-row">
+            <div class="dm-group" style="margin-bottom:0;">
+              <label class="dm-label">Quantity <span style="color:#dc2626;">*</span></label>
+              <input class="dm-input" type="number" step="0.01" min="0" name="quantity" id="editQty" required />
+            </div>
+            <div class="dm-group" style="margin-bottom:0;">
+              <label class="dm-label">Reorder Level <span style="color:#dc2626;">*</span></label>
+              <input class="dm-input" type="number" step="0.01" min="0" name="reorder_level" id="editReorder" required />
+            </div>
+          </div>
+
+          <div class="dm-row" style="margin-top:14px;">
+            <div class="dm-group" style="margin-bottom:0;">
+              <label class="dm-label">Shelf Location</label>
+              <input class="dm-input" type="text" name="shelf_location" id="editShelf" maxlength="20" placeholder="e.g. A-12" />
+            </div>
+            <div class="dm-group" style="margin-bottom:0;">
+              <label class="dm-label">Last Restocked</label>
+              <input class="dm-input" type="date" name="last_restocked" id="editRestocked" />
+              <p class="dm-hint">Cannot be a future date.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="dm-foot">
+        <button type="submit" class="dm-btn dm-btn-blue" id="editSubmit"
+                disabled style="opacity:.4;cursor:not-allowed;">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+        <button type="button" class="dm-btn dm-btn-outline" onclick="closeDM('dm-edit')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     MODAL 3 — DELETE INVENTORY ITEM
+══════════════════════════════════════ -->
+<div class="dm-overlay" id="dm-delete" onclick="closeDMOnOverlay(event,this)">
+  <div class="dm-modal" style="max-width:420px;">
+    <div class="dm-head">
+      <div class="dm-head-title">
+        <div class="dm-head-icon" style="background:#fee2e2;">
+          <i class="fas fa-trash-alt" style="color:#dc2626;"></i>
+        </div>
+        Delete Inventory Record
+      </div>
+      <button class="dm-close" onclick="closeDM('dm-delete')">✕</button>
+    </div>
+
+    <form method="POST" action="/employee/branch/inventory/delete">
+      <div class="dm-body">
+
+        <div class="dm-danger-box">
+          <strong>This cannot be undone.</strong> The inventory record for this product will be permanently removed from your branch. The product itself is not deleted.
+        </div>
+
+        <div class="dm-group">
+          <label class="dm-label">Select Record to Delete</label>
+          <select class="dm-select" name="inv_id" id="deleteSelect" onchange="showDeletePreview(this)" required>
+            <option value="">— Choose inventory record —</option>
+            {% for i in inventory %}
+            <option value="{{ i.inv_id }}"
+                    data-product="{{ i.product_name }}"
+                    data-qty="{{ i.quantity }}"
+                    data-status="{{ i.stock_status }}">
+              {{ i.inv_id }} — {{ i.product_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Preview card -->
+        <div id="deletePreview" style="display:none;background:#fafafa;border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:14px;">
+          <div style="font-weight:700;color:var(--dark);margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;">About to delete:</div>
+          <div id="delPreviewBody"></div>
+        </div>
+
+        <div class="dm-group" style="margin-bottom:0;">
+          <label class="dm-label">Type the Inventory ID to confirm</label>
+          <input class="dm-input" name="confirm_id" id="deleteConfirm"
+                 placeholder="e.g. I-001"
+                 required oninput="checkDeleteConfirm()" />
+          <p class="dm-hint">Type the exact inventory ID shown above.</p>
+        </div>
+
+      </div>
+      <div class="dm-foot">
+        <button type="submit" class="dm-btn dm-btn-danger" id="deleteSubmit"
+                disabled style="opacity:.4;cursor:not-allowed;">
+          <i class="fas fa-trash-alt"></i> Delete Permanently
+        </button>
+        <button type="button" class="dm-btn dm-btn-outline" onclick="closeDM('dm-delete')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-  const searchInput = document.getElementById("inventorySearch");
-  if (searchInput) {
-    searchInput.addEventListener("keyup", function () {
-      const filter = this.value.toLowerCase();
-      document.querySelectorAll("#inventoryTable tbody tr").forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-      });
+  // ── Modal helpers ─────────────────────────────────────────────────────────
+  function openDM(id)  { document.getElementById(id).classList.add('open');    document.body.style.overflow = 'hidden'; }
+  function closeDM(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = '';       }
+  function closeDMOnOverlay(e, el) { if (e.target === el) closeDM(el.id); }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape')
+      document.querySelectorAll('.dm-overlay.open').forEach(m => { m.classList.remove('open'); document.body.style.overflow = ''; });
+  });
+
+  // ── Table search + status filter ─────────────────────────────────────────
+  function applyFilters() {
+    const text   = document.getElementById('inventorySearch').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    document.querySelectorAll('#inventoryTable tbody tr').forEach(row => {
+      const matchText   = row.innerText.toLowerCase().includes(text);
+      const matchStatus = !status || row.dataset.status === status;
+      row.style.display = (matchText && matchStatus) ? '' : 'none';
     });
+  }
+  document.getElementById('inventorySearch').addEventListener('keyup', applyFilters);
+
+  // ── ADD modal: init today's date + cascade category → product ────────────
+  // Parse all products from the embedded JSON blob once, on page load
+  const _allProducts = JSON.parse(
+    document.getElementById('allProductsData').textContent
+  );
+
+  function filterProducts() {
+    const catId  = document.getElementById('addCatFilter').value;
+    const select = document.getElementById('addProductSelect');
+
+    // Filter the master list
+    const filtered = catId
+      ? _allProducts.filter(p => p.cat === catId)
+      : _allProducts;
+
+    // Rebuild <select> options
+    select.innerHTML = '<option value="">— Select a product —</option>';
+    filtered.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value       = p.id;
+      opt.textContent = `${p.name} (${p.unit}) — ৳${p.price}`;
+      select.appendChild(opt);
+    });
+  }
+
+  // On page load: populate product list with all products + set today's date
+  const _today = new Date().toISOString().split('T')[0];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    filterProducts(); // populate full list on open
+
+    // Add modal: default to today, cap max at today (no future dates)
+    const addDate = document.getElementById('addRestocked');
+    addDate.value = _today;
+    addDate.max   = _today;
+
+    // Edit modal: cap max at today (value is set per-record in prefillEdit)
+    document.getElementById('editRestocked').max = _today;
+  });
+
+  // ── EDIT modal: prefill fields ────────────────────────────────────────────
+  function prefillEdit(select) {
+    const opt    = select.options[select.selectedIndex];
+    const fields = document.getElementById('editFields');
+    const btn    = document.getElementById('editSubmit');
+
+    if (!opt.value) {
+      fields.style.display = 'none';
+      btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
+      return;
+    }
+
+    document.getElementById('editProductName').value = opt.dataset.product;
+    document.getElementById('editQty').value         = opt.dataset.qty;
+    document.getElementById('editReorder').value     = opt.dataset.reorder;
+    document.getElementById('editShelf').value       = opt.dataset.shelf;
+
+    // data-restocked is already sliced to YYYY-MM-DD by Jinja [:10]
+    // If blank (never restocked), fall back to today so it's never empty
+    const rawDate = opt.dataset.restocked || '';
+    const editDate = document.getElementById('editRestocked');
+    editDate.max   = _today;                          // block future dates
+    editDate.value = rawDate || _today;
+
+    fields.style.display = '';
+    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  }
+
+  // ── DELETE modal: preview + confirm ──────────────────────────────────────
+  let _selectedDelId = '';
+
+  function showDeletePreview(select) {
+    const opt = select.options[select.selectedIndex];
+    _selectedDelId = opt.value || '';
+    document.getElementById('deleteConfirm').value = '';
+    checkDeleteConfirm();
+
+    if (!opt.value) { document.getElementById('deletePreview').style.display = 'none'; return; }
+
+    const statusColor = opt.dataset.status === 'LOW' ? '#dc2626' : '#16a34a';
+    const statusLabel = opt.dataset.status === 'LOW' ? '⚠ Low Stock' : '✓ In Stock';
+
+    document.getElementById('delPreviewBody').innerHTML = `
+      <div><strong style="color:var(--green);font-family:monospace;">${opt.value}</strong></div>
+      <div>${opt.dataset.product}</div>
+      <div style="color:var(--mid);">
+        Qty: ${opt.dataset.qty}
+        &nbsp;·&nbsp;
+        <span style="color:${statusColor};">${statusLabel}</span>
+      </div>
+    `;
+    document.getElementById('deletePreview').style.display = '';
+  }
+
+  function checkDeleteConfirm() {
+    const typed = document.getElementById('deleteConfirm').value.trim();
+    const btn   = document.getElementById('deleteSubmit');
+    const match = (typed === _selectedDelId && _selectedDelId !== '');
+    btn.disabled       = !match;
+    btn.style.opacity  = match ? '1' : '.4';
+    btn.style.cursor   = match ? 'pointer' : 'not-allowed';
   }
 </script>
 {% endblock %}

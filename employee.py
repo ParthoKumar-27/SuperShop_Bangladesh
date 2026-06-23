@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from database import query
 from auth import require_employee
+from datetime import date as _date
 
 employee_router = APIRouter(prefix="/employee", tags=["Employee"])
 templates = Jinja2Templates(directory="templates")
@@ -212,31 +213,31 @@ def branch_sales(request: Request, session=Depends(require_branch_manager)):
 #  BRANCH INVENTORY
 # ══════════════════════════════════════════════════════════════════════════════
 
-@employee_router.get("/branch/inventory", response_class=HTMLResponse)
-def branch_inventory(request: Request, session=Depends(require_branch_manager)):
-    branch_id = session.get("branch_id")
+# @employee_router.get("/branch/inventory", response_class=HTMLResponse)
+# def branch_inventory(request: Request, session=Depends(require_branch_manager)):
+#     branch_id = session.get("branch_id")
 
-    if not branch_id:
-        return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
-            "user_name": session.get("user_name"), "role": "EMPLOYEE",
-            "position": "BRANCH_MANAGER", "no_branch": True, "inventory": [],
-        })
+#     if not branch_id:
+#         return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
+#             "user_name": session.get("user_name"), "role": "EMPLOYEE",
+#             "position": "BRANCH_MANAGER", "no_branch": True, "inventory": [],
+#         })
 
-    inventory = query("""
-        SELECT bi.inv_id, p.product_name, bi.quantity, bi.reorder_level,
-               bi.shelf_location,
-               TO_CHAR(bi.last_restocked, 'DD Mon YYYY') AS last_restocked,
-               CASE WHEN bi.quantity <= bi.reorder_level THEN 'LOW' ELSE 'OK' END AS stock_status
-        FROM   branch_inventory bi
-        JOIN   product p USING (product_id)
-        WHERE  bi.branch_id = %s
-        ORDER  BY p.product_name
-    """, (branch_id,))
+#     inventory = query("""
+#         SELECT bi.inv_id, p.product_name, bi.quantity, bi.reorder_level,
+#                bi.shelf_location,
+#                TO_CHAR(bi.last_restocked, 'DD Mon YYYY') AS last_restocked,
+#                CASE WHEN bi.quantity <= bi.reorder_level THEN 'LOW' ELSE 'OK' END AS stock_status
+#         FROM   branch_inventory bi
+#         JOIN   product p USING (product_id)
+#         WHERE  bi.branch_id = %s
+#         ORDER  BY p.product_name
+#     """, (branch_id,))
 
-    return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
-        "user_name": session.get("user_name"), "role": "EMPLOYEE",
-        "position": "BRANCH_MANAGER", "no_branch": False, "inventory": inventory,
-    })
+#     return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
+#         "user_name": session.get("user_name"), "role": "EMPLOYEE",
+#         "position": "BRANCH_MANAGER", "no_branch": False, "inventory": inventory,
+#     })
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -337,3 +338,210 @@ def employees_page(request: Request, session=Depends(require_branch_manager)):
         }
     )
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  BRANCH INVENTORY  — Add / Edit / Delete routes
+#  Paste these into employee_router (employee.py) alongside the existing
+#  branch_inventory GET route.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+
+# ── GET  /employee/branch/inventory  (enhanced — passes extra context) ────────
+
+@employee_router.get("/branch/inventory", response_class=HTMLResponse)
+def branch_inventory(request: Request, session=Depends(require_branch_manager)):
+    branch_id = session.get("branch_id")
+
+    if not branch_id:
+        return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
+            "user_name": session.get("user_name"), "role": "EMPLOYEE",
+            "position": "BRANCH_MANAGER", "no_branch": True,
+            "inventory": [], "available_products": [], "categories": [],
+        })
+
+    # ── Current inventory ────────────────────────────────────────────────
+    inventory = query("""
+        SELECT bi.inv_id,
+               p.product_name,
+               bi.quantity,
+               bi.reorder_level,
+               bi.shelf_location,
+               TO_CHAR(bi.last_restocked, 'DD Mon YYYY')  AS last_restocked,
+               bi.last_restocked::text                    AS last_restocked_raw,
+               CASE WHEN bi.quantity <= bi.reorder_level
+                    THEN 'LOW' ELSE 'OK' END              AS stock_status
+        FROM   branch_inventory bi
+        JOIN   product p USING (product_id)
+        WHERE  bi.branch_id = %s
+        ORDER  BY p.product_name
+    """, (branch_id,))
+
+    # ── Products NOT yet in this branch's inventory (for Add modal) ───────
+    available_products = query("""
+        SELECT p.product_id, p.product_name, p.unit_price, p.unit, p.cat_id
+        FROM   product p
+        WHERE  p.is_active = 'Y'
+          AND  p.product_id NOT IN (
+              SELECT product_id FROM branch_inventory WHERE branch_id = %s
+          )
+        ORDER  BY p.product_name
+    """, (branch_id,))
+
+    # ── All categories (for the cascade filter in Add modal) ──────────────
+    categories = query("""
+        SELECT cat_id, cat_name
+        FROM   category
+        ORDER  BY cat_name
+    """, ())
+
+    return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
+        "user_name":          session.get("user_name"),
+        "role":               "EMPLOYEE",
+        "position":           "BRANCH_MANAGER",
+        "no_branch":          False,
+        "inventory":          inventory,
+        "available_products": available_products,
+        "categories":         categories,
+    })
+
+
+# ── POST  /employee/branch/inventory/add ─────────────────────────────────────
+
+@employee_router.post("/branch/inventory/add")
+def add_inventory(
+    request:        Request,
+    product_id:     str           = Form(...),
+    quantity:       float         = Form(...),
+    reorder_level:  float         = Form(...),
+    shelf_location: str           = Form(""),
+    last_restocked: str | None    = Form(None),
+    session=Depends(require_branch_manager),
+):
+    branch_id = session.get("branch_id")
+
+    # Safety: confirm product not already tracked for this branch
+    exists = query(
+        "SELECT 1 FROM branch_inventory WHERE branch_id = %s AND product_id = %s",
+        (branch_id, product_id)
+    )
+    if exists:
+        return RedirectResponse(
+            "/employee/branch/inventory?error=Product+already+exists+in+inventory",
+            status_code=302
+        )
+
+    # Generate next inv_id  (I-001, I-002, …)
+    max_id = query("SELECT MAX(inv_id) AS mx FROM branch_inventory", ())
+    mx = max_id[0]["mx"] or "I-000"
+    next_num = int(mx.split("-")[1]) + 1
+    inv_id = f"I-{next_num:05d}"
+
+    execute("""
+        INSERT INTO branch_inventory
+               (inv_id, branch_id, product_id, quantity, reorder_level,
+                shelf_location, last_restocked)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (
+        inv_id, branch_id, product_id, quantity, reorder_level,
+        shelf_location or None,
+        last_restocked or str(_date.today()),   # default to today if blank
+    ))
+
+    return RedirectResponse(
+        f"/employee/branch/inventory?success=Item+{inv_id}+added+to+inventory",
+        status_code=302
+    )
+
+
+# ── POST  /employee/branch/inventory/edit ────────────────────────────────────
+
+@employee_router.post("/branch/inventory/edit")
+def edit_inventory(
+    request:        Request,
+    inv_id:         str           = Form(...),
+    quantity:       float         = Form(...),
+    reorder_level:  float         = Form(...),
+    shelf_location: str           = Form(""),
+    last_restocked: str | None    = Form(None),
+    session=Depends(require_branch_manager),
+):
+    branch_id = session.get("branch_id")
+
+    # Verify the record belongs to this manager's branch
+    existing = query(
+        "SELECT 1 FROM branch_inventory WHERE inv_id = %s AND branch_id = %s",
+        (inv_id, branch_id)
+    )
+    if not existing:
+        return RedirectResponse(
+            "/employee/branch/inventory?error=Record+not+found+for+your+branch",
+            status_code=302
+        )
+
+    # If last_restocked comes through blank (shouldn't happen with JS default,
+    # but defensive fallback: fetch and preserve the existing DB value)
+    if not last_restocked:
+        existing_date = query(
+            "SELECT last_restocked::text AS d FROM branch_inventory WHERE inv_id = %s",
+            (inv_id,)
+        )
+        last_restocked = (existing_date[0]["d"] or str(_date.today()))[:10] if existing_date else str(_date.today())
+
+    execute("""
+        UPDATE branch_inventory
+        SET    quantity        = %s,
+               reorder_level  = %s,
+               shelf_location = %s,
+               last_restocked = %s
+        WHERE  inv_id = %s
+    """, (
+        quantity, reorder_level,
+        shelf_location or None,
+        last_restocked,
+        inv_id,
+    ))
+
+    return RedirectResponse(
+        f"/employee/branch/inventory?success=Inventory+{inv_id}+updated",
+        status_code=302
+    )
+
+
+# ── POST  /employee/branch/inventory/delete ───────────────────────────────────
+
+@employee_router.post("/branch/inventory/delete")
+def delete_inventory(
+    request:    Request,
+    inv_id:     str = Form(...),
+    confirm_id: str = Form(...),
+    session=Depends(require_branch_manager),
+):
+    branch_id = session.get("branch_id")
+
+    # Typed confirmation must match
+    if confirm_id.strip() != inv_id.strip():
+        return RedirectResponse(
+            "/employee/branch/inventory?error=Confirmation+ID+did+not+match",
+            status_code=302
+        )
+
+    # Verify ownership
+    existing = query(
+        "SELECT 1 FROM branch_inventory WHERE inv_id = %s AND branch_id = %s",
+        (inv_id, branch_id)
+    )
+    if not existing:
+        return RedirectResponse(
+            "/employee/branch/inventory?error=Record+not+found+for+your+branch",
+            status_code=302
+        )
+
+    execute(
+        "DELETE FROM branch_inventory WHERE inv_id = %s",
+        (inv_id,)
+    )
+
+    return RedirectResponse(
+        f"/employee/branch/inventory?success=Inventory+record+{inv_id}+deleted",
+        status_code=302
+    )
