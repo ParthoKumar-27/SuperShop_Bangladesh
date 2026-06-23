@@ -31,6 +31,12 @@ def employee_dashboard_router(request: Request, session=Depends(require_employee
 
     if position == "BRANCH_MANAGER":
         return _branch_manager_dashboard(request, session)
+    
+    elif position == "CASHIER":
+        return RedirectResponse(
+            url="/employee/cashier/dashboard",
+            status_code=302
+        )
 
     return templates.TemplateResponse(request, "employee/branch_manager/dashboard.html", {
         "user_name": session.get("user_name"),
