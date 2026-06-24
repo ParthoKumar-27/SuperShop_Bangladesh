@@ -293,39 +293,37 @@ def add_discount(
     discount_type:  str   = Form(...),
     discount_value: float = Form(...),
     product_id:     str   = Form(""),
-    cat_id:         str   = Form(""),        # hidden — product scope
-    cat_id_scope:   str   = Form(""),        # visible select — category scope
+    cat_id_scope:   str   = Form(...),
     start_date:     str   = Form(...),
     end_date:       str   = Form(...),
     session=Depends(require_admin),
 ):
-    # cat_id_scope wins when "Entire Category" tab is active
-# REPLACE WITH — only one of the two scopes can be active
-    if cat_id_scope and cat_id_scope.strip():
-    # Category scope selected
-        final_cat = cat_id_scope.strip()
-        final_pid = None
+    pid = product_id.strip() if product_id and product_id.strip() else None
+    cat = cat_id_scope.strip() if cat_id_scope and cat_id_scope.strip() else None
+ 
+    if pid:
+        final_pid = pid
+        final_cat = cat
     else:
-    # Product scope selected
-        final_pid = product_id.strip() if product_id and product_id.strip() else None
-        final_cat = None
-
+        final_pid = None
+        final_cat = cat
+ 
+    if not final_pid and not final_cat:
+        return RedirectResponse(
+            "/admin/dashboard/discounts?error=Please+select+at+least+a+category",
+            status_code=302
+        )
+ 
     execute("""
         INSERT INTO discount
             (discount_id, discount_name, discount_type, discount_value,
              product_id, cat_id, start_date, end_date)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """, (
-        discount_id,
-        discount_name.strip(),
-        discount_type,
-        discount_value,
-        final_pid,
-        final_cat,
-        start_date,
-        end_date,
+        discount_id, discount_name.strip(), discount_type, discount_value,
+        final_pid, final_cat, start_date, end_date,
     ))
-
+ 
     return RedirectResponse("/admin/dashboard/discounts?success=Discount+created", status_code=302)
 
 

@@ -525,79 +525,80 @@
         </div>
 
         <!-- Scope: product or category -->
+        <!-- Category (required) -->
         <div class="dm-group">
-          <label class="dm-label">Applies To</label>
-          <div class="scope-row">
-            <div
-              class="scope-tab active"
-              id="scopeTabProduct"
-              onclick="setScope('product')"
-            >
-              <i class="fas fa-tag"></i> Specific Product
-            </div>
-            <div
-              class="scope-tab"
-              id="scopeTabCat"
-              onclick="setScope('category')"
-            >
-              <i class="fas fa-layer-group"></i> Entire Category
-            </div>
-          </div>
-
-          <!-- Product scope: category first, then product -->
-          <div id="scopeProduct">
-            <div class="dm-group" style="margin-bottom: 8px">
-              <label class="dm-label">Category</label>
-              <select
-                class="dm-select"
-                id="addCatFilter"
-                onchange="filterProductsByCategory()"
-              >
-                <option value="">— All categories —</option>
-                {% for cat in categories %}
-                <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="dm-group" style="margin-bottom: 0">
-              <label class="dm-label">Product</label>
-              <select class="dm-select" name="product_id" id="addProductSelect">
-                <option value="">— Select category first —</option>
-                {% for p in products %}
-                <option
-                  value="{{ p.product_id }}"
-                  data-cat="{{ p.cat_id }}"
-                  data-name="{{ p.product_name }}"
-                >
-                  {{ p.product_name }}
-                </option>
-                {% endfor %}
-              </select>
-              <input type="hidden" name="cat_id" value="" />
-            </div>
-          </div>
-
-          <!-- Category scope -->
-          <div id="scopeCategory" style="display: none">
-            <select class="dm-select" name="cat_id_scope" id="addCatScope">
-              <option value="">— Select category —</option>
-              {% for cat in categories %}
-              <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
-              {% endfor %}
-            </select>
-            <input type="hidden" name="product_id" value="" />
-          </div>
+          <label class="dm-label"
+            >Category <span style="color: #dc2626">*</span></label
+          >
+          <select
+            class="dm-select"
+            name="cat_id_scope"
+            id="addCatScope"
+            onchange="onCatChange()"
+            required
+          >
+            <option value="">— Select a category —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
+            {% endfor %}
+          </select>
+          <p class="dm-hint">
+            Required. Discount applies to all products in this category unless
+            you pick one below.
+          </p>
         </div>
+
+        <!-- Product (optional, filtered by category above) -->
+        <div class="dm-group">
+          <label class="dm-label"
+            >Specific Product
+            <span style="color: var(--mid); font-weight: 400"
+              >(optional)</span
+            ></label
+          >
+          <select
+            class="dm-select"
+            name="product_id"
+            id="addProductSelect"
+            disabled
+          >
+            <option value="">— Select a category first —</option>
+          </select>
+          <p class="dm-hint">
+            Leave blank to apply the discount to all products in the selected
+            category.
+          </p>
+        </div>
+
+        <!-- Hidden JSON for client-side product filtering -->
+        <script id="allProductsJson" type="application/json">
+          [{% for p in products %}{"id":"{{ p.product_id }}","name":"{{ p.product_name | replace('"', '&quot;') }}","cat":"{{ p.cat_id }}"}{% if not loop.last %},{% endif %}{% endfor %}]
+        </script>
 
         <!-- Date range -->
         <div class="dm-row">
           <div class="dm-group" style="margin-bottom: 0">
             <label class="dm-label">Start Date</label>
-            <input class="dm-input" type="date" name="start_date" required />
+            <input
+              class="dm-input"
+              type="date"
+              name="start_date"
+              id="addStartDate"
+              onchange="syncAddEndMin()"
+              required
+            />
+            <p class="dm-hint">Cannot be in the past.</p>
           </div>
           <div class="dm-group" style="margin-bottom: 0">
             <label class="dm-label">End Date</label>
-            <input class="dm-input" type="date" name="end_date" required />
+            <input
+              class="dm-input"
+              type="date"
+              name="end_date"
+              id="addEndDate"
+              required
+            />
+            <p class="dm-hint">Must be on or after start date.</p>
           </div>
         </div>
       </div>
@@ -729,8 +730,10 @@
                 type="date"
                 name="start_date"
                 id="modStart"
+                onchange="syncModEndMin()"
                 required
               />
+              <p class="dm-hint">Cannot be in the past.</p>
             </div>
             <div class="dm-group" style="margin-bottom: 0">
               <label class="dm-label">End Date</label>
@@ -741,6 +744,7 @@
                 id="modEnd"
                 required
               />
+              <p class="dm-hint">Must be on or after start date.</p>
             </div>
           </div>
 
@@ -885,7 +889,9 @@
 
 {% endblock %} {% block scripts %}
 <script>
-  // ── Modal open / close ────────────────────────────────────────────────────
+  // ── Shared helpers ────────────────────────────────────────────────────────
+  const _today = new Date().toISOString().split("T")[0];
+
   function openDM(id) {
     document.getElementById(id).classList.add("open");
     document.body.style.overflow = "hidden";
@@ -895,9 +901,7 @@
     document.body.style.overflow = "";
   }
   function closeDMOnOverlay(e, el) {
-    if (e.target === el) {
-      closeDM(el.id);
-    }
+    if (e.target === el) closeDM(el.id);
   }
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape")
@@ -907,7 +911,7 @@
       });
   });
 
-  // ── Table search ─────────────────────────────────────────────────────────
+  // ── Table search ──────────────────────────────────────────────────────────
   document
     .getElementById("discountSearch")
     .addEventListener("keyup", function () {
@@ -938,73 +942,62 @@
       t === "PERCENT" ? "#2563eb" : "var(--orange)";
   }
 
-  // Scope toggle
-  let currentScope = "product";
-  function setScope(scope) {
-    currentScope = scope;
+  const _allProducts = JSON.parse(
+    document.getElementById("allProductsJson").textContent,
+  );
 
-    const productPanel = document.getElementById("scopeProduct");
-    const categoryPanel = document.getElementById("scopeCategory");
+  function onCatChange() {
+    const catId = document.getElementById("addCatScope").value;
+    const select = document.getElementById("addProductSelect");
 
-    if (scope === "product") {
-      productPanel.style.display = "";
-      categoryPanel.style.display = "none";
-      // Enable product scope fields so they submit
-      productPanel
-        .querySelectorAll("select, input")
-        .forEach((el) => (el.disabled = false));
-      // Disable + clear category scope so it doesn't submit
-      categoryPanel.querySelectorAll("select, input").forEach((el) => {
-        el.disabled = true;
-        el.value = "";
-      });
-    } else {
-      categoryPanel.style.display = "";
-      productPanel.style.display = "none";
-      // Enable category scope fields so they submit
-      categoryPanel
-        .querySelectorAll("select, input")
-        .forEach((el) => (el.disabled = false));
-      // Disable + clear product scope so it doesn't submit
-      productPanel.querySelectorAll("select, input").forEach((el) => {
-        el.disabled = true;
-        el.value = "";
-      });
+    if (!catId) {
+      select.innerHTML =
+        '<option value="">— Select a category first —</option>';
+      select.disabled = true;
+      return;
     }
 
-    document.getElementById("scopeTabProduct").className =
-      "scope-tab" + (scope === "product" ? " active" : "");
-    document.getElementById("scopeTabCat").className =
-      "scope-tab" + (scope === "category" ? " active" : "");
-  }
-  // Initialize: disable category scope inputs on page load (product is default)
-  document.addEventListener("DOMContentLoaded", () => {
-    document
-      .getElementById("scopeCategory")
-      .querySelectorAll("select, input")
-      .forEach((el) => {
-        el.disabled = true;
-        el.value = "";
-      });
-  });
+    const matches = _allProducts.filter((p) => p.cat === catId);
 
-  // Cascading: filter products by category
-  function filterProductsByCategory() {
-    const catId = document.getElementById("addCatFilter").value;
-    const select = document.getElementById("addProductSelect");
-    const options = select.querySelectorAll("option");
-
-    options.forEach((opt) => {
-      if (!opt.value) return; // keep the placeholder
-      opt.style.display = !catId || opt.dataset.cat === catId ? "" : "none";
+    select.innerHTML =
+      '<option value="">— All products in this category —</option>';
+    matches.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      select.appendChild(opt);
     });
-
-    // Reset product selection when category changes
-    select.value = "";
-    select.options[0].textContent = catId
-      ? "— Select product —"
-      : "— Select category first —";
+    select.disabled = false;
   }
+  // Date guards — Add modal
+  function syncAddEndMin() {
+    const start = document.getElementById("addStartDate").value;
+    const endEl = document.getElementById("addEndDate");
+    if (start) {
+      endEl.min = start;
+      // If currently selected end < new start, clear it
+      if (endEl.value && endEl.value < start) endEl.value = start;
+    }
+  }
+
+  // Add modal form validation before submit
+  document
+    .querySelector('form[action="/admin/dashboard/discounts/add"]')
+    .addEventListener("submit", function (e) {
+      const start = document.getElementById("addStartDate").value;
+      const end = document.getElementById("addEndDate").value;
+
+      if (start < _today) {
+        e.preventDefault();
+        alert("Start date cannot be in the past.");
+        return;
+      }
+      if (end < start) {
+        e.preventDefault();
+        alert("End date must be on or after the start date.");
+        return;
+      }
+    });
 
   // ══════════════════════════════
   //  MODIFY MODAL
@@ -1025,7 +1018,9 @@
     document.getElementById("modStart").value = opt.dataset.start;
     document.getElementById("modEnd").value = opt.dataset.end;
 
-    // Set type
+    // Set end min to current start
+    document.getElementById("modEnd").min = opt.dataset.start;
+
     selectModType(opt.dataset.type);
 
     document.getElementById("modifyFields").style.display = "";
@@ -1050,6 +1045,28 @@
     document.getElementById("modSuffix").style.color =
       t === "PERCENT" ? "#2563eb" : "var(--orange)";
   }
+
+  // Date guards — Modify modal
+  function syncModEndMin() {
+    const start = document.getElementById("modStart").value;
+    const endEl = document.getElementById("modEnd");
+    if (start) {
+      endEl.min = start;
+      if (endEl.value && endEl.value < start) endEl.value = start;
+    }
+  }
+
+  // Modify form validation before submit
+  document
+    .getElementById("modifyForm")
+    .addEventListener("submit", function (e) {
+      const start = document.getElementById("modStart").value;
+      const end = document.getElementById("modEnd").value;
+      if (end < start) {
+        e.preventDefault();
+        alert("End date must be on or after the start date.");
+      }
+    });
 
   // ══════════════════════════════
   //  DELETE MODAL
@@ -1081,8 +1098,7 @@
         <span style="color:${statusColors[opt.dataset.status] || "var(--mid)"}">
           ${opt.dataset.status}
         </span>
-      </div>
-    `;
+      </div>`;
     document.getElementById("deletePreview").style.display = "";
   }
 
@@ -1094,5 +1110,14 @@
     btn.style.opacity = match ? "1" : ".4";
     btn.style.cursor = match ? "pointer" : "not-allowed";
   }
+
+  // ══════════════════════════════
+  //  INIT — set min dates on page load
+  // ══════════════════════════════
+  document.addEventListener("DOMContentLoaded", () => {
+    // Add modal: start cannot be before today
+    document.getElementById("addStartDate").min = _today;
+    document.getElementById("addEndDate").min = _today;
+  });
 </script>
 {% endblock %}
