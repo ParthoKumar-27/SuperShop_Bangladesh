@@ -12,6 +12,22 @@ from auth import _hash, _verify
 employee_router = APIRouter(prefix="/employee", tags=["Employee"])
 templates = Jinja2Templates(directory="templates")
 
+def _get_branch_info(branch_id: str) -> dict:
+    """Returns branch_name and branch_address for the header bar.
+    Safe to call with None — returns empty strings."""
+    if not branch_id:
+        return {"branch_name": "", "branch_address": ""}
+    row = query("""
+        SELECT b.branch_name, b.address, c.city_name
+        FROM   branch b JOIN city c USING (city_id)
+        WHERE  b.branch_id = %s
+    """, (branch_id,))
+    if not row:
+        return {"branch_name": "", "branch_address": ""}
+    return {
+        "branch_name":    row[0]["branch_name"],
+        "branch_address": row[0]["address"] or row[0]["city_name"] or "",
+    }
 
 def require_branch_manager(request: Request, session=Depends(require_employee)):
     """Only employees with position = BRANCH_MANAGER may pass."""
@@ -72,6 +88,7 @@ def _branch_manager_dashboard(request: Request, session):
             "role":      "EMPLOYEE",
             "position":  "BRANCH_MANAGER",
             "no_branch": True,
+             "branch_name": "", "branch_address": "",
         })
 
     # ── Branch info ──────────────────────────────────────────────────────
@@ -174,6 +191,8 @@ def _branch_manager_dashboard(request: Request, session):
         "role":             "EMPLOYEE",
         "position":         "BRANCH_MANAGER",
         "no_branch":        False,
+        "branch_name":      branch.get("branch_name", ""),      # ← add
+        "branch_address":   branch.get("address") or branch.get("city_name", ""),  # ← add
         "branch":           branch,
         "today_orders":     today_stats["n"],
         "today_revenue":    float(today_stats["revenue"]),
@@ -210,6 +229,7 @@ def branch_sales(request: Request, session=Depends(require_branch_manager)):
         return templates.TemplateResponse(request, "employee/branch_manager/sales.html", {
             "user_name": session.get("user_name"), "role": "EMPLOYEE",
             "position": "BRANCH_MANAGER", "no_branch": True, "sales": [],
+            "branch_name": "", "branch_address": "",
         })
 
     sales = query("""
@@ -228,38 +248,9 @@ def branch_sales(request: Request, session=Depends(require_branch_manager)):
     return templates.TemplateResponse(request, "employee/branch_manager/sales.html", {
         "user_name": session.get("user_name"), "role": "EMPLOYEE",
         "position": "BRANCH_MANAGER", "no_branch": False, "sales": sales,
+        **_get_branch_info(branch_id),   # ← add this line
     })
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  BRANCH INVENTORY
-# ══════════════════════════════════════════════════════════════════════════════
-
-# @employee_router.get("/branch/inventory", response_class=HTMLResponse)
-# def branch_inventory(request: Request, session=Depends(require_branch_manager)):
-#     branch_id = session.get("branch_id")
-
-#     if not branch_id:
-#         return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
-#             "user_name": session.get("user_name"), "role": "EMPLOYEE",
-#             "position": "BRANCH_MANAGER", "no_branch": True, "inventory": [],
-#         })
-
-#     inventory = query("""
-#         SELECT bi.inv_id, p.product_name, bi.quantity, bi.reorder_level,
-#                bi.shelf_location,
-#                TO_CHAR(bi.last_restocked, 'DD Mon YYYY') AS last_restocked,
-#                CASE WHEN bi.quantity <= bi.reorder_level THEN 'LOW' ELSE 'OK' END AS stock_status
-#         FROM   branch_inventory bi
-#         JOIN   product p USING (product_id)
-#         WHERE  bi.branch_id = %s
-#         ORDER  BY p.product_name
-#     """, (branch_id,))
-
-#     return templates.TemplateResponse(request, "employee/branch_manager/inventory.html", {
-#         "user_name": session.get("user_name"), "role": "EMPLOYEE",
-#         "position": "BRANCH_MANAGER", "no_branch": False, "inventory": inventory,
-#     })
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -274,6 +265,7 @@ def branch_orders(request: Request, session=Depends(require_branch_manager)):
         return templates.TemplateResponse(request, "employee/branch_manager/orders.html", {
             "user_name": session.get("user_name"), "role": "EMPLOYEE",
             "position": "BRANCH_MANAGER", "no_branch": True, "orders": [],
+            "branch_name": "", "branch_address": "",
         })
 
     orders = query("""
@@ -292,6 +284,7 @@ def branch_orders(request: Request, session=Depends(require_branch_manager)):
     return templates.TemplateResponse(request, "employee/branch_manager/orders.html", {
         "user_name": session.get("user_name"), "role": "EMPLOYEE",
         "position": "BRANCH_MANAGER", "no_branch": False, "orders": orders,
+        **_get_branch_info(branch_id),   # ← add this line
     })
 
 
@@ -356,7 +349,8 @@ def employees_page(request: Request, session=Depends(require_branch_manager)):
             "employees": employees,
             "user_name": session.get("user_name"),
             "role": "EMPLOYEE",
-            "position": "BRANCH_MANAGER"
+            "position": "BRANCH_MANAGER",
+            **_get_branch_info(session.get("branch_id")),
         }
     )
 
@@ -379,6 +373,7 @@ def branch_inventory(request: Request, session=Depends(require_branch_manager)):
             "user_name": session.get("user_name"), "role": "EMPLOYEE",
             "position": "BRANCH_MANAGER", "no_branch": True,
             "inventory": [], "available_products": [], "categories": [],
+            "branch_name": "", "branch_address": "",
         })
 
     # ── Current inventory ────────────────────────────────────────────────
@@ -424,6 +419,7 @@ def branch_inventory(request: Request, session=Depends(require_branch_manager)):
         "inventory":          inventory,
         "available_products": available_products,
         "categories":         categories,
+        **_get_branch_info(branch_id),
     })
 
 
@@ -635,6 +631,7 @@ def cashier_dashboard(request: Request, session=Depends(require_cashier)):
         "position":    "CASHIER",
         "branch_name": branch_name,
         "inventory":   inventory,
+        **_get_branch_info(branch_id),
     })
 
 
@@ -881,6 +878,7 @@ def branch_sales(request: Request, session=Depends(require_cashier)):
         return templates.TemplateResponse(request, "employee/cashier/sales.html", {
             "user_name": session.get("user_name"), "role": "EMPLOYEE",
             "position": "CASHIER", "no_branch": True, "sales": [],
+            "branch_name": "", "branch_address": "",
         })
 
     sales = query("""
@@ -900,6 +898,7 @@ def branch_sales(request: Request, session=Depends(require_cashier)):
     return templates.TemplateResponse(request, "employee/cashier/sales.html", {
         "user_name": session.get("user_name"), "role": "EMPLOYEE",
         "position": "CASHIER", "no_branch": False, "sales": sales,
+        **_get_branch_info(branch_id),
     })
 
 # ════════════════════════════════════════════════════════════════════════
@@ -1062,7 +1061,8 @@ def employee_profile(
             "employee": employee[0],
             "user_name": session.get("user_name"),
             "role": "EMPLOYEE",
-            "position": session.get("position")
+            "position": session.get("position"),
+            **_get_branch_info(session.get("branch_id"))
         }
     )
 
@@ -1243,6 +1243,7 @@ def sales_staff_products(request: Request, session=Depends(require_sales_staff))
         "position":   "SALES_STAFF",
         "products":   products,
         "categories": categories,
+        **_get_branch_info(branch_id)
     })
 
 
@@ -1338,6 +1339,7 @@ def rider_deliveries(request: Request, session=Depends(require_rider)):
         "deliveries":   deliveries,
         "stats":        stats,
         "status_badge": _DELIVERY_STATUS_BADGE,
+        **_get_branch_info(session.get("branch_id"))
     })
 
 
