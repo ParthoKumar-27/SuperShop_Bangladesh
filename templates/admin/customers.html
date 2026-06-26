@@ -6,10 +6,10 @@
 
 <div
   class="filter-bar"
-  style="display: flex; justify-content: space-between; align-items: center"
+  style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;"
 >
   <!-- LEFT: existing search (UNCHANGED) -->
-  <div class="filter-input-wrap">
+  <div class="filter-input-wrap" style="flex:1; min-width: 220px;">
     <i class="fas fa-search"></i>
     <input
       id="searchBox"
@@ -18,6 +18,15 @@
       placeholder="Search by name, phone, email..."
     />
   </div>
+
+  <!-- MEMBERSHIP filter -->
+  <select id="membershipFilter" class="filter-select">
+    <option value="">All Memberships</option>
+    <option value="PLATINUM">Platinum</option>
+    <option value="GOLD">Gold</option>
+    <option value="SILVER">Silver</option>
+    <option value="REGULAR">Regular</option>
+  </select>
 
   <!-- RIGHT: SORT dropdown (NEW) -->
   <select id="sortSelect" class="filter-select">
@@ -78,7 +87,7 @@
 
       <tbody id="custBody">
         {% for c in customers %}
-        <tr style="transition: all 0.15s ease">
+        <tr style="transition: all 0.15s ease" data-membership="{{ c.membership_type }}">
           <!-- ID -->
           <td>
             <strong style="color: var(--green)"> {{ c.cust_id }} </strong>
@@ -134,19 +143,42 @@
 
 {% endblock %} {% block scripts %}
 <script>
-  document.getElementById("searchBox").addEventListener("input", function () {
-    const term = this.value.toLowerCase();
+  // ─── Combined filters (search + membership) ───────────────────────────────
+  const searchBox       = document.getElementById("searchBox");
+  const membershipFilter= document.getElementById("membershipFilter");
+  const tbody           = document.getElementById("custBody");
+  const totalChip       = document.querySelector(".card-header span");
+  const allRows         = Array.from(tbody.querySelectorAll("tr"));
 
-    document.querySelectorAll("#custBody tr").forEach((row) => {
-      row.style.display = row.innerText.toLowerCase().includes(term)
-        ? ""
-        : "none";
+  function applyFilters() {
+    const term = (searchBox.value || "").toLowerCase();
+    const mem  = membershipFilter.value;   // '' = all, else membership_type
+
+    let visible = 0;
+
+    allRows.forEach((row) => {
+      const matchesText = !term ||
+        row.innerText.toLowerCase().includes(term);
+      const matchesMem  = !mem || row.dataset.membership === mem;
+
+      const show = matchesText && matchesMem;
+      row.style.display = show ? "" : "none";
+      if (show) visible++;
     });
-  });
 
+    // if (totalChip) {
+    //   totalChip.textContent = visible === allRows.length
+    //     ? `Total: ${allRows.length}`
+    //     : `Showing: ${visible} / ${allRows.length}`;
+    // }
+  }
+
+  searchBox       .addEventListener("input",  applyFilters);
+  membershipFilter.addEventListener("change", applyFilters);
+
+  // ─── Sort ────────────────────────────────────────────────────────────────
   document.getElementById("sortSelect").addEventListener("change", function () {
     const value = this.value;
-    const tbody = document.getElementById("custBody");
     const rows = Array.from(tbody.querySelectorAll("tr"));
 
     function getCell(row, index) {

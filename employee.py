@@ -319,9 +319,12 @@ def update_order_status(
     )
 
 #employee
+# ── REPLACE the existing employees_page GET route in employee.py with this ──
 
 @employee_router.get("/branch/staff", response_class=HTMLResponse)
 def employees_page(request: Request, session=Depends(require_branch_manager)):
+    branch_id = session.get("branch_id")
+
     employees = query("""
         SELECT e.emp_id,
                e.emp_name,
@@ -340,20 +343,27 @@ def employees_page(request: Request, session=Depends(require_branch_manager)):
             ON e.dept_id = d.dept_id
         WHERE e.branch_id = %s
         ORDER BY e.emp_name
-    """, (session.get("branch_id"),))
+    """, (branch_id,))
+
+    # All departments — passed to the Add Staff modal dropdown
+    departments = query("""
+        SELECT dept_id, dept_name
+        FROM   department
+        ORDER  BY dept_name
+    """, ())
 
     return templates.TemplateResponse(
         request,
         "employee/branch_manager/staffs.html",
         {
-            "employees": employees,
-            "user_name": session.get("user_name"),
-            "role": "EMPLOYEE",
-            "position": "BRANCH_MANAGER",
-            **_get_branch_info(session.get("branch_id")),
+            "employees":   employees,
+            "departments": departments,
+            "user_name":   session.get("user_name"),
+            "role":        "EMPLOYEE",
+            "position":    "BRANCH_MANAGER",
+            **_get_branch_info(branch_id),
         }
     )
-
 # ══════════════════════════════════════════════════════════════════════════════
 #  BRANCH INVENTORY  — Add / Edit / Delete routes
 #  Paste these into employee_router (employee.py) alongside the existing
@@ -1420,4 +1430,98 @@ def rider_update_status(
     return RedirectResponse(
         f"/employee/deliveries?success=Delivery+{delivery_id}+updated+to+{new_status.replace('_','+')}",
         status_code=302
+    )
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ADD STAFF — POST /employee/branch/staff/add
+#  Paste this route into employee.py, right after the employees_page GET route.
+#
+#  Rules:
+#  • emp_id is auto-generated (numeric-only MAX, format E-XXXXX)
+#  • branch_id is taken from the session (the manager's own branch)
+#  • is_active defaults to 'N' — admin activates later
+#  • Only CASHIER, SALES_STAFF, DELIVERY_RIDER positions are allowed
+# ══════════════════════════════════════════════════════════════════════════════
+
+@employee_router.post("/branch/staff/add")
+def add_staff(
+    request:   Request,
+    emp_name:  str           = Form(...),
+    gender:    str           = Form(...),
+    position:  str           = Form(...),
+    dept_id:   str           = Form(""),
+    email:     str           = Form(""),
+    phone:     str           = Form(...),
+    salary:    float         = Form(...),
+    hire_date: str           = Form(...),
+    session=Depends(require_branch_manager),
+):
+    branch_id = session.get("branch_id")
+
+    # ── Guard: only branch-level positions allowed ────────────────────────────
+    ALLOWED_POSITIONS = {"CASHIER", "SALES_STAFF", "DELIVERY_RIDER"}
+    if position not in ALLOWED_POSITIONS:
+        return RedirectResponse(
+            "/employee/branch/staff?error=Invalid+position+selected",
+            status_code=302,
+        )
+
+    # ── Guard: phone must be unique across employees ──────────────────────────
+    phone_check = query(
+        "SELECT 1 FROM employee WHERE phone = %s",
+        (phone.strip(),)
+    )
+    if phone_check:
+        return RedirectResponse(
+            "/employee/branch/staff?error=That+phone+number+is+already+registered",
+            status_code=302,
+        )
+
+    # ── Guard: email uniqueness (only if provided) ────────────────────────────
+    clean_email = email.strip() or None
+    if clean_email:
+        email_check = query(
+            "SELECT 1 FROM employee WHERE email = %s",
+            (clean_email,)
+        )
+        if email_check:
+            return RedirectResponse(
+                "/employee/branch/staff?error=That+email+is+already+in+use",
+                status_code=302,
+            )
+
+    # ── Auto-generate emp_id (numeric-only MAX to avoid format collisions) ────
+    max_row = query("""
+        SELECT MAX(CAST(SUBSTRING(emp_id FROM 3) AS INTEGER)) AS mx
+        FROM   employee
+        WHERE  emp_id ~ '^E-[0-9]+$'
+    """, ())
+    next_n = (max_row[0]["mx"] or 0) + 1
+    emp_id = f"E-{next_n:05d}"
+
+    # ── Insert employee (is_active = 'N' — admin activates later) ────────────
+    execute("""
+        INSERT INTO employee
+            (emp_id, emp_name, email, phone,
+             branch_id, dept_id, position,
+             salary, hire_date, gender, is_active)
+        VALUES (%s, %s, %s, %s,
+                %s, %s, %s,
+                %s, %s, %s, 'N')
+    """, (
+        emp_id,
+        emp_name.strip(),
+        clean_email,
+        phone.strip(),
+        branch_id,
+        dept_id.strip() or None,
+        position,
+        salary,
+        hire_date,
+        gender,
+    ))
+
+    return RedirectResponse(
+        f"/employee/branch/staff?success=Staff+member+{emp_id}+added+successfully.+Awaiting+admin+activation.",
+        status_code=302,
     )

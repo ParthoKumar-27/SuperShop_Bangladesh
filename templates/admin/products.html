@@ -270,33 +270,71 @@
   View and manage all available products.
 </div>
 
-<div
+<!-- Server-side filters: changing the category or sort re-submits this
+     GET form so the SQL query in admin.py does the work. The search box
+     also submits here.  All three are linked together by query params.  -->
+<form
+  id="productsFilterForm"
+  method="GET"
+  action="/admin/dashboard/products"
   class="filter-bar"
   style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"
 >
-  <!-- Search -->
+  <!-- Search (auto-submits on Enter / after debounce) -->
   <div class="filter-input-wrap">
     <i class="fas fa-search"></i>
     <input
       id="searchBox"
+      name="q"
       type="text"
       class="filter-input"
       placeholder="Search products..."
+      value="{{ search_term or '' }}"
+      autocomplete="off"
     />
   </div>
 
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <!-- Sort -->
-    <select id="sortSelect" class="filter-select">
-      <option value="">Sort Products</option>
-      <option value="name_asc">Name ↑</option>
-      <option value="name_desc">Name ↓</option>
-      <option value="price_asc">Price ↑</option>
-      <option value="price_desc">Price ↓</option>
+
+    <!-- Category filter — drives the SQL WHERE clause -->
+    <select id="catFilter" name="cat_id" class="filter-select"
+            onchange="document.getElementById('productsFilterForm').submit()">
+      <option value="">
+        All Categories ({{ total_all }})
+      </option>
+      {% for cat in categories %}
+      <option
+        value="{{ cat.cat_id }}"
+        {% if selected_cat == cat.cat_id %}selected{% endif %}
+      >
+        {{ cat.cat_name }} ({{ cat_counts.get(cat.cat_id, 0) }})
+      </option>
+      {% endfor %}
+      {# Show "Uncategorized" only when at least one product has no cat #}
+      {% if cat_counts.get('', 0) %}
+      <option value="__NONE__" {% if selected_cat == '__NONE__' %}selected{% endif %}>
+        Uncategorized ({{ cat_counts.get('', 0) }})
+      </option>
+      {% endif %}
     </select>
 
-    <!-- Add button -->
+    <!-- Sort — drives the SQL ORDER BY -->
+    <select
+      id="sortSelect"
+      name="sort"
+      class="filter-select"
+      onchange="document.getElementById('productsFilterForm').submit()"
+    >
+      <option value=""          {% if not sort_value %}selected{% endif %}>Sort Products</option>
+      <option value="name_asc"  {% if sort_value == 'name_asc'  %}selected{% endif %}>Name ↑</option>
+      <option value="name_desc" {% if sort_value == 'name_desc' %}selected{% endif %}>Name ↓</option>
+      <option value="price_asc" {% if sort_value == 'price_asc' %}selected{% endif %}>Price ↑</option>
+      <option value="price_desc"{% if sort_value == 'price_desc'%}selected{% endif %}>Price ↓</option>
+    </select>
+
+    <!-- Add button (kept outside the form so it doesn't submit it) -->
     <button
+      type="button"
       class="prod-action-btn"
       style="background: var(--green); color: white"
       onclick="openPM('pm-add')"
@@ -304,7 +342,10 @@
       <i class="fas fa-plus"></i> Add
     </button>
   </div>
-</div>
+</form>
+
+{# clear_url is built server-side in admin.py to avoid unsupported
+   Jinja **kwargs macros. #}
 
 <div class="card">
   <div class="card-header">
@@ -330,8 +371,26 @@
       Product List
     </h3>
 
-    <span style="font-size:12px;color:var(--mid)">
-      Total: {{ products|length }}
+    <span style="font-size:12px;color:var(--mid);display:flex;align-items:center;gap:10px">
+      {% if selected_cat or search_term %}
+        Showing: {{ products|length }} / {{ total_all }}
+        <a
+          href="{{ clear_url }}"
+          style="
+            text-decoration:none;
+            color:var(--green);
+            font-weight:600;
+            font-size:11px;
+            padding:3px 9px;
+            border:1px solid var(--green);
+            border-radius:999px;
+          "
+        >
+          <i class="fas fa-times"></i> Clear filters
+        </a>
+      {% else %}
+        Total: {{ products|length }}
+      {% endif %}
     </span>
   </div>
 
@@ -677,58 +736,46 @@
 
 {% block scripts %}
 <script>
+// ────────────────────────────────────────────────────────────────────────
+//  All three controls (search, category, sort) are now part of the
+//  GET form above.  Category and sort re-submit on `change`.
+//  Search uses a small debounce so we don't fire a request on every
+//  keystroke.  No DOM-row filtering happens on the client anymore —
+//  the server returns the right slice of rows.
+// ────────────────────────────────────────────────────────────────────────
 
-document.getElementById("searchBox").addEventListener("input", function () {
-  const term = this.value.toLowerCase();
+const filterForm   = document.getElementById("productsFilterForm");
+const searchBox    = document.getElementById("searchBox");
+const sortSelect   = document.getElementById("sortSelect");
+const catFilter    = document.getElementById("catFilter");
 
-  document.querySelectorAll("#productBody tr").forEach(row => {
-    row.style.display =
-      row.innerText.toLowerCase().includes(term)
-      ? ""
-      : "none";
+// Debounce the search box so we only navigate after the user pauses.
+let searchTimer = null;
+if (searchBox) {
+  searchBox.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => filterForm.submit(), 350);
   });
-});
+  // Submit immediately on Enter, even mid-debounce.
+  searchBox.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      clearTimeout(searchTimer);
+      filterForm.submit();
+    }
+  });
+}
 
-document.getElementById("sortSelect").addEventListener("change", function () {
-
-  const value = this.value;
-  const tbody = document.getElementById("productBody");
-  const rows = Array.from(tbody.querySelectorAll("tr"));
-
-  function getCell(row, index) {
-    return row.children[index]?.innerText.trim() || "";
-  }
-
-  let sorted = [...rows];
-
-  if (value === "name_asc") {
-    sorted.sort((a,b) =>
-      getCell(a,1).localeCompare(getCell(b,1))
-    );
-  }
-
-  else if (value === "name_desc") {
-    sorted.sort((a,b) =>
-      getCell(b,1).localeCompare(getCell(a,1))
-    );
-  }
-
-  else if (value === "price_asc") {
-    sorted.sort((a,b) =>
-      parseFloat(getCell(a,4).replace(/[^\d.]/g,'')) -
-      parseFloat(getCell(b,4).replace(/[^\d.]/g,''))
-    );
-  }
-
-  else if (value === "price_desc") {
-    sorted.sort((a,b) =>
-      parseFloat(getCell(b,4).replace(/[^\d.]/g,'')) -
-      parseFloat(getCell(a,4).replace(/[^\d.]/g,''))
-    );
-  }
-
-  sorted.forEach(row => tbody.appendChild(row));
-});
+// Translate the __NONE__ pseudo-value into a server-side flag we can
+// match.  We just keep it as-is — the SQL branch uses COALESCE on cat_id
+// via the SELECT count, but for the actual product list we'll fall back
+// to filtering on NULL below.
+if (catFilter) {
+  catFilter.addEventListener("change", () => filterForm.submit());
+}
+if (sortSelect) {
+  sortSelect.addEventListener("change", () => filterForm.submit());
+}
 
 // ── Modal open / close ────────────────────────────────────────────────────
 function openPM(id) {

@@ -180,11 +180,13 @@ def employees_page(request: Request, session=Depends(require_admin)):
                e.phone,
                e.position,
                e.salary,
-               e.hire_date,
                e.gender,
                e.is_active,
+               e.branch_id,
+               e.dept_id,
                b.branch_name,
-               d.dept_name
+               d.dept_name,
+               TO_CHAR(e.hire_date, 'YYYY-MM-DD') AS hire_date
         FROM employee e
         LEFT JOIN branch b
             ON e.branch_id = b.branch_id
@@ -193,14 +195,177 @@ def employees_page(request: Request, session=Depends(require_admin)):
         ORDER BY e.emp_name
     """)
 
+    departments = query("""
+        SELECT dept_id, dept_name
+        FROM   department
+        ORDER BY dept_name
+    """)
+
+    branches = query("""
+        SELECT branch_id, branch_name
+        FROM   branch
+        WHERE  is_active = 'Y'
+        ORDER BY branch_name
+    """)
+
     return templates.TemplateResponse(
         request,
         "admin/employees.html",
         {
-            "employees": employees,
-            "user_name": session.get("user_name"),
-            "role": "ADMIN",
+            "employees":   employees,
+            "departments": departments,
+            "branches":    branches,
+            "user_name":   session.get("user_name"),
+            "role":        "ADMIN",
         }
+    )
+
+
+@admin_router.post("/dashboard/employees/{emp_id}/edit")
+def edit_employee(
+    request:    Request,
+    emp_id:     str,
+    emp_name:   str   = Form(...),
+    email:      str   = Form(""),
+    phone:      str   = Form(""),
+    gender:     str   = Form(...),
+    position:   str   = Form(...),
+    branch_id:  str   = Form(""),
+    dept_id:    str   = Form(""),
+    salary:     float = Form(...),
+    hire_date:  str   = Form(...),
+    is_active:  str   = Form(...),
+    session=Depends(require_admin),
+):
+    # Validate salary
+    if salary < 10000:
+        return RedirectResponse(
+            f"/admin/dashboard/employees?error=Salary+must+be+at+least+৳10,000",
+            status_code=302,
+        )
+
+    # Validate email format if provided
+    email_val = email.strip() if email and email.strip() else None
+    if email_val and ("@" not in email_val or "." not in email_val):
+        return RedirectResponse(
+            f"/admin/dashboard/employees?error=Invalid+email+format",
+            status_code=302,
+        )
+
+    # Validate position
+    valid_positions = {"BRANCH_MANAGER", "CASHIER", "SALES_STAFF", "DELIVERY_RIDER"}
+    if position not in valid_positions:
+        return RedirectResponse(
+            f"/admin/dashboard/employees?error=Invalid+position",
+            status_code=302,
+        )
+
+    # Check for duplicate email (other employees)
+    if email_val:
+        dup = query("""
+            SELECT 1
+            FROM   employee
+            WHERE  email = %s
+              AND  emp_id <> %s
+        """, (email_val, emp_id))
+        if dup:
+            return RedirectResponse(
+                f"/admin/dashboard/employees?error=Email+already+used+by+another+employee",
+                status_code=302,
+            )
+
+    dept_val = dept_id.strip() if dept_id and dept_id.strip() else None
+
+    # Look up the current row BEFORE writing so we can compare old vs new
+    current = query("""
+        SELECT position, branch_id
+        FROM   employee
+        WHERE  emp_id = %s
+    """, (emp_id,))
+    if not current:
+        return RedirectResponse(
+            f"/admin/dashboard/employees?error=Employee+not+found",
+            status_code=302,
+        )
+    old_pos    = current[0]["position"]
+    old_branch = current[0]["branch_id"]
+
+    # ── Decide branch_id for the UPDATE based on the new position ────────────
+    # Rule 1: promoting TO branch_manager → employee.branch_id must be cleared,
+    #         manager assignment is handled on the Manage Branches page.
+    if position == "BRANCH_MANAGER":
+        branch_val = None
+    else:
+        branch_val = branch_id.strip() if branch_id and branch_id.strip() else None
+
+        # Validate branch_id if provided
+        if branch_val:
+            exists = query("""
+                SELECT 1 FROM branch WHERE branch_id = %s
+            """, (branch_val,))
+            if not exists:
+                return RedirectResponse(
+                    f"/admin/dashboard/employees?error=Invalid+branch+selected",
+                    status_code=302,
+                )
+
+    # Update employee record
+    execute("""
+        UPDATE employee
+        SET    emp_name  = %s,
+               email     = %s,
+               phone     = %s,
+               gender    = %s,
+               position  = %s,
+               branch_id = %s,
+               dept_id   = %s,
+               salary    = %s,
+               hire_date = %s,
+               is_active = %s
+        WHERE  emp_id    = %s
+    """, (
+        emp_name.strip(),
+        email_val,
+        phone.strip() if phone and phone.strip() else None,
+        gender,
+        position,
+        branch_val,
+        dept_val,
+        salary,
+        hire_date,
+        is_active,
+        emp_id,
+    ))
+
+    # ── branch_manager housekeeping + redirect message ──────────────────────
+    promote_to_bm    = (old_pos != "BRANCH_MANAGER" and position == "BRANCH_MANAGER")
+    demote_from_bm   = (old_pos == "BRANCH_MANAGER" and position != "BRANCH_MANAGER")
+
+    if promote_to_bm or demote_from_bm or old_branch != branch_val:
+        # Any of these situations means the previous manager row is stale
+        execute("""
+            DELETE FROM branch_manager WHERE emp_id = %s
+        """, (emp_id,))
+
+    if promote_to_bm:
+        return RedirectResponse(
+            f"/admin/dashboard/employees?"
+            f"success=Promoted+to+Branch+Manager.+employee.branch_id+cleared.+"
+            f"Open+Manage+Branches+to+assign+this+employee+as+a+branch+manager.",
+            status_code=302,
+        )
+
+    if demote_from_bm:
+        return RedirectResponse(
+            f"/admin/dashboard/employees?"
+            f"success=Demoted+from+Branch+Manager.+Branch+now+shows+Unassigned+"
+            f"manager+until+you+assign+a+new+one+via+Manage+Branches.",
+            status_code=302,
+        )
+
+    return RedirectResponse(
+        f"/admin/dashboard/employees?success=Employee+{emp_id}+updated+successfully",
+        status_code=302,
     )
 
 
@@ -638,8 +803,40 @@ def suppliers_page(
 # ════════════════════════════════════════════════════════════════════════════
 
 @admin_router.get("/dashboard/products", response_class=HTMLResponse)
-def admin_products_page(request: Request, session=Depends(require_admin)):
-    products = query("""
+def admin_products_page(
+    request: Request,
+    cat_id: str = "",          # ?cat_id=P-...  →  SQL-filtered category
+    q:      str = "",          # ?q=milk        →  SQL-filtered search term
+    sort:   str = "",          # ?sort=name_asc →  SQL-side ORDER BY
+    session = Depends(require_admin),
+):
+    # ── Whitelist sort values (safe to plug into ORDER BY) ──────────────
+    sort_map = {
+        "name_asc":   "p.product_name ASC",
+        "name_desc":  "p.product_name DESC",
+        "price_asc":  "p.unit_price ASC, p.product_name ASC",
+        "price_desc": "p.unit_price DESC, p.product_name ASC",
+    }
+    order_clause = sort_map.get(sort, "p.product_name ASC")
+
+    # ── Build WHERE clauses dynamically ──────────────────────────────────
+    where  = []
+    params: list = []
+
+    if cat_id == "__NONE__":
+        where.append("p.cat_id IS NULL")
+    elif cat_id:
+        where.append("p.cat_id = %s")
+        params.append(cat_id)
+
+    if q:
+        where.append("(LOWER(p.product_name) LIKE %s OR LOWER(COALESCE(p.brand,'')) LIKE %s)")
+        like = f"%{q.lower()}%"
+        params.extend([like, like])
+
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+
+    products = query(f"""
         SELECT p.product_id, p.product_name, p.brand,
                p.cat_id, p.supplier_id,
                p.unit_price, p.unit, p.is_active,
@@ -647,8 +844,19 @@ def admin_products_page(request: Request, session=Depends(require_admin)):
         FROM   product p
                LEFT JOIN category c  USING (cat_id)
                LEFT JOIN supplier s  USING (supplier_id)
-        ORDER BY p.product_name
+        {where_sql}
+        ORDER BY {order_clause}
+    """, tuple(params))
+
+    # Count per category (for the dropdown badges + "All" total)
+    cat_counts_raw = query("""
+        SELECT COALESCE(p.cat_id, '') AS cat_id,
+               COUNT(*)              AS n
+        FROM   product p
+        GROUP BY COALESCE(p.cat_id, '')
     """)
+    cat_counts = {row["cat_id"]: row["n"] for row in cat_counts_raw}
+    total_all  = sum(cat_counts.values())
 
     categories = query("""
         SELECT cat_id, cat_name FROM category ORDER BY cat_name
@@ -673,6 +881,12 @@ def admin_products_page(request: Request, session=Depends(require_admin)):
         "categories":      categories,
         "suppliers":       suppliers,
         "next_product_id": next_product_id,
+        "selected_cat":    cat_id,
+        "search_term":     q,
+        "sort_value":      sort,
+        "cat_counts":      cat_counts,
+        "total_all":       total_all,
+        "clear_url":       str(request.url_for("admin_products_page")),
         "user_name": session.get("user_name"),
         "role":      session.get("role"),
     })

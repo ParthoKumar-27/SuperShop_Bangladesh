@@ -1,27 +1,199 @@
 {% extends "admin/base_admin.html" %} {% block title %}Employees{% endblock %}
 {% block content %}
 
-<div class="page-heading">Employees</div>
+<style>
+  /* ── Drawer / modal (mirrors manage_branches style) ── */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.38);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .drawer-overlay.open { display: flex; }
 
+  .drawer {
+    background: var(--white);
+    width: 480px;
+    max-width: 96vw;
+    max-height: 92vh;
+    border-radius: var(--radius);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    animation: drawerIn 0.18s ease;
+    overflow: hidden;
+  }
+  @keyframes drawerIn {
+    from { transform: scale(0.95) translateY(10px); opacity: 0; }
+    to   { transform: scale(1)    translateY(0);    opacity: 1; }
+  }
+
+  .drawer-head {
+    background: var(--green);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .drawer-head h3 { font-size: 15px; font-weight: 700; }
+  .drawer-head p  { font-size: 12px; opacity: 0.65; margin-top: 2px; }
+
+  .drawer-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.15);
+    border: none; color: white; cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .drawer-close:hover { background: rgba(255,255,255,0.28); }
+
+  .drawer-body {
+    padding: 22px 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  /* form elements */
+  .df-group { margin-bottom: 15px; }
+  .df-label {
+    display: block;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--mid); margin-bottom: 5px;
+  }
+  .df-input, .df-select {
+    width: 100%;
+    padding: 9px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px; color: var(--dark);
+    background: #fafafa; outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    box-sizing: border-box;
+  }
+  .df-input:focus, .df-select:focus { border-color: var(--green); background: white; }
+  .df-input[readonly] {
+    background: rgba(4,70,53,0.05);
+    border-color: rgba(4,70,53,0.2);
+    color: var(--green); font-weight: 600; cursor: default;
+  }
+  .df-hint { font-size: 11px; color: var(--mid); margin-top: 4px; }
+  .df-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+  .df-warn {
+    background: #fef9c3; border: 1px solid #fde047;
+    border-radius: 8px; padding: 11px 13px;
+    font-size: 12px; color: #713f12;
+    margin-bottom: 14px; line-height: 1.5;
+  }
+  .df-info {
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    border-radius: 8px; padding: 11px 13px;
+    font-size: 12px; color: #1e40af;
+    margin-bottom: 14px; line-height: 1.5;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .df-info i { margin-top: 1px; flex-shrink: 0; }
+
+  .df-divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  .df-btn {
+    width: 100%; padding: 11px;
+    background: var(--green); color: white;
+    border: none; border-radius: 9px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-top: 4px;
+    transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .df-btn:hover { background: #033828; transform: translateY(-1px); }
+  .df-btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--dark); margin-top: 8px;
+  }
+  .df-btn-outline:hover { background: #f3f4f6; transform: none; }
+
+  /* flash messages */
+  .flash { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+  .flash.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .flash.error   { background: #fee2e2; color: #7f1d1d; border: 1px solid #fecaca; }
+
+  /* edit button in table row */
+  .row-edit-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 7px;
+    background: #e0f2fe; color: #0369a1;
+    border: none; cursor: pointer;
+    font-family: "DM Sans", sans-serif;
+    font-size: 12px; font-weight: 600;
+    transition: background 0.13s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .row-edit-btn:hover { background: #bae6fd; transform: translateY(-1px); }
+
+  /* Status toggle pills */
+  .status-pill {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    padding: 10px 13px; border-radius: 9px; cursor: pointer;
+    border: 1.5px solid var(--border); background: #fafafa;
+    font-size: 13px; font-weight: 600; color: var(--dark);
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  /* Position chip colours (same as staffs.html) */
+  .pos-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .pos-cashier        { background: #dbeafe; color: #1d4ed8; }
+  .pos-sales_staff    { background: #fef9c3; color: #854d0e; }
+  .pos-rider          { background: #f3e8ff; color: #7e22ce; }
+  .pos-branch_manager { background: #dcfce7; color: #166534; }
+  .pos-other          { background: #f3f4f6; color: var(--mid); }
+</style>
+
+<!-- Flash messages -->
+{% set msg_ok  = request.query_params.get('success') %}
+{% set msg_err = request.query_params.get('error') %}
+{% if msg_ok  %}<div class="flash success">✓ {{ msg_ok }}</div>{% endif %}
+{% if msg_err %}<div class="flash error">✗ {{ msg_err }}</div>{% endif %}
+
+<div class="page-heading">Employees</div>
 <div class="page-subheading">View and manage all employees.</div>
 
-<div
-  class="filter-bar"
-  style="display: flex; justify-content: space-between; align-items: center"
->
-  <!-- Search -->
-  <div class="filter-input-wrap">
+<div class="filter-bar" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+  <div class="filter-input-wrap" style="flex:1;min-width:220px;">
     <i class="fas fa-search"></i>
-
-    <input
-      id="searchBox"
-      type="text"
-      class="filter-input"
-      placeholder="Search employees..."
-    />
+    <input id="searchBox" type="text" class="filter-input" placeholder="Search employees..." />
   </div>
 
-  <!-- Sort -->
+  <select id="branchFilter" class="filter-select">
+    <option value="">All Branches</option>
+    <option value="__NONE__">— Unassigned —</option>
+    {% for b in branches %}
+    <option value="{{ b.branch_id }}">{{ b.branch_name }} ({{ b.branch_id }})</option>
+    {% endfor %}
+  </select>
+
+  <select id="positionFilter" class="filter-select">
+    <option value="">All Positions</option>
+    <option value="BRANCH_MANAGER">Branch Manager</option>
+    <option value="CASHIER">Cashier</option>
+    <option value="SALES_STAFF">Sales Staff</option>
+    <option value="DELIVERY_RIDER">Delivery Rider</option>
+  </select>
+
   <select id="sortSelect" class="filter-select">
     <option value="">Sort Employees</option>
     <option value="name_asc">Name ↑</option>
@@ -35,36 +207,16 @@
 
 <div class="card">
   <div class="card-header">
-    <h3
-      style="
-        color: var(--green);
-        font-weight: 800;
-        letter-spacing: 0.3px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      "
-    >
-      <span
-        style="
-          width: 10px;
-          height: 10px;
-          background: var(--orange);
-          border-radius: 50%;
-          display: inline-block;
-        "
-      ></span>
+    <h3 style="color:var(--green);font-weight:800;letter-spacing:0.3px;
+               display:flex;align-items:center;gap:10px;">
+      <span style="width:10px;height:10px;background:var(--orange);
+                   border-radius:50%;display:inline-block;"></span>
       Employee List
     </h3>
-
-    <span style="font-size: 12px; color: var(--mid)">
-      Total: {{ employees|length }}
-    </span>
+    <span style="font-size:12px;color:var(--mid);">Total: {{ employees|length }}</span>
   </div>
 
-  <div style="overflow-x: hidden;
-  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.1);
-  border-radius: 12px;">
+  <div style="overflow-x:hidden;box-shadow:0 8px 20px rgba(16,24,40,0.1);border-radius:12px;">
     <table class="data-table">
       <thead>
         <tr>
@@ -74,47 +226,74 @@
           <th>Department</th>
           <th>Position</th>
           <th>Gender</th>
-          <th style="text-align: right">Salary</th>
+          <th style="text-align:right">Salary</th>
           <th>Status</th>
           <th>Hire Date</th>
+          <th>Actions</th>
         </tr>
       </thead>
-
       <tbody id="empBody">
         {% for e in employees %}
-        <tr>
-          <td><strong style="color: var(--green)"> {{ e.emp_id }} </strong></td>
+        <tr data-branch-id="{{ e.branch_id or '' }}" data-position="{{ e.position }}">
+          <td><strong style="color:var(--green);">{{ e.emp_id }}</strong></td>
 
           <td>
-            <div style="font-weight: 600"><strong>{{ e.emp_name }}</strong></div>
-
-            <div style="font-size: 12px; color: var(--mid)">{{ e.email }}</div>
-            <div style="font-size: 12px; color: var(--mid)">{{ e.phone }}</div>
-          </td>
-          
-          <td>{{ e.branch_name }}</td>
-
-          <td>{{ e.dept_name or '-' }}</td>
-
-          <td>{{ e.position }}</td>
-
-          <td style="text-align: center">
-            {{ '👨' if e.gender == 'M' else '👩' }}
+            <div style="font-weight:600;"><strong>{{ e.emp_name }}</strong></div>
+            <div style="font-size:12px;color:var(--mid);">{{ e.email or '' }}</div>
+            <div style="font-size:12px;color:var(--mid);">{{ e.phone or '' }}</div>
           </td>
 
-          <td style="text-align: right; font-weight: 700">
+          <td style="font-size:13px;">{{ e.branch_name or '—' }}</td>
+
+          <td style="font-size:13px;">{{ e.dept_name or '—' }}</td>
+
+          <td>
+            {% set pos = e.position | lower %}
+            {% if pos == 'cashier' %}
+              <span class="pos-chip pos-cashier"><i class="fas fa-cash-register"></i> Cashier</span>
+            {% elif pos == 'sales_staff' %}
+              <span class="pos-chip pos-sales_staff"><i class="fas fa-tags"></i> Sales Staff</span>
+            {% elif pos == 'delivery_rider' %}
+              <span class="pos-chip pos-rider"><i class="fas fa-motorcycle"></i> Rider</span>
+            {% elif pos == 'branch_manager' %}
+              <span class="pos-chip pos-branch_manager"><i class="fas fa-user-tie"></i> Branch Manager</span>
+            {% else %}
+              <span class="pos-chip pos-other">{{ e.position }}</span>
+            {% endif %}
+          </td>
+
+          <td style="text-align:center;">{{ '👨' if e.gender == 'M' else '👩' }}</td>
+
+          <td style="text-align:right;font-weight:700;">
             ৳{{ "{:,.0f}".format(e.salary or 0) }}
           </td>
 
           <td>
             {% if e.is_active == 'Y' %}
-            <span class="badge badge-green"> ACTIVE </span>
+              <span class="badge badge-green">ACTIVE</span>
             {% else %}
-            <span class="badge badge-gray"> INACTIVE </span>
+              <span class="badge badge-gray">INACTIVE</span>
             {% endif %}
           </td>
 
-          <td>{{ e.hire_date }}</td>
+          <td style="font-size:13px;">{{ e.hire_date }}</td>
+
+          <td>
+            <button class="row-edit-btn"
+                    data-emp-id="{{ e.emp_id }}"
+                    data-emp-name="{{ e.emp_name | e }}"
+                    data-email="{{ e.email or '' | e }}"
+                    data-phone="{{ e.phone or '' | e }}"
+                    data-branch-id="{{ e.branch_id or '' | e }}"
+                    data-dept-id="{{ e.dept_id or '' | e }}"
+                    data-position="{{ e.position | e }}"
+                    data-salary="{{ e.salary or 0 }}"
+                    data-hire-date="{{ e.hire_date or '' | e }}"
+                    data-gender="{{ e.gender or 'M' | e }}"
+                    data-is-active="{{ e.is_active }}">
+              <i class="fas fa-edit" style="font-size:11px;"></i> Edit
+            </button>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -122,61 +301,419 @@
   </div>
 </div>
 
-{% endblock %} {% block scripts %}
+
+<!-- ══════════════════════════════════════════════
+     EDIT EMPLOYEE DRAWER
+══════════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawer-edit-emp" onclick="closeOnOverlay(event,this)">
+  <div class="drawer">
+
+    <div class="drawer-head">
+      <div>
+        <h3>Edit Employee</h3>
+        <p id="editEmpSubtitle">Loading…</p>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer('drawer-edit-emp')">✕</button>
+    </div>
+
+    <div class="drawer-body">
+
+      <!-- Read-only ID strip -->
+      <div style="background:rgba(4,70,53,.05);border:1.5px solid rgba(4,70,53,.15);
+                  border-radius:9px;padding:11px 14px;margin-bottom:18px;font-size:12px;
+                  display:flex;align-items:center;gap:14px;">
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                      letter-spacing:.05em;color:var(--mid);">Employee ID</div>
+          <div id="editEmpIdDisplay" style="font-weight:700;color:var(--green);
+               font-family:monospace;font-size:14px;margin-top:2px;"></div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="font-size:11px;color:var(--mid);text-align:right;">
+          <i class="fas fa-lock" style="font-size:10px;"></i><br>ID is read-only
+        </div>
+      </div>
+
+      <!-- Promote-to-Branch-Manager warning (hidden by default) -->
+      <div id="bmPromoteWarn" class="df-warn" style="display:none;">
+        <strong>⚠ Promoting to Branch Manager:</strong>
+        The employee's <code>branch_id</code> will be
+        <strong>cleared</strong> on save (a Branch Manager must not be
+        pre-assigned to a branch). After saving, open
+        <a href="/admin/dashboard/branches/manage" style="color:inherit;font-weight:700;">
+        Manage Branches → Assign Manager</a> to assign this person to a branch.
+      </div>
+
+      <!-- Demote-from-Branch-Manager warning (hidden by default) -->
+      <div id="bmDemoteWarn" class="df-warn" style="display:none;">
+        <strong>⚠ Demoting from Branch Manager:</strong>
+        The previous branch will now show
+        <strong>Unassigned</strong> as its manager until you assign a
+        new one through
+        <a href="/admin/dashboard/branches/manage" style="color:inherit;font-weight:700;">
+        Manage Branches → Assign Manager</a>.
+        This employee's <code>branch_id</code> stays the same.
+      </div>
+
+      <!-- Branch reassignment warning (hidden by default) -->
+      <div id="branchWarning" class="df-warn" style="display:none;">
+        <strong>⚠ Branch reassignment:</strong>
+        Moving this employee to a different branch will
+        <strong>unlink any active manager record</strong>. Re-link through
+        <a href="/admin/dashboard/branches/manage" style="color:inherit;font-weight:700;">
+        Manage Branches → Assign Manager</a> afterward.
+      </div>
+
+      <!-- Active-status notice for currently inactive -->
+      <div id="activationInfo" class="df-info" style="display:none;">
+        <i class="fas fa-info-circle"></i>
+        <div>Setting status to <strong>Active</strong> allows this employee to log in.
+        If they have no login account yet, one must be created separately.</div>
+      </div>
+
+      <form id="editEmpForm" method="POST" action="">
+
+        <!-- Name + Gender -->
+        <div class="df-row">
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Full Name <span style="color:#dc2626;">*</span></label>
+            <input class="df-input" type="text" name="emp_name" id="editEmpName"
+                   maxlength="60" required />
+          </div>
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Gender <span style="color:#dc2626;">*</span></label>
+            <select class="df-select" name="gender" id="editEmpGender" required>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Email + Phone -->
+        <div class="df-row" style="margin-top:14px;">
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Email</label>
+            <input class="df-input" type="email" name="email" id="editEmpEmail"
+                   maxlength="100" placeholder="employee@example.com" />
+          </div>
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Phone</label>
+            <input class="df-input" type="text" name="phone" id="editEmpPhone"
+                   maxlength="15" placeholder="01XXXXXXXXX" />
+          </div>
+        </div>
+
+        <!-- Position + Department -->
+        <div class="df-row" style="margin-top:14px;">
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Position <span style="color:#dc2626;">*</span></label>
+            <select class="df-select" name="position" id="editEmpPosition"
+                    onchange="onPositionChange(this)" required>
+              <option value="BRANCH_MANAGER">Branch Manager</option>
+              <option value="CASHIER">Cashier</option>
+              <option value="SALES_STAFF">Sales Staff</option>
+              <option value="DELIVERY_RIDER">Delivery Rider</option>
+            </select>
+            <p class="df-hint">Changing from/to Branch Manager will auto-unlink any manager assignment.</p>
+          </div>
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Department</label>
+            <select class="df-select" name="dept_id" id="editEmpDept">
+              <option value="">— None —</option>
+              {% for dept in departments %}
+              <option value="{{ dept.dept_id }}">{{ dept.dept_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Branch -->
+        <div class="df-group" style="margin-top:14px;">
+          <label class="df-label">Branch</label>
+          <select class="df-select" name="branch_id" id="editEmpBranch">
+            <option value="">— Unassigned —</option>
+            {% for b in branches %}
+            <option value="{{ b.branch_id }}">{{ b.branch_name }} ({{ b.branch_id }})</option>
+            {% endfor %}
+          </select>
+          <p class="df-hint" id="branchHint">
+            Reassigning to a different branch will unlink any active manager record for this employee.
+          </p>
+        </div>
+
+        <!-- Salary + Hire Date -->
+        <div class="df-row" style="margin-top:14px;">
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Salary (৳) <span style="color:#dc2626;">*</span></label>
+            <input class="df-input" type="number" name="salary" id="editEmpSalary"
+                   min="10000" step="100" required />
+            <p class="df-hint">Min ৳10,000</p>
+          </div>
+          <div class="df-group" style="margin-bottom:0;">
+            <label class="df-label">Hire Date <span style="color:#dc2626;">*</span></label>
+            <input class="df-input" type="date" name="hire_date" id="editEmpHireDate"
+                   required />
+          </div>
+        </div>
+
+        <!-- Active Status -->
+        <div class="df-group" style="margin-top:14px;">
+          <label class="df-label">Status</label>
+          <div style="display:flex;gap:10px;">
+            <label class="status-pill" id="pillActive">
+              <input type="radio" name="is_active" value="Y" id="statusY"
+                     onchange="highlightStatus()">
+              <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>
+              Active
+            </label>
+            <label class="status-pill" id="pillInactive">
+              <input type="radio" name="is_active" value="N" id="statusN"
+                     onchange="highlightStatus()">
+              <span style="width:8px;height:8px;border-radius:50%;background:#9ca3af;flex-shrink:0;"></span>
+              Inactive
+            </label>
+          </div>
+        </div>
+
+        <hr class="df-divider">
+
+        <button type="submit" class="df-btn">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+        <button type="button" class="df-btn df-btn-outline"
+                onclick="closeDrawer('drawer-edit-emp')">
+          Cancel
+        </button>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-  const searchBox = document.getElementById("searchBox");
-  const sortSelect = document.getElementById("sortSelect");
-  const tbody = document.getElementById("empBody");
-
-  searchBox.addEventListener("input", function () {
-    const term = this.value.toLowerCase();
-
-    tbody.querySelectorAll("tr").forEach((row) => {
-      row.style.display = row.innerText.toLowerCase().includes(term)
-        ? ""
-        : "none";
-    });
+  // ─── Drawer helpers ────────────────────────────────────────────────────────
+  function openDrawer(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function closeOnOverlay(e, el) {
+    if (e.target === el) closeDrawer(el.id);
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape')
+      document.querySelectorAll('.drawer-overlay.open').forEach(d => {
+        d.classList.remove('open');
+        document.body.style.overflow = '';
+      });
   });
 
+  // ─── Track original position so we know if it changed ────────────────────
+  let _originalPosition = '';
+  let _originalBranch   = '';
+
+  function openEditEmployee(
+    empId, empName, email, phone,
+    branchId, deptId, position,
+    salary, hireDate, gender, isActive
+  ) {
+    _originalPosition = position;
+    _originalBranch   = branchId || '';
+
+    // Subtitle + read-only strip
+    document.getElementById('editEmpSubtitle').textContent = empId + ' — ' + empName;
+    document.getElementById('editEmpIdDisplay').textContent = empId;
+
+    // Form action
+    document.getElementById('editEmpForm').action = '/admin/dashboard/employees/' + empId + '/edit';
+
+    // Fill fields
+    document.getElementById('editEmpName').value     = empName;
+    document.getElementById('editEmpEmail').value    = email;
+    document.getElementById('editEmpPhone').value    = phone;
+    document.getElementById('editEmpSalary').value   = salary;
+    document.getElementById('editEmpHireDate').value = hireDate;
+    document.getElementById('editEmpGender').value   = gender;
+    document.getElementById('editEmpPosition').value = position;
+    document.getElementById('editEmpDept').value     = deptId;
+    document.getElementById('editEmpBranch').value   = branchId || '';
+
+    // Status radio
+    document.getElementById('statusY').checked = (isActive === 'Y');
+    document.getElementById('statusN').checked = (isActive !== 'Y');
+    highlightStatus();
+
+    // Show activation info only when currently inactive
+    document.getElementById('activationInfo').style.display =
+      isActive !== 'Y' ? 'flex' : 'none';
+
+    // Reset all position-related warnings and branch-field state
+    applyPositionGuards();
+
+    openDrawer('drawer-edit-emp');
+  }
+
+  // ─── Position-driven guards ───────────────────────────────────────────────
+  //   * Promoting to BRANCH_MANAGER  → branch select disabled + warn
+  //   * Demoting  from BRANCH_MANAGER → warn (branch_id stays untouched)
+  //   * Otherwise  → reset everything
+  function applyPositionGuards() {
+    const newPos  = document.getElementById('editEmpPosition').value;
+    const branch  = document.getElementById('editEmpBranch');
+    const hint    = document.getElementById('branchHint');
+    const promote = document.getElementById('bmPromoteWarn');
+    const demote  = document.getElementById('bmDemoteWarn');
+
+    promote.style.display = 'none';
+    demote.style.display  = 'none';
+
+    if (newPos === 'BRANCH_MANAGER' && _originalPosition !== 'BRANCH_MANAGER') {
+      // Promote → disable the branch select; branch_id will be cleared on save
+      branch.value     = '';
+      branch.disabled  = true;
+      branch.style.background = 'rgba(4,70,53,0.04)';
+      branch.style.cursor      = 'not-allowed';
+      hint.textContent =
+        'Disabled: branch_id will be cleared when promoting to Branch Manager. ' +
+        'Use Manage Branches → Assign Manager after saving.';
+      promote.style.display = 'block';
+    } else if (newPos !== 'BRANCH_MANAGER' && _originalPosition === 'BRANCH_MANAGER') {
+      // Demote → keep branch_id untouched, surface manager-unlinked warning
+      branch.disabled  = false;
+      branch.style.background = '';
+      branch.style.cursor      = '';
+      hint.textContent =
+        'branch_id is preserved. The previous branch will show Unassigned ' +
+        'manager until reassigned via Manage Branches.';
+      demote.style.display = 'block';
+    } else {
+      // No BM position change → branch select behaves normally
+      branch.disabled  = false;
+      branch.style.background = '';
+      branch.style.cursor      = '';
+      hint.textContent =
+        'Reassigning to a different branch will unlink any active manager record for this employee.';
+    }
+  }
+
+  // ─── Position change → re-run guards ──────────────────────────────────────
+  function onPositionChange(_select) {
+    applyPositionGuards();
+    // Position change already covers BM-related manager unlinking;
+    // hide the standalone branch-reassignment warning to avoid noise.
+    document.getElementById('branchWarning').style.display = 'none';
+  }
+
+  // ─── Branch change → show/hide reassignment warning (only when enabled) ──
+  document.getElementById('editEmpBranch').addEventListener('change', function () {
+    if (this.disabled) {                      // ignore while promoting to BM
+      this.value = '';
+      return;
+    }
+    const changed = (this.value || '') !== _originalBranch;
+    document.getElementById('branchWarning').style.display =
+      changed && this.value !== '' ? 'block' : 'none';
+  });
+
+  // ─── Status pill highlight ────────────────────────────────────────────────
+  function highlightStatus() {
+    const active = document.getElementById('statusY').checked;
+    const pA = document.getElementById('pillActive');
+    const pI = document.getElementById('pillInactive');
+    if (active) {
+      pA.style.borderColor = '#22c55e'; pA.style.background = '#f0fdf4';
+      pI.style.borderColor = 'var(--border)'; pI.style.background = '#fafafa';
+    } else {
+      pI.style.borderColor = '#9ca3af'; pI.style.background = '#f9fafb';
+      pA.style.borderColor = 'var(--border)'; pA.style.background = '#fafafa';
+    }
+  }
+
+  // ─── Edit button (delegated — safe against quotes in names) ──────────────
+  document.getElementById('empBody').addEventListener('click', function (e) {
+    const btn = e.target.closest('.row-edit-btn');
+    if (!btn) return;
+    openEditEmployee(
+      btn.dataset.empId,
+      btn.dataset.empName,
+      btn.dataset.email,
+      btn.dataset.phone,
+      btn.dataset.branchId,
+      btn.dataset.deptId,
+      btn.dataset.position,
+      btn.dataset.salary,
+      btn.dataset.hireDate,
+      btn.dataset.gender,
+      btn.dataset.isActive
+    );
+  });
+
+  // ─── Table: filters (search + branch + position) ──────────────────────────
+  const searchBox     = document.getElementById("searchBox");
+  const branchFilter  = document.getElementById("branchFilter");
+  const positionFilter= document.getElementById("positionFilter");
+  const sortSelect    = document.getElementById("sortSelect");
+  const tbody         = document.getElementById("empBody");
+  const totalChip     = document.querySelector(".card-header span");
+  const allRows       = Array.from(tbody.querySelectorAll("tr"));
+
+  function applyFilters() {
+    const term  = (searchBox.value || "").toLowerCase();
+    const bSel  = branchFilter.value;       // '' = all, '__NONE__' = unassigned, else branch_id
+    const pSel  = positionFilter.value;     // '' = all, else position enum
+
+    let visible = 0;
+
+    allRows.forEach(row => {
+      const rowBranch = row.dataset.branchId || '';
+      const rowPos    = row.dataset.position  || '';
+
+      const matchesText = !term || row.innerText.toLowerCase().includes(term);
+      const matchesBranch =
+        !bSel ||
+        (bSel === '__NONE__' ? rowBranch === '' : rowBranch === bSel);
+      const matchesPos = !pSel || rowPos === pSel;
+
+      const show = matchesText && matchesBranch && matchesPos;
+      row.style.display = show ? "" : "none";
+      if (show) visible++;
+    });
+
+    // if (totalChip) {
+    //   totalChip.textContent = visible === allRows.length
+    //     ? `Total: ${allRows.length}`
+    //     : `Showing: ${visible} / ${allRows.length}`;
+    // }
+  }
+
+  searchBox     .addEventListener("input",  applyFilters);
+  branchFilter  .addEventListener("change", applyFilters);
+  positionFilter.addEventListener("change", applyFilters);
+
+  // ─── Table: sort ──────────────────────────────────────────────────────────
   sortSelect.addEventListener("change", function () {
     const rows = Array.from(tbody.querySelectorAll("tr"));
-
-    function getCell(row, index) {
-      return row.children[index]?.innerText.trim() || "";
-    }
+    function getCell(row, i) { return row.children[i]?.innerText.trim() || ""; }
 
     rows.sort((a, b) => {
       switch (this.value) {
-        case "name_asc":
-          return getCell(a, 1).localeCompare(getCell(b, 1));
-
-        case "name_desc":
-          return getCell(b, 1).localeCompare(getCell(a, 1));
-
-        case "salary_asc":
-          return (
-            parseFloat(getCell(a, 6).replace(/[^\d.]/g, "")) -
-            parseFloat(getCell(b, 6).replace(/[^\d.]/g, ""))
-          );
-
-        case "salary_desc":
-          return (
-            parseFloat(getCell(b, 6).replace(/[^\d.]/g, "")) -
-            parseFloat(getCell(a, 6).replace(/[^\d.]/g, ""))
-          );
-
-        case "hire_asc":
-          return new Date(getCell(a, 8)) - new Date(getCell(b, 8));
-
-        case "hire_desc":
-          return new Date(getCell(b, 8)) - new Date(getCell(a, 8));
-
-        default:
-          return 0;
+        case "name_asc":    return getCell(a,1).localeCompare(getCell(b,1));
+        case "name_desc":   return getCell(b,1).localeCompare(getCell(a,1));
+        case "salary_asc":  return parseFloat(getCell(a,6).replace(/[^\d.]/g,"")) - parseFloat(getCell(b,6).replace(/[^\d.]/g,""));
+        case "salary_desc": return parseFloat(getCell(b,6).replace(/[^\d.]/g,"")) - parseFloat(getCell(a,6).replace(/[^\d.]/g,""));
+        case "hire_asc":    return new Date(getCell(a,8)) - new Date(getCell(b,8));
+        case "hire_desc":   return new Date(getCell(b,8)) - new Date(getCell(a,8));
+        default: return 0;
       }
     });
-
-    rows.forEach((row) => tbody.appendChild(row));
+    rows.forEach(row => tbody.appendChild(row));
   });
 </script>
 {% endblock %}
