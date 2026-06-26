@@ -1,0 +1,511 @@
+{% extends "employee/branch_manager/base_employee.html" %}
+{% block title %}My Deliveries{% endblock %}
+
+{% block content %}
+<p class="page-heading">My Deliveries</p>
+<p class="page-subheading">Track and update your assigned delivery runs</p>
+
+{% if success %}
+<div class="toast toast-green" id="toastMsg">
+  <i class="fas fa-check-circle"></i> {{ success }}
+</div>
+{% endif %}
+{% if error %}
+<div class="toast toast-red" id="toastMsg">
+  <i class="fas fa-exclamation-circle"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- ── Stats strip ───────────────────────────────────────────────── -->
+<div class="stats-strip">
+  <div class="stat-pill">
+    <span class="stat-pill-icon green"><i class="fas fa-motorcycle"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ stats.total or 0 }}</p>
+      <p class="stat-pill-lbl">Total Assigned</p>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <span class="stat-pill-icon orange"><i class="fas fa-route"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ stats.on_the_way or 0 }}</p>
+      <p class="stat-pill-lbl">On the Way</p>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <span class="stat-pill-icon blue"><i class="fas fa-box"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ stats.picked_up or 0 }}</p>
+      <p class="stat-pill-lbl">Picked Up</p>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <span class="stat-pill-icon teal"><i class="fas fa-check-double"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ stats.delivered or 0 }}</p>
+      <p class="stat-pill-lbl">Delivered Today</p>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <span class="stat-pill-icon purple"><i class="fas fa-road"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ "%.1f" | format(stats.total_km or 0) }} km</p>
+      <p class="stat-pill-lbl">Distance Today</p>
+    </div>
+  </div>
+  {% if stats.avg_rating %}
+  <div class="stat-pill">
+    <span class="stat-pill-icon star"><i class="fas fa-star"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ "%.1f" | format(stats.avg_rating) }}</p>
+      <p class="stat-pill-lbl">Avg Rating</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Filter bar ────────────────────────────────────────────────── -->
+<div class="filter-bar">
+  <div class="filter-input-wrap">
+    <i class="fas fa-search"></i>
+    <input class="filter-input" type="text" id="searchInput"
+           placeholder="Search order ID, customer, address…" style="width:280px" />
+  </div>
+
+  <select class="filter-select" id="statusFilter">
+    <option value="">All Statuses</option>
+    <option value="ASSIGNED">Assigned</option>
+    <option value="PICKED_UP">Picked Up</option>
+    <option value="ON_THE_WAY">On the Way</option>
+    <option value="DELIVERED">Delivered</option>
+    <option value="FAILED">Failed</option>
+  </select>
+
+  <select class="filter-select" id="dateFilter">
+    <option value="">All Time</option>
+    <option value="today">Today</option>
+    <option value="week">This Week</option>
+  </select>
+</div>
+
+<!-- ── Active deliveries (Kanban-style cards) ────────────────────── -->
+{% if not deliveries %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="fas fa-motorcycle"></i></div>
+  <p class="empty-title">No deliveries assigned yet</p>
+  <p class="empty-sub">New deliveries from your branch will appear here once assigned.</p>
+</div>
+{% else %}
+
+<div id="deliveryList">
+{% for d in deliveries %}
+<div
+  class="delivery-card status-{{ d.delivery_status | lower }}"
+  data-search="{{ (d.delivery_id ~ ' ' ~ d.order_id ~ ' ' ~ d.customer ~ ' ' ~ d.delivery_address) | lower }}"
+  data-status="{{ d.delivery_status }}"
+  data-date="{{ d.assigned_date or '' }}"
+>
+  <!-- Left accent bar (colour by status) -->
+  <div class="dc-bar"></div>
+
+  <!-- ── Card body ── -->
+  <div class="dc-body">
+
+    <!-- Row 1: IDs + status badge + action button -->
+    <div class="dc-top">
+      <div>
+        <span class="dc-id">{{ d.delivery_id }}</span>
+        <span class="dc-sep">·</span>
+        <span class="dc-order-id">Order {{ d.order_id }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="badge {{ status_badge[d.delivery_status] }}">
+          {{ d.delivery_status | replace('_', ' ') | title }}
+        </span>
+        {% if d.delivery_status not in ('DELIVERED', 'FAILED') %}
+        <button class="btn-advance" onclick="openAdvance('{{ d.delivery_id }}', '{{ d.delivery_status }}')">
+          <i class="fas fa-chevron-right"></i> Advance
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Row 2: Customer + address -->
+    <div class="dc-info-row">
+      <div class="dc-info-item">
+        <i class="fas fa-user"></i>
+        <span>{{ d.customer }}</span>
+      </div>
+      <div class="dc-info-item">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>{{ d.delivery_address }}</span>
+      </div>
+    </div>
+
+    <!-- Row 3: Meta chips -->
+    <div class="dc-chips">
+      {% if d.distance_km %}
+      <span class="chip"><i class="fas fa-road"></i> {{ d.distance_km }} km</span>
+      {% endif %}
+      <span class="chip"><i class="fas fa-money-bill-wave"></i> ৳{{ "%.0f" | format(d.delivery_fee or 0) }} fee</span>
+      <span class="chip"><i class="fas fa-shopping-bag"></i> ৳{{ "%.0f" | format(d.order_total or 0) }} order</span>
+      {% if d.rating %}
+      <span class="chip chip-star">
+        <i class="fas fa-star"></i> {{ "%.1f" | format(d.rating) }}
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Row 4: Timeline -->
+    <div class="dc-timeline">
+      <div class="tl-step {{ 'done' if d.delivery_status in ('PICKED_UP','ON_THE_WAY','DELIVERED') else 'active' if d.delivery_status == 'ASSIGNED' else '' }}">
+        <div class="tl-dot"></div>
+        <div class="tl-label">Assigned<br><small>{{ d.assigned_at or '—' }}</small></div>
+      </div>
+      <div class="tl-line {{ 'done' if d.delivery_status in ('ON_THE_WAY','DELIVERED') else '' }}"></div>
+      <div class="tl-step {{ 'done' if d.delivery_status in ('ON_THE_WAY','DELIVERED') else 'active' if d.delivery_status == 'PICKED_UP' else '' }}">
+        <div class="tl-dot"></div>
+        <div class="tl-label">Picked Up<br><small>{{ d.picked_up_at or '—' }}</small></div>
+      </div>
+      <div class="tl-line {{ 'done' if d.delivery_status == 'DELIVERED' else '' }}"></div>
+      <div class="tl-step {{ 'done' if d.delivery_status == 'DELIVERED' else 'active' if d.delivery_status == 'ON_THE_WAY' else '' }}">
+        <div class="tl-dot"></div>
+        <div class="tl-label">On the Way<br><small>{{ d.on_the_way_at or '—' }}</small></div>
+      </div>
+      <div class="tl-line {{ 'done' if d.delivery_status == 'DELIVERED' else '' }}"></div>
+      <div class="tl-step {{ 'done' if d.delivery_status == 'DELIVERED' else '' }}">
+        <div class="tl-dot"></div>
+        <div class="tl-label">Delivered<br><small>{{ d.delivered_at or '—' }}</small></div>
+      </div>
+    </div>
+
+    {% if d.note %}
+    <div class="dc-note"><i class="fas fa-sticky-note"></i> {{ d.note }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+</div>
+
+<p id="resultCount" style="font-size:12px;color:var(--mid);margin-top:10px;text-align:right"></p>
+{% endif %}
+
+
+<!-- ══════════════════════════════════════════════════════
+     ADVANCE STATUS MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="advanceModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-arrow-circle-right" style="color:var(--green)"></i> Advance Delivery</h3>
+      <button class="modal-close" onclick="closeAdvance()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="advanceHint" style="font-size:13px;color:var(--mid);margin-bottom:16px"></p>
+
+      <form method="POST" action="/employee/rider/update-status">
+        <input type="hidden" name="delivery_id" id="modalDeliveryId" />
+        <input type="hidden" name="new_status"  id="modalNewStatus"  />
+
+        <div class="form-group">
+          <label class="form-label">Note (optional)</label>
+          <input class="form-control" type="text" name="note"
+                 placeholder="e.g. Customer not home, left at gate…" />
+        </div>
+
+        <!-- Only show "mark as failed" if not already final -->
+        <div id="failOption" style="margin-top:10px;display:none">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="failCheck" onchange="toggleFail()" />
+            Mark as Failed instead
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" onclick="closeAdvance()">Cancel</button>
+          <button type="submit" class="btn-primary" id="advanceSubmitBtn">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════ STYLES ══════════════════════════════════════ -->
+<style>
+  /* ── stats strip ── */
+  .stats-strip { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .stat-pill {
+    display:flex; align-items:center; gap:12px;
+    background:var(--white); border-radius:12px;
+    padding:14px 18px; flex:1; min-width:130px;
+    box-shadow:0 2px 8px rgba(4,70,53,.07);
+  }
+  .stat-pill-icon {
+    width:38px; height:38px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; flex-shrink:0;
+  }
+  .stat-pill-icon.green  { background:#dcfce7; color:#15803d; }
+  .stat-pill-icon.orange { background:#fff3e0; color:var(--orange); }
+  .stat-pill-icon.blue   { background:#dbeafe; color:#1d4ed8; }
+  .stat-pill-icon.teal   { background:#d1fae5; color:var(--green); }
+  .stat-pill-icon.purple { background:#ede9fe; color:#7c3aed; }
+  .stat-pill-icon.star   { background:#fef9c3; color:#a16207; }
+  .stat-pill-val { font-size:20px; font-weight:700; line-height:1.1; color:var(--dark); }
+  .stat-pill-lbl { font-size:11px; color:var(--mid); }
+
+  /* ── delivery card ── */
+  .delivery-card {
+    background: var(--white); border-radius:14px;
+    box-shadow: 0 2px 10px rgba(4,70,53,.08);
+    margin-bottom:14px; display:flex; overflow:hidden;
+    transition: box-shadow .2s;
+  }
+  .delivery-card:hover { box-shadow:0 8px 24px rgba(4,70,53,.14); }
+
+  /* left accent bar colours by status */
+  .dc-bar { width:5px; flex-shrink:0; }
+  .status-assigned   .dc-bar { background:#60a5fa; }
+  .status-picked_up  .dc-bar { background:var(--orange); }
+  .status-on_the_way .dc-bar { background:#a855f7; }
+  .status-delivered  .dc-bar { background:#22c55e; }
+  .status-failed     .dc-bar { background:#ef4444; }
+
+  .dc-body { flex:1; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
+
+  .dc-top {
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+  .dc-id        { font-size:13px; font-weight:700; color:var(--dark); }
+  .dc-sep       { color:var(--border); margin:0 4px; }
+  .dc-order-id  { font-size:12px; color:var(--mid); }
+
+  .btn-advance {
+    display:flex; align-items:center; gap:6px;
+    background:var(--green); color:#fff; border:none; border-radius:8px;
+    padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer;
+    font-family:"DM Sans",sans-serif; transition:.15s;
+  }
+  .btn-advance:hover { background:#033526; }
+
+  .dc-info-row { display:flex; gap:24px; flex-wrap:wrap; }
+  .dc-info-item {
+    display:flex; align-items:flex-start; gap:7px;
+    font-size:13px; color:var(--dark); max-width:340px;
+  }
+  .dc-info-item i { color:var(--orange); font-size:12px; margin-top:2px; flex-shrink:0; }
+
+  /* chips */
+  .dc-chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip {
+    display:inline-flex; align-items:center; gap:5px;
+    background:#f1f5f9; border-radius:20px;
+    padding:4px 10px; font-size:11px; color:var(--dark); font-weight:500;
+  }
+  .chip i { color:var(--mid); font-size:10px; }
+  .chip-star { background:#fef9c3; color:#a16207; }
+  .chip-star i { color:#f59e0b; }
+
+  /* ── timeline ── */
+  .dc-timeline {
+    display:flex; align-items:flex-start; margin-top:4px;
+  }
+  .tl-step { display:flex; flex-direction:column; align-items:center; min-width:80px; }
+  .tl-dot  {
+    width:14px; height:14px; border-radius:50%;
+    border:2px solid #d1d5db; background:#fff;
+    flex-shrink:0; transition:.2s;
+  }
+  .tl-step.done   .tl-dot  { border-color:var(--green); background:var(--green); }
+  .tl-step.active .tl-dot  { border-color:var(--orange); background:var(--orange); }
+  .tl-label {
+    font-size:10px; color:var(--mid); text-align:center; margin-top:4px; line-height:1.4;
+  }
+  .tl-step.done   .tl-label { color:var(--green); font-weight:600; }
+  .tl-step.active .tl-label { color:var(--orange); font-weight:600; }
+  .tl-line { flex:1; height:2px; background:#e5e7eb; margin-top:6px; }
+  .tl-line.done { background:var(--green); }
+
+  .dc-note {
+    font-size:12px; color:var(--mid); background:#f9fafb;
+    border-radius:8px; padding:8px 12px;
+    display:flex; align-items:flex-start; gap:6px;
+  }
+  .dc-note i { color:var(--orange); font-size:11px; margin-top:1px; }
+
+  /* ── modal ── */
+  .modal-backdrop {
+    position:fixed; inset:0; background:rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center; z-index:200;
+  }
+  .modal-box {
+    background:var(--white); border-radius:16px; width:440px; max-width:92vw;
+    box-shadow:0 20px 60px rgba(0,0,0,.2); overflow:hidden;
+  }
+  .modal-header {
+    padding:18px 22px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .modal-header h3 { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .modal-close {
+    width:30px; height:30px; border:none; background:none; cursor:pointer;
+    color:var(--mid); border-radius:8px; font-size:14px; transition:.15s;
+  }
+  .modal-close:hover { background:#f1f5f9; color:var(--dark); }
+  .modal-body   { padding:22px; }
+  .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
+  .form-group   { display:flex; flex-direction:column; gap:5px; }
+  .form-label   { font-size:12px; font-weight:600; color:var(--dark); }
+  .form-control {
+    padding:9px 12px; border:1.5px solid var(--border); border-radius:9px;
+    font-family:"DM Sans",sans-serif; font-size:13px; color:var(--dark);
+    outline:none; transition:.15s; width:100%;
+  }
+  .form-control:focus { border-color:var(--green); }
+
+  .btn-primary {
+    background:var(--green); color:#fff; border:none; border-radius:9px;
+    padding:9px 22px; font-size:13px; font-weight:600; cursor:pointer;
+    font-family:"DM Sans",sans-serif; transition:.15s;
+  }
+  .btn-primary:hover { background:#033526; }
+  .btn-outline {
+    background:none; border:1.5px solid var(--border); border-radius:9px;
+    padding:9px 18px; font-size:13px; color:var(--dark); cursor:pointer;
+    font-family:"DM Sans",sans-serif; transition:.15s;
+  }
+  .btn-outline:hover { border-color:var(--green); color:var(--green); }
+
+  /* ── toast ── */
+  .toast {
+    display:flex; align-items:center; gap:10px;
+    padding:12px 18px; border-radius:10px; font-size:13px; font-weight:600;
+    margin-bottom:16px; animation:fadeInDown .3s ease;
+  }
+  .toast-green { background:#dcfce7; color:#15803d; }
+  .toast-red   { background:#fee2e2; color:#dc2626; }
+  @keyframes fadeInDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+  .empty-state { text-align:center; padding:60px 20px; }
+  .empty-icon  { font-size:48px; color:#d1d5db; margin-bottom:12px; }
+  .empty-title { font-size:16px; font-weight:700; color:var(--dark); margin-bottom:6px; }
+  .empty-sub   { font-size:13px; color:var(--mid); }
+</style>
+
+<script>
+  /* ── next status map ── */
+  const nextStatus = {
+    'ASSIGNED':   'PICKED_UP',
+    'PICKED_UP':  'ON_THE_WAY',
+    'ON_THE_WAY': 'DELIVERED',
+  };
+  const statusLabel = {
+    'PICKED_UP':  'Mark as Picked Up',
+    'ON_THE_WAY': 'Mark as On the Way',
+    'DELIVERED':  'Mark as Delivered',
+  };
+
+  function openAdvance(delId, currentStatus) {
+    const next = nextStatus[currentStatus];
+    if (!next) return;
+
+    document.getElementById('modalDeliveryId').value = delId;
+    document.getElementById('modalNewStatus').value  = next;
+    document.getElementById('advanceSubmitBtn').textContent = statusLabel[next] || 'Confirm';
+    document.getElementById('advanceHint').textContent =
+      `Moving delivery ${delId} from "${currentStatus.replace('_',' ')}" → "${next.replace(/_/g,' ')}"`;
+
+    // Show fail option for PICKED_UP and ON_THE_WAY
+    const failOpt = document.getElementById('failOption');
+    failOpt.style.display = ['PICKED_UP','ON_THE_WAY'].includes(currentStatus) ? '' : 'none';
+    document.getElementById('failCheck').checked = false;
+
+    document.getElementById('advanceModal').style.display = 'flex';
+  }
+
+  function closeAdvance() {
+    document.getElementById('advanceModal').style.display = 'none';
+  }
+
+  function toggleFail() {
+    const checked = document.getElementById('failCheck').checked;
+    const statusInput = document.getElementById('modalNewStatus');
+    const submitBtn   = document.getElementById('advanceSubmitBtn');
+    if (checked) {
+      statusInput.value   = 'FAILED';
+      submitBtn.textContent = 'Mark as Failed';
+      submitBtn.style.background = '#ef4444';
+    } else {
+      // restore next
+      const hint = document.getElementById('advanceHint').textContent;
+      const cur  = hint.match(/from "([^"]+)"/)?.[1]?.replace(' ','_').toUpperCase();
+      statusInput.value   = nextStatus[cur] || '';
+      submitBtn.textContent = statusLabel[nextStatus[cur]] || 'Confirm';
+      submitBtn.style.background = '';
+    }
+  }
+
+  /* ── Close modal on backdrop click ── */
+  document.getElementById('advanceModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeAdvance();
+  });
+
+  /* ── Filters ── */
+  const searchInput  = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const dateFilter   = document.getElementById('dateFilter');
+  const resultCount  = document.getElementById('resultCount');
+
+  [searchInput, statusFilter, dateFilter].forEach(el => {
+    if (el) el.addEventListener('input', filterDeliveries);
+  });
+
+  function filterDeliveries() {
+    const q      = (searchInput?.value || '').toLowerCase();
+    const status = statusFilter?.value || '';
+    const date   = dateFilter?.value   || '';
+    const today  = new Date().toDateString();
+
+    const cards = document.querySelectorAll('#deliveryList .delivery-card');
+    let visible = 0;
+
+    cards.forEach(card => {
+      const search  = card.dataset.search || '';
+      const cstatus = card.dataset.status || '';
+      const cdate   = card.dataset.date   || '';
+
+      const matchQ = !q || search.includes(q);
+      const matchS = !status || cstatus === status;
+      let   matchD = true;
+      if (date === 'today') {
+        matchD = cdate === today;
+      } else if (date === 'week') {
+        const d = new Date(cdate);
+        const now = new Date();
+        const diff = (now - d) / (1000*60*60*24);
+        matchD = diff >= 0 && diff < 7;
+      }
+
+      const show = matchQ && matchS && matchD;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    if (resultCount) {
+      resultCount.textContent = visible === cards.length
+        ? `Showing all ${cards.length} deliveries`
+        : `Showing ${visible} of ${cards.length} deliveries`;
+    }
+  }
+
+  filterDeliveries();
+
+  /* ── Auto-dismiss toast ── */
+  setTimeout(() => {
+    const t = document.getElementById('toastMsg');
+    if (t) { t.style.opacity='0'; t.style.transition='opacity .5s'; }
+  }, 4000);
+</script>
+{% endblock %}

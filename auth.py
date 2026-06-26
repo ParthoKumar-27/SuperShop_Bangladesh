@@ -176,6 +176,10 @@ def employee_login(
         return RedirectResponse("/employee/branch/dashboard", status_code=302)
     elif request.session["position"] == "CASHIER":
         return RedirectResponse("/employee/cashier/dashboard", status_code=302)
+    elif request.session["position"] == "DELIVERY_RIDER":
+        return RedirectResponse("/employee/delivery_rider/dashboard", status_code=302)
+    elif request.session["position"] == "SALES_STAFF":
+        return RedirectResponse("/employee/sales_staff/dashboard", status_code=302)
     else:
         return RedirectResponse("/employee/dashboard", status_code=302)
 

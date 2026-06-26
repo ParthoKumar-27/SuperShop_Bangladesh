@@ -37,6 +37,18 @@ def employee_dashboard_router(request: Request, session=Depends(require_employee
             url="/employee/cashier/dashboard",
             status_code=302
         )
+    
+    elif position == "DELIVERY_RIDER":
+        return RedirectResponse(
+            url="/employee/delivery_rider/dashboard",
+            status_code=302
+        )
+    
+    elif position == "SALES_STAFF":
+        return RedirectResponse(
+            url="/employee/sales_staff/dashboard",
+            status_code=302
+        )
 
     return templates.TemplateResponse(request, "employee/branch_manager/dashboard.html", {
         "user_name": session.get("user_name"),
@@ -1142,5 +1154,268 @@ def employee_profile_password(
 
     return RedirectResponse(
         "/employee/profile?success=Password+updated+successfully",
+        status_code=302
+    )
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SALES STAFF — Products page
+#  Paste into employee.py alongside the existing routes.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def require_sales_staff(request: Request, session=Depends(require_employee)):
+    """Only SALES_STAFF employees may pass."""
+    if session.get("position") != "SALES_STAFF":
+        raise HTTPException(status_code=403, detail="Sales Staff access required.")
+    return session
+
+
+@employee_router.get("/sales_staff/dashboard", response_class=HTMLResponse)
+def sales_staff_products(request: Request, session=Depends(require_sales_staff)):
+    branch_id = session.get("branch_id")
+
+    if not branch_id:
+        return templates.TemplateResponse(request, "employee/sales_staff/products.html", {
+            "user_name": session.get("user_name"),
+            "role":      "EMPLOYEE",
+            "position":  "SALES_STAFF",
+            "products":  [],
+            "categories": [],
+        })
+
+    # ── Products in this branch's inventory, enriched with active discount ──
+    products = query("""
+        SELECT
+            p.product_id,
+            p.product_name,
+            p.brand,
+            p.unit_price,
+            p.unit,
+            bi.quantity,
+            bi.reorder_level,
+            bi.shelf_location,
+            cat.cat_name,
+
+            -- Active discount (if any)
+            d.discount_id,
+            d.discount_name    AS disc_name,
+            d.discount_type    AS disc_type,
+            d.discount_value   AS disc_value,
+            TO_CHAR(d.end_date, 'DD Mon YYYY') AS disc_end,
+
+            -- Computed stock status
+            CASE
+                WHEN bi.quantity = 0                    THEN 'OUT'
+                WHEN bi.quantity <= bi.reorder_level    THEN 'LOW'
+                ELSE 'OK'
+            END AS stock_status
+
+        FROM   branch_inventory bi
+        JOIN   product   p   USING (product_id)
+        LEFT JOIN category cat ON p.cat_id = cat.cat_id
+        LEFT JOIN discount d
+               ON  (d.product_id = p.product_id OR d.cat_id = p.cat_id)
+               AND CURRENT_DATE BETWEEN d.start_date AND d.end_date
+        WHERE  bi.branch_id = %s
+          AND  p.is_active  = 'Y'
+        ORDER  BY p.product_name
+    """, (branch_id,))
+
+    # Attach a boolean convenience flag for the template
+    for p in products:
+        p["has_discount"] = bool(p.get("disc_value"))
+
+    # ── Distinct categories present in this branch (for filter dropdown) ───
+    categories = query("""
+        SELECT DISTINCT cat.cat_id, cat.cat_name
+        FROM   branch_inventory bi
+        JOIN   product  p   USING (product_id)
+        JOIN   category cat ON p.cat_id = cat.cat_id
+        WHERE  bi.branch_id = %s
+          AND  p.is_active  = 'Y'
+          AND  cat.cat_name IS NOT NULL
+        ORDER  BY cat.cat_name
+    """, (branch_id,))
+
+    return templates.TemplateResponse(request, "employee/sales_staff/products.html", {
+        "user_name":  session.get("user_name"),
+        "role":       "EMPLOYEE",
+        "position":   "SALES_STAFF",
+        "products":   products,
+        "categories": categories,
+    })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  DELIVERY RIDER — My Deliveries page
+#  Paste into employee.py alongside the existing routes.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def require_rider(request: Request, session=Depends(require_employee)):
+    """Only DELIVERY_RIDER employees may pass."""
+    if session.get("position") != "DELIVERY_RIDER":
+        raise HTTPException(status_code=403, detail="Delivery Rider access required.")
+    return session
+
+
+# ── Badge class map (avoids logic in Jinja) ─────────────────────────────────
+_DELIVERY_STATUS_BADGE = {
+    "ASSIGNED":    "badge-blue",
+    "PICKED_UP":   "badge-yellow",
+    "ON_THE_WAY":  "badge-orange",
+    "DELIVERED":   "badge-green",
+    "FAILED":      "badge-red",
+}
+
+
+@employee_router.get("/delivery_rider/dashboard", response_class=HTMLResponse)
+def rider_deliveries(request: Request, session=Depends(require_rider)):
+    rider_id = session.get("user_id")   # emp_id stored in session
+
+    # ── All deliveries assigned to this rider ───────────────────────────────
+    deliveries = query("""
+        SELECT
+            d.delivery_id,
+            d.order_id,
+            d.delivery_status,
+            d.distance_km,
+            d.delivery_fee,
+            d.rating,
+            d.note,
+
+            TO_CHAR(d.assigned_at,  'DD Mon, HH12:MI AM') AS assigned_at,
+            TO_CHAR(d.picked_up_at, 'DD Mon, HH12:MI AM') AS picked_up_at,
+            TO_CHAR(d.delivered_at, 'DD Mon, HH12:MI AM') AS delivered_at,
+
+            -- For ON_THE_WAY timestamp display (no dedicated column — use assigned_at as proxy)
+            CASE WHEN d.delivery_status IN ('ON_THE_WAY','DELIVERED')
+                 THEN TO_CHAR(d.picked_up_at, 'DD Mon, HH12:MI AM')
+                 ELSE NULL
+            END AS on_the_way_at,
+
+            -- Raw date for JS date filter
+            TO_CHAR(d.assigned_at, 'Mon DD YYYY') AS assigned_date,
+
+            -- Customer info
+            c.cust_name  AS customer,
+            o.delivery_address,
+
+            -- Order total (for chip display)
+            s.total_amt  AS order_total
+
+        FROM   delivery    d
+        JOIN   online_order o  ON d.order_id  = o.order_id
+        JOIN   customer    c  ON o.cust_id   = c.cust_id
+        LEFT JOIN sale     s  ON o.sale_id   = s.sale_id
+        WHERE  d.rider_id = %s
+        ORDER  BY d.assigned_at DESC
+    """, (rider_id,))
+
+    # ── Today's aggregate stats ─────────────────────────────────────────────
+    stats_row = query("""
+        SELECT
+            COUNT(*)                                                AS total,
+            COUNT(*) FILTER (WHERE delivery_status = 'ON_THE_WAY') AS on_the_way,
+            COUNT(*) FILTER (WHERE delivery_status = 'PICKED_UP')  AS picked_up,
+            COUNT(*) FILTER (
+                WHERE delivery_status = 'DELIVERED'
+                  AND DATE(delivered_at) = CURRENT_DATE
+            )                                                       AS delivered,
+            COALESCE(SUM(distance_km) FILTER (
+                WHERE DATE(assigned_at) = CURRENT_DATE
+            ), 0)                                                   AS total_km,
+            ROUND(AVG(rating)::NUMERIC, 1)                          AS avg_rating
+        FROM   delivery
+        WHERE  rider_id = %s
+    """, (rider_id,))
+    stats = stats_row[0] if stats_row else {}
+
+    return templates.TemplateResponse(request, "employee/rider/deliveries.html", {
+        "user_name":    session.get("user_name"),
+        "role":         "EMPLOYEE",
+        "position":     "DELIVERY_RIDER",
+        "deliveries":   deliveries,
+        "stats":        stats,
+        "status_badge": _DELIVERY_STATUS_BADGE,
+    })
+
+
+# ── POST  /employee/rider/update-status — advance delivery status ────────────
+
+@employee_router.post("/rider/update-status")
+def rider_update_status(
+    request:    Request,
+    delivery_id: str = Form(...),
+    new_status:  str = Form(...),
+    note:        str = Form(""),
+    session=Depends(require_rider),
+):
+    rider_id = session.get("user_id")
+
+    VALID_STATUSES = {"PICKED_UP", "ON_THE_WAY", "DELIVERED", "FAILED"}
+    if new_status not in VALID_STATUSES:
+        return RedirectResponse(
+            "/employee/deliveries?error=Invalid+status+transition",
+            status_code=302
+        )
+
+    # Verify this delivery belongs to this rider
+    existing = query(
+        "SELECT delivery_status FROM delivery WHERE delivery_id = %s AND rider_id = %s",
+        (delivery_id, rider_id)
+    )
+    if not existing:
+        return RedirectResponse(
+            "/employee/deliveries?error=Delivery+not+found+or+not+assigned+to+you",
+            status_code=302
+        )
+
+    current = existing[0]["delivery_status"]
+    # Guard against going backwards or re-finalising
+    TERMINAL = {"DELIVERED", "FAILED"}
+    if current in TERMINAL:
+        return RedirectResponse(
+            "/employee/deliveries?error=Delivery+is+already+finalised",
+            status_code=302
+        )
+
+    # Timestamp columns to fill in
+    ts_col = {
+        "PICKED_UP":  "picked_up_at  = CURRENT_TIMESTAMP,",
+        "ON_THE_WAY": "",                            # no dedicated column in schema
+        "DELIVERED":  "delivered_at  = CURRENT_TIMESTAMP,",
+        "FAILED":     "",
+    }.get(new_status, "")
+
+    execute(f"""
+        UPDATE delivery
+        SET    {ts_col}
+               delivery_status = %s,
+               note            = COALESCE(NULLIF(%s, ''), note)
+        WHERE  delivery_id     = %s
+    """, (new_status, note.strip(), delivery_id))
+
+    # When delivered, also update the linked online_order status
+    if new_status == "DELIVERED":
+        execute("""
+            UPDATE online_order oo
+            SET    order_status   = 'DELIVERED',
+                   actual_delivery = CURRENT_TIMESTAMP
+            FROM   delivery d
+            WHERE  d.delivery_id = %s
+              AND  d.order_id    = oo.order_id
+        """, (delivery_id,))
+    elif new_status == "FAILED":
+        execute("""
+            UPDATE online_order oo
+            SET    order_status = 'CANCELLED'
+            FROM   delivery d
+            WHERE  d.delivery_id = %s
+              AND  d.order_id    = oo.order_id
+        """, (delivery_id,))
+
+    return RedirectResponse(
+        f"/employee/deliveries?success=Delivery+{delivery_id}+updated+to+{new_status.replace('_','+')}",
         status_code=302
     )

@@ -357,7 +357,7 @@
       <div class="nav-label">Main</div>
       <a href="/employee/branch/dashboard"
          class="nav-item {{ 'active' if path == '/employee/branch/dashboard' or path == '/employee/branch/dashboard/branch_manager' 
-         or path == '/employee/cashier/dashboard' else '' }}">
+         or path == '/employee/cashier/dashboard' or path == '/employee/delivery_rider/dashboard' or path == '/employee/sales_staff/dashboard' else '' }}">
         <i class="fas fa-th-large"></i> <span class="nav-text">Dashboard</span>
       </a>
 
@@ -388,15 +388,11 @@
         <i class="fas fa-users"></i> <span class="nav-text">In-store Sales</span>
       </a>
 
-      {% elif position == 'SALES_STAFF' %}
-      <div class="nav-label">Floor</div>
-      <a href="/employee/products" class="nav-item">
-        <i class="fas fa-tag"></i> <span class="nav-text">Products</span>
-      </a>
+      
 
-      {% elif position == 'DELIVERY_RIDER' %}
+      {% elif position == 'RIDER' %}
       <div class="nav-label">Deliveries</div>
-      <a href="/employee/deliveries" class="nav-item">
+      <a href="/employee/rider/deliveries" class="nav-item">
         <i class="fas fa-motorcycle"></i> <span class="nav-text">My Deliveries</span>
       </a>
       {% endif %}

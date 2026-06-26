@@ -1,0 +1,433 @@
+{% extends "employee/branch_manager/base_employee.html" %}
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<p class="page-heading">Products</p>
+<p class="page-subheading">Browse available products in your branch</p>
+
+{% if success %}
+<div class="toast toast-green" id="toastMsg">
+  <i class="fas fa-check-circle"></i> {{ success }}
+</div>
+{% endif %}
+{% if error %}
+<div class="toast toast-red" id="toastMsg">
+  <i class="fas fa-exclamation-circle"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- ── Stats strip ───────────────────────────────────────────────── -->
+<div class="stats-strip">
+  <div class="stat-pill">
+    <span class="stat-pill-icon green"><i class="fas fa-box-open"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ products | length }}</p>
+      <p class="stat-pill-lbl">Total Products</p>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <span class="stat-pill-icon orange"><i class="fas fa-exclamation-triangle"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ products | selectattr('stock_status', 'eq', 'LOW') | list | length }}</p>
+      <p class="stat-pill-lbl">Low Stock</p>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <span class="stat-pill-icon blue"><i class="fas fa-tags"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ products | selectattr('has_discount', 'eq', True) | list | length }}</p>
+      <p class="stat-pill-lbl">On Discount</p>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <span class="stat-pill-icon teal"><i class="fas fa-check-circle"></i></span>
+    <div>
+      <p class="stat-pill-val">{{ products | selectattr('stock_status', 'eq', 'OK') | list | length }}</p>
+      <p class="stat-pill-lbl">In Stock</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Filter bar ────────────────────────────────────────────────── -->
+<div class="filter-bar">
+  <div class="filter-input-wrap">
+    <i class="fas fa-search"></i>
+    <input
+      class="filter-input"
+      type="text"
+      id="searchInput"
+      placeholder="Search by name, brand, category…"
+      style="width:280px"
+    />
+  </div>
+
+  <select class="filter-select" id="catFilter">
+    <option value="">All Categories</option>
+    {% for cat in categories %}
+      <option value="{{ cat.cat_name }}">{{ cat.cat_name }}</option>
+    {% endfor %}
+  </select>
+
+  <select class="filter-select" id="stockFilter">
+    <option value="">All Stock Levels</option>
+    <option value="OK">In Stock</option>
+    <option value="LOW">Low Stock</option>
+    <option value="OUT">Out of Stock</option>
+  </select>
+
+  <select class="filter-select" id="discFilter">
+    <option value="">All Pricing</option>
+    <option value="disc">On Discount</option>
+    <option value="full">Full Price</option>
+  </select>
+
+  <!-- View toggle -->
+  <div class="view-toggle" style="margin-left:auto">
+    <button class="view-btn active" id="btnGrid" onclick="setView('grid')" title="Grid view">
+      <i class="fas fa-th"></i>
+    </button>
+    <button class="view-btn" id="btnList" onclick="setView('list')" title="List view">
+      <i class="fas fa-list"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ── Empty state ───────────────────────────────────────────────── -->
+{% if not products %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+  <p class="empty-title">No products in inventory</p>
+  <p class="empty-sub">Your branch hasn't stocked any products yet. Contact your branch manager.</p>
+</div>
+{% else %}
+
+<!-- ════════════════════════════════════════════════════════
+     GRID VIEW
+════════════════════════════════════════════════════════ -->
+<div id="viewGrid" class="product-grid">
+  {% for p in products %}
+  <div
+    class="product-card"
+    data-name="{{ p.product_name | lower }}"
+    data-brand="{{ (p.brand or '') | lower }}"
+    data-cat="{{ p.cat_name or '' }}"
+    data-stock="{{ p.stock_status }}"
+    data-disc="{{ 'disc' if p.has_discount else 'full' }}"
+  >
+    <!-- Stock ribbon -->
+    <div class="ribbon ribbon-{{ 'red' if p.stock_status == 'OUT' else 'orange' if p.stock_status == 'LOW' else 'green' }}">
+      {{ 'Out of Stock' if p.stock_status == 'OUT' else 'Low Stock' if p.stock_status == 'LOW' else 'In Stock' }}
+    </div>
+
+    <div class="pc-header">
+      <div class="pc-icon">
+        <i class="fas fa-{{ 'apple-alt' if 'food' in (p.cat_name or '').lower()
+                            else 'tshirt' if 'cloth' in (p.cat_name or '').lower()
+                            else 'pills' if 'medicine' in (p.cat_name or '').lower()
+                            else 'blender' if 'applian' in (p.cat_name or '').lower()
+                            else 'box' }}"></i>
+      </div>
+      <div class="pc-meta">
+        {% if p.has_discount %}
+        <span class="badge badge-orange" style="font-size:10px">
+          <i class="fas fa-tag"></i>
+          {{ p.disc_value }}{{ '%' if p.disc_type == 'PERCENT' else ' ৳ off' }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <p class="pc-name">{{ p.product_name }}</p>
+    <p class="pc-brand">{{ p.brand or '—' }}</p>
+    <p class="pc-cat"><i class="fas fa-folder" style="color:var(--orange);margin-right:4px;font-size:10px"></i>{{ p.cat_name or 'Uncategorised' }}</p>
+
+    <div class="pc-price-row">
+      {% if p.has_discount %}
+        {% if p.disc_type == 'PERCENT' %}
+          {% set effective = p.unit_price * (1 - p.disc_value / 100) %}
+        {% else %}
+          {% set effective = p.unit_price - p.disc_value %}
+        {% endif %}
+        <span class="pc-price">৳{{ "%.2f" | format(effective) }}</span>
+        <span class="pc-old-price">৳{{ "%.2f" | format(p.unit_price) }}</span>
+      {% else %}
+        <span class="pc-price">৳{{ "%.2f" | format(p.unit_price) }}</span>
+      {% endif %}
+      <span class="pc-unit">/ {{ p.unit }}</span>
+    </div>
+
+    <div class="pc-stock-bar-wrap">
+      {% set stock_pct = [[(p.quantity / p.reorder_level * 60) if p.reorder_level else 100, 0] | max, 100] | min if p.quantity > 0 else 0 %}
+      <div class="pc-stock-label">
+        <span>Stock: <strong>{{ p.quantity }}</strong> {{ p.unit }}</span>
+        <span style="color:var(--mid);font-size:11px">Reorder ≤ {{ p.reorder_level }}</span>
+      </div>
+      <div class="pc-stock-bar">
+        <div class="pc-stock-fill {{ 'fill-red' if p.stock_status == 'OUT' else 'fill-orange' if p.stock_status == 'LOW' else 'fill-green' }}"
+             style="width: {{ stock_pct }}%"></div>
+      </div>
+    </div>
+
+    {% if p.disc_name %}
+    <div class="pc-disc-badge">
+      <i class="fas fa-percent"></i> {{ p.disc_name }}
+      {% if p.disc_end %} · ends {{ p.disc_end }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     LIST VIEW
+════════════════════════════════════════════════════════ -->
+<div id="viewList" class="card" style="display:none">
+  <table class="data-table" id="listTable">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Brand</th>
+        <th>Category</th>
+        <th>Unit Price</th>
+        <th>Discount</th>
+        <th>Effective Price</th>
+        <th>Stock (qty)</th>
+        <th>Reorder At</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr
+        data-name="{{ p.product_name | lower }}"
+        data-brand="{{ (p.brand or '') | lower }}"
+        data-cat="{{ p.cat_name or '' }}"
+        data-stock="{{ p.stock_status }}"
+        data-disc="{{ 'disc' if p.has_discount else 'full' }}"
+      >
+        <td><strong>{{ p.product_name }}</strong></td>
+        <td>{{ p.brand or '—' }}</td>
+        <td>{{ p.cat_name or '—' }}</td>
+        <td>৳{{ "%.2f" | format(p.unit_price) }} / {{ p.unit }}</td>
+        <td>
+          {% if p.has_discount %}
+            <span class="badge badge-orange">
+              {{ p.disc_value }}{{ '%' if p.disc_type == 'PERCENT' else ' ৳' }}
+            </span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if p.has_discount %}
+            {% if p.disc_type == 'PERCENT' %}
+              <strong>৳{{ "%.2f" | format(p.unit_price * (1 - p.disc_value / 100)) }}</strong>
+            {% else %}
+              <strong>৳{{ "%.2f" | format(p.unit_price - p.disc_value) }}</strong>
+            {% endif %}
+          {% else %}
+            ৳{{ "%.2f" | format(p.unit_price) }}
+          {% endif %}
+        </td>
+        <td>{{ p.quantity }}</td>
+        <td>{{ p.reorder_level }}</td>
+        <td>
+          <span class="badge {{ 'badge-red' if p.stock_status == 'OUT' else 'badge-yellow' if p.stock_status == 'LOW' else 'badge-green' }}">
+            {{ 'Out of Stock' if p.stock_status == 'OUT' else 'Low Stock' if p.stock_status == 'LOW' else 'OK' }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- result count -->
+<p id="resultCount" style="font-size:12px;color:var(--mid);margin-top:10px;text-align:right"></p>
+
+{% endif %}
+
+<!-- ══════════════════════════════════════ STYLES ══════════════════════════════════════ -->
+<style>
+  /* ── stats strip ── */
+  .stats-strip {
+    display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .stat-pill {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--white); border-radius: 12px;
+    padding: 14px 20px; flex: 1; min-width: 140px;
+    box-shadow: 0 2px 8px rgba(4,70,53,.07);
+  }
+  .stat-pill-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .stat-pill-icon.green  { background:#dcfce7; color:#15803d; }
+  .stat-pill-icon.orange { background:#fff3e0; color:var(--orange); }
+  .stat-pill-icon.blue   { background:#dbeafe; color:#1d4ed8; }
+  .stat-pill-icon.teal   { background:#d1fae5; color:var(--green); }
+  .stat-pill-val  { font-size:20px; font-weight:700; line-height:1.1; color:var(--dark); }
+  .stat-pill-lbl  { font-size:11px; color:var(--mid); }
+
+  /* ── view toggle ── */
+  .view-toggle { display:flex; gap:4px; }
+  .view-btn {
+    width:34px; height:34px; border:1.5px solid var(--border);
+    border-radius:8px; background:var(--white); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--mid); font-size:13px; transition:.15s;
+  }
+  .view-btn.active { border-color:var(--green); background:var(--green); color:#fff; }
+  .view-btn:hover:not(.active) { border-color:var(--green); color:var(--green); }
+
+  /* ── product grid ── */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+  }
+  .product-card {
+    background: var(--white); border-radius: 14px;
+    padding: 18px; position: relative; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(4,70,53,.08);
+    transition: box-shadow .2s, transform .2s;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .product-card:hover { box-shadow: 0 8px 28px rgba(4,70,53,.16); transform: translateY(-2px); }
+
+  /* ribbon */
+  .ribbon {
+    position: absolute; top: 14px; right: -8px;
+    font-size: 10px; font-weight: 700; padding: 3px 14px 3px 10px;
+    border-radius: 4px 0 0 4px; letter-spacing:.03em;
+  }
+  .ribbon-green  { background:#dcfce7; color:#15803d; }
+  .ribbon-orange { background:#fff3e0; color:#c45c00; }
+  .ribbon-red    { background:#fee2e2; color:#dc2626; }
+
+  .pc-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:4px; }
+  .pc-icon {
+    width:40px; height:40px; border-radius:10px;
+    background: linear-gradient(135deg, #044635 0%, #0a7a5a 100%);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:16px; flex-shrink:0;
+  }
+  .pc-name  { font-size:14px; font-weight:700; color:var(--dark); line-height:1.3; margin-top:6px; }
+  .pc-brand { font-size:11px; color:var(--mid); }
+  .pc-cat   { font-size:11px; color:var(--mid); }
+
+  .pc-price-row { display:flex; align-items:baseline; gap:6px; margin-top:4px; }
+  .pc-price     { font-size:18px; font-weight:700; color:var(--green); }
+  .pc-old-price { font-size:12px; color:#b0b8c1; text-decoration:line-through; }
+  .pc-unit      { font-size:11px; color:var(--mid); }
+
+  .pc-stock-bar-wrap { margin-top:6px; }
+  .pc-stock-label    { display:flex; justify-content:space-between; font-size:11px; color:var(--dark); margin-bottom:4px; }
+  .pc-stock-bar      { height:5px; background:#f1f5f9; border-radius:10px; overflow:hidden; }
+  .pc-stock-fill     { height:100%; border-radius:10px; transition:width .4s; }
+  .fill-green  { background:#22c55e; }
+  .fill-orange { background:var(--orange); }
+  .fill-red    { background:#ef4444; }
+
+  .pc-disc-badge {
+    margin-top:6px; font-size:11px; color:var(--orange);
+    background:#fff3e0; border-radius:6px; padding:4px 8px;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+
+  /* ── empty state ── */
+  .empty-state { text-align:center; padding:60px 20px; }
+  .empty-icon  { font-size:48px; color:#d1d5db; margin-bottom:12px; }
+  .empty-title { font-size:16px; font-weight:700; color:var(--dark); margin-bottom:6px; }
+  .empty-sub   { font-size:13px; color:var(--mid); }
+
+  /* ── toast ── */
+  .toast {
+    display:flex; align-items:center; gap:10px;
+    padding:12px 18px; border-radius:10px; font-size:13px; font-weight:600;
+    margin-bottom:16px; animation: fadeInDown .3s ease;
+  }
+  .toast-green { background:#dcfce7; color:#15803d; }
+  .toast-red   { background:#fee2e2; color:#dc2626; }
+  @keyframes fadeInDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* hide row message */
+  .no-results-row { display:none; }
+</style>
+
+<script>
+  /* ── View toggle ── */
+  function setView(v) {
+    const grid = document.getElementById('viewGrid');
+    const list = document.getElementById('viewList');
+    const btnG = document.getElementById('btnGrid');
+    const btnL = document.getElementById('btnList');
+    if (v === 'grid') {
+      grid.style.display = ''; list.style.display = 'none';
+      btnG.classList.add('active'); btnL.classList.remove('active');
+    } else {
+      grid.style.display = 'none'; list.style.display = '';
+      btnG.classList.remove('active'); btnL.classList.add('active');
+    }
+    filterProducts();
+  }
+
+  /* ── Filters ── */
+  const searchInput = document.getElementById('searchInput');
+  const catFilter   = document.getElementById('catFilter');
+  const stockFilter = document.getElementById('stockFilter');
+  const discFilter  = document.getElementById('discFilter');
+  const resultCount = document.getElementById('resultCount');
+
+  [searchInput, catFilter, stockFilter, discFilter].forEach(el => {
+    if (el) el.addEventListener('input', filterProducts);
+  });
+
+  function filterProducts() {
+    const q     = (searchInput ? searchInput.value.toLowerCase() : '');
+    const cat   = catFilter   ? catFilter.value   : '';
+    const stock = stockFilter ? stockFilter.value : '';
+    const disc  = discFilter  ? discFilter.value  : '';
+
+    // Determine active view
+    const inGrid = document.getElementById('viewGrid') &&
+                   document.getElementById('viewGrid').style.display !== 'none';
+
+    const cards = inGrid
+      ? document.querySelectorAll('#viewGrid .product-card')
+      : document.querySelectorAll('#listTable tbody tr');
+
+    let visible = 0;
+    cards.forEach(card => {
+      const name  = (card.dataset.name  || '').toLowerCase();
+      const brand = (card.dataset.brand || '').toLowerCase();
+      const ccat  = card.dataset.cat    || '';
+      const cstk  = card.dataset.stock  || '';
+      const cdisc = card.dataset.disc   || '';
+
+      const matchQ    = !q     || name.includes(q) || brand.includes(q) || ccat.toLowerCase().includes(q);
+      const matchCat  = !cat   || ccat === cat;
+      const matchStk  = !stock || cstk === stock;
+      const matchDisc = !disc  || cdisc === disc;
+
+      const show = matchQ && matchCat && matchStk && matchDisc;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    if (resultCount) {
+      resultCount.textContent = visible === cards.length
+        ? `Showing all ${cards.length} products`
+        : `Showing ${visible} of ${cards.length} products`;
+    }
+  }
+
+  filterProducts();
+
+  /* ── Auto-dismiss toast ── */
+  setTimeout(() => {
+    const t = document.getElementById('toastMsg');
+    if (t) t.style.opacity = '0', t.style.transition = 'opacity .5s';
+  }, 4000);
+</script>
+{% endblock %}
