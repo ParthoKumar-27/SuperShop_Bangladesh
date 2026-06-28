@@ -320,6 +320,21 @@
     />
   </div>
 
+  <!-- Type filter -->
+  <select class="filter-input" id="typeFilter" onchange="applyDiscountFilters()">
+    <option value="">All Types</option>
+    <option value="PERCENT">PERCENT</option>
+    <option value="FLAT">FLAT</option>
+  </select>
+
+  <!-- Status filter -->
+  <select class="filter-input" id="statusFilter" onchange="applyDiscountFilters()">
+    <option value="">All Statuses</option>
+    <option value="ACTIVE">Active</option>
+    <option value="UPCOMING">Upcoming</option>
+    <option value="EXPIRED">Expired</option>
+  </select>
+
   <!-- 3 buttons flush right of the search -->
   <button
     class="disc-action-btn"
@@ -395,7 +410,7 @@
       </thead>
       <tbody>
         {% for d in discounts %}
-        <tr>
+        <tr data-type="{{ d.discount_type }}" data-status="{{ d.status }}">
           <td>
             <strong
               style="
@@ -911,15 +926,26 @@
       });
   });
 
-  // ── Table search ──────────────────────────────────────────────────────────
+  // ── Table search + filters ───────────────────────────────────────────────
+  function applyDiscountFilters() {
+    const q = document.getElementById("discountSearch").value.toLowerCase();
+    const type = document.getElementById("typeFilter").value;
+    const status = document.getElementById("statusFilter").value;
+
+    document.querySelectorAll("#discountTable tbody tr").forEach((r) => {
+      const matchesText = !q || r.innerText.toLowerCase().includes(q);
+      const rowType = r.dataset.type || "";
+      const rowStatus = r.dataset.status || "";
+      const matchesType = !type || rowType === type;
+      const matchesStatus = !status || rowStatus === status;
+      r.style.display =
+        matchesText && matchesType && matchesStatus ? "" : "none";
+    });
+  }
+
   document
     .getElementById("discountSearch")
-    .addEventListener("keyup", function () {
-      const v = this.value.toLowerCase();
-      document.querySelectorAll("#discountTable tbody tr").forEach((r) => {
-        r.style.display = r.innerText.toLowerCase().includes(v) ? "" : "none";
-      });
-    });
+    .addEventListener("keyup", applyDiscountFilters);
 
   // ══════════════════════════════
   //  ADD MODAL

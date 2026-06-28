@@ -599,11 +599,18 @@ def admin_inventory(request: Request, session=Depends(require_admin)):
         ORDER BY b.branch_name, p.product_name
     """)
 
+    branches = query("""
+        SELECT branch_id, branch_name
+        FROM branch
+        ORDER BY branch_name
+    """)
+
     return templates.TemplateResponse(
         request,
         "admin/inventory.html",
         {
             "inventory": inventory,
+            "branches": branches,
             "user_name": session.get("user_name"),
             "role": "ADMIN",
         }

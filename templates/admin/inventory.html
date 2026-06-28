@@ -14,6 +14,19 @@
       placeholder="Search inventory..."
     />
   </div>
+
+  <select class="filter-input" id="branchFilter" onchange="applyInventoryFilters()">
+    <option value="">All Branches</option>
+    {% for b in branches %}
+    <option value="{{ b.branch_name }}">{{ b.branch_name }}</option>
+    {% endfor %}
+  </select>
+
+  <select class="filter-input" id="statusFilter" onchange="applyInventoryFilters()">
+    <option value="">All Statuses</option>
+    <option value="LOW">Low Stock</option>
+    <option value="OK">In Stock</option>
+  </select>
 </div>
 
 <div class="card">
@@ -63,7 +76,7 @@
 
       <tbody>
         {% for i in inventory %}
-        <tr>
+        <tr data-branch="{{ i.branch_name }}" data-status="{{ i.stock_status }}">
           <td><strong style="color: var(--green)"> {{ i.inv_id }} </strong></td>
           <td><strong>{{ i.branch_name }}</strong></td>
           <td><strong>{{ i.product_name }}</strong></td>
@@ -94,17 +107,23 @@
 
 {% endblock %} {% block scripts %}
 <script>
-  const searchInput = document.getElementById("inventorySearch");
-
-  searchInput.addEventListener("keyup", function () {
-    const filter = this.value.toLowerCase();
+  function applyInventoryFilters() {
+    const q = document.getElementById("inventorySearch").value.toLowerCase();
+    const branch = document.getElementById("branchFilter").value;
+    const status = document.getElementById("statusFilter").value;
     const rows = document.querySelectorAll("#inventoryTable tbody tr");
 
     rows.forEach((row) => {
-      row.style.display = row.innerText.toLowerCase().includes(filter)
-        ? ""
-        : "none";
+      const matchesText = !q || row.innerText.toLowerCase().includes(q);
+      const matchesBranch = !branch || row.dataset.branch === branch;
+      const matchesStatus = !status || row.dataset.status === status;
+      row.style.display =
+        matchesText && matchesBranch && matchesStatus ? "" : "none";
     });
-  });
+  }
+
+  document
+    .getElementById("inventorySearch")
+    .addEventListener("keyup", applyInventoryFilters);
 </script>
 {% endblock %}
