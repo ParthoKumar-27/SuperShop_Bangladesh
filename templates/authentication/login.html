@@ -44,13 +44,17 @@
     /* ── Top bar ── */
     .topbar {
       position: relative;
-      background: linear-gradient(100deg, var(--green-deep), var(--green) 55%, var(--green-mid) 130%);
+      background:
+        radial-gradient(600px 80px at 20% 0%, rgba(241,123,13,.28), transparent 70%),
+        radial-gradient(500px 80px at 90% 100%, rgba(20,184,166,.22), transparent 70%),
+        linear-gradient(120deg, #01140e 0%, #02241b 35%, #044635 70%, #0a6b4f 130%);
       color: #fff;
       padding: 14px 32px;
       display: flex;
       align-items: center;
       gap: 10px;
       overflow: hidden;
+      border-bottom: 1px solid rgba(241,123,13,.25);
     }
     .topbar::after {
       content: '';
@@ -89,10 +93,11 @@
     /* LEFT — brand panel */
     .hero-left {
       background:
-        radial-gradient(900px 600px at 110% -10%, rgba(241,123,13,.28), transparent 60%),
-        radial-gradient(700px 500px at -10% 110%, rgba(255,179,92,.18), transparent 60%),
-        linear-gradient(135deg, #02241b 0%, #044635 45%, #0a6b4f 120%);
-      background-size: 200% 200%;
+        radial-gradient(900px 600px at 110% -10%, rgba(241,123,13,.42), transparent 60%),
+        radial-gradient(700px 500px at -10% 110%, rgba(255,179,92,.28), transparent 60%),
+        radial-gradient(600px 400px at 50% 50%, rgba(20,184,166,.18), transparent 70%),
+        linear-gradient(135deg, #013b2b 0%, #0a6b4f 45%, #14b8a6 110%);
+      background-size: 220% 220%, 220% 220%, 220% 220%, 100% 100%;
       animation: driftGradient 18s ease-in-out infinite alternate;
       color: #fff;
       display: flex;
