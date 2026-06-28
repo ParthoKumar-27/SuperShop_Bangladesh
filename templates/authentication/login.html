@@ -304,6 +304,23 @@
         radial-gradient(540px circle at 5% 95%, rgba(4,70,53,.06), transparent 60%);
     }
 
+    /* ── Decorative illustration in the off-white area around the card ── */
+    .bg-illu {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      opacity: .55;
+      pointer-events: none;
+      animation: bgIlluFloat 9s ease-in-out infinite alternate;
+    }
+    @keyframes bgIlluFloat {
+      0%   { transform: translateY(0)   scale(1); }
+      100% { transform: translateY(-8px) scale(1.02); }
+    }
+
     .auth-box {
       background: var(--white);
       border-radius: var(--radius);
@@ -477,22 +494,44 @@
     .btn-submit {
       width: 100%;
       padding: 13px;
-      background: linear-gradient(120deg, var(--green), var(--green-mid) 60%, var(--green));
+      background: linear-gradient(120deg, #14b8a6 0%, #84cc16 45%, #eab308 100%);
       background-size: 200% 100%;
       background-position: 0% 0%;
-      color: #fff;
+      color: #0f2a1a;
       border: none;
       border-radius: 8px;
       font-family: 'DM Sans', sans-serif;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: background-position .4s ease, transform .1s;
+      transition: background-position .4s ease, transform .1s, box-shadow .25s ease;
       margin-top: 6px;
+      box-shadow:
+        0 6px 16px rgba(20,184,166,.30),
+        inset 0 1px 0 rgba(255,255,255,.45),
+        inset 0 -1px 0 rgba(0,0,0,.10);
+      letter-spacing: .02em;
     }
-    .btn-submit:hover { background-position: 100% 0%; transform: translateY(-1px); }
+    .btn-submit::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -75%;
+      width: 50%; height: 100%;
+      background: linear-gradient(110deg, transparent, rgba(255,255,255,.45), transparent);
+      transition: left .55s ease;
+      pointer-events: none;
+    }
+    .btn-submit:hover {
+      background-position: 100% 0%;
+      transform: translateY(-1px);
+      box-shadow:
+        0 10px 22px rgba(132,204,22,.36),
+        inset 0 1px 0 rgba(255,255,255,.50),
+        inset 0 -1px 0 rgba(0,0,0,.12);
+    }
+    .btn-submit:hover::before { left: 130%; }
     .btn-submit:active { transform: translateY(0); }
 
     /* ── Divider ── */
@@ -740,6 +779,137 @@
 
     <!-- RIGHT: Auth panel -->
     <div class="hero-right">
+
+      <!-- Background illustration in the off-white area around the card -->
+      <svg class="bg-illu" viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="bgI1" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%"  stop-color="#0a6b4f"/>
+            <stop offset="100%" stop-color="#02241b"/>
+          </linearGradient>
+          <linearGradient id="bgI2" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%"  stop-color="#ffb35c"/>
+            <stop offset="100%" stop-color="#F17B0D"/>
+          </linearGradient>
+          <linearGradient id="bgI3" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%"  stop-color="#ffd9a8"/>
+            <stop offset="100%" stop-color="#f4b370"/>
+          </linearGradient>
+        </defs>
+
+        <!-- soft dotted backdrop -->
+        <g fill="#d9c8a8" opacity=".55">
+          <circle cx="60"  cy="60"  r="2.5"/>
+          <circle cx="120" cy="40"  r="2"/>
+          <circle cx="200" cy="70"  r="2.5"/>
+          <circle cx="460" cy="120" r="2.5"/>
+          <circle cx="500" cy="60"  r="2"/>
+          <circle cx="420" cy="40"  r="2"/>
+          <circle cx="50"  cy="320" r="2.5"/>
+          <circle cx="490" cy="340" r="2"/>
+          <circle cx="440" cy="320" r="2.5"/>
+          <circle cx="160" cy="320" r="2"/>
+          <circle cx="360" cy="340" r="2"/>
+        </g>
+
+        <!-- big color washes -->
+        <circle cx="60"  cy="280" r="100" fill="rgba(241,123,13,.06)"/>
+        <circle cx="470" cy="300" r="90"  fill="rgba(4,70,53,.06)"/>
+
+        <!-- ── Grocery box (open, with items) ── -->
+        <g transform="translate(60 180)">
+          <!-- box back wall -->
+          <path d="M0 30 L80 0 L160 30 L80 60 Z" fill="url(#bgI1)"/>
+          <!-- left wall -->
+          <path d="M0 30 L0 110 L80 140 L80 60 Z" fill="#044635"/>
+          <!-- right wall -->
+          <path d="M160 30 L160 110 L80 140 L80 60 Z" fill="#02241b"/>
+          <!-- box flap (open) -->
+          <path d="M0 30 L80 60 L-12 70 L-12 18 Z" fill="#0a6b4f"/>
+          <path d="M160 30 L80 60 L172 70 L172 18 Z" fill="#0a6b4f"/>
+          <!-- subtle highlight strip -->
+          <path d="M0 30 L80 0 L160 30" stroke="rgba(255,255,255,.25)" stroke-width="1" fill="none"/>
+
+          <!-- apple on left -->
+          <circle cx="32" cy="22" r="14" fill="#e34b3c"/>
+          <path d="M32 8 C32 4 36 2 38 4" stroke="#044635" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <ellipse cx="28" cy="18" rx="3" ry="2" fill="rgba(255,255,255,.5)"/>
+
+          <!-- bread loaf center -->
+          <path d="M58 30 C58 8 102 8 102 30 L96 38 L64 38 Z" fill="url(#bgI3)"/>
+          <path d="M70 22 Q80 14 90 22" stroke="#c45f00" stroke-width="1.5" fill="none"/>
+          <path d="M68 30 Q80 22 92 30" stroke="#c45f00" stroke-width="1.5" fill="none"/>
+
+          <!-- milk carton right -->
+          <g transform="translate(108 0)">
+            <path d="M0 16 L36 4 L36 50 L0 38 Z" fill="#fff"/>
+            <path d="M36 4 L36 50" stroke="#044635" stroke-width="1"/>
+            <path d="M0 16 L36 4" stroke="#044635" stroke-width="1"/>
+            <rect x="6" y="22" width="24" height="6" fill="rgba(4,70,53,.7)"/>
+            <rect x="6" y="30" width="24" height="3" fill="rgba(241,123,13,.85)"/>
+          </g>
+        </g>
+
+        <!-- ── Delivery scooter ── -->
+        <g transform="translate(290 200)">
+          <!-- shadow -->
+          <ellipse cx="70" cy="120" rx="70" ry="6" fill="rgba(4,70,53,.10)"/>
+          <!-- delivery box on back -->
+          <rect x="78" y="48" width="50" height="44" rx="6" fill="url(#bgI1)"/>
+          <rect x="78" y="48" width="50" height="10" rx="6" fill="rgba(255,255,255,.10)"/>
+          <path d="M88 70 L118 70 M88 78 L114 78" stroke="rgba(241,123,13,.85)" stroke-width="3" stroke-linecap="round"/>
+          <!-- body / front shield -->
+          <path d="M28 96 C28 76 50 70 70 70 C92 70 110 78 110 96 L110 104 L28 104 Z" fill="#044635"/>
+          <!-- handle -->
+          <path d="M88 70 L98 56 L114 56" stroke="#02241b" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <circle cx="114" cy="56" r="4" fill="#F17B0D"/>
+          <!-- seat -->
+          <path d="M58 70 L86 70 L82 62 L62 62 Z" fill="#02241b"/>
+          <!-- wheels -->
+          <circle cx="38" cy="108" r="14" fill="#02241b"/>
+          <circle cx="38" cy="108" r="6"  fill="#FFFCF1"/>
+          <circle cx="38" cy="108" r="2"  fill="#044635"/>
+          <circle cx="100" cy="108" r="14" fill="#02241b"/>
+          <circle cx="100" cy="108" r="6"  fill="#FFFCF1"/>
+          <circle cx="100" cy="108" r="2"  fill="#044635"/>
+          <!-- speed lines -->
+          <g stroke="#F17B0D" stroke-width="2.4" stroke-linecap="round" opacity=".75">
+            <line x1="6"  y1="84"  x2="22" y2="84"/>
+            <line x1="0"  y1="94"  x2="20" y2="94"/>
+            <line x1="8"  y1="104" x2="24" y2="104"/>
+          </g>
+        </g>
+
+        <!-- ── Floating receipt ── -->
+        <g transform="translate(360 60) rotate(-10)">
+          <path d="M0 0 L64 0 L64 84 L60 80 L56 84 L52 80 L48 84 L44 80 L40 84 L36 80 L32 84 L28 80 L24 84 L20 80 L16 84 L12 80 L8 84 L4 80 L0 84 Z"
+                fill="#fff" stroke="#044635" stroke-width="1.6"/>
+          <line x1="8"  y1="14" x2="56" y2="14" stroke="#044635" stroke-width="1.4"/>
+          <line x1="8"  y1="24" x2="44" y2="24" stroke="#646464" stroke-width="1"/>
+          <line x1="8"  y1="32" x2="52" y2="32" stroke="#646464" stroke-width="1"/>
+          <line x1="8"  y1="40" x2="40" y2="40" stroke="#646464" stroke-width="1"/>
+          <line x1="8"  y1="52" x2="56" y2="52" stroke="#F17B0D" stroke-width="2"/>
+          <text x="32" y="68" font-family="DM Sans, sans-serif" font-size="9" font-weight="700" fill="#F17B0D" text-anchor="middle">TOTAL</text>
+        </g>
+
+        <!-- ── Floating price tag ── -->
+        <g transform="translate(40 70) rotate(14)">
+          <path d="M0 0 L48 0 L58 12 L48 24 L0 24 Z" fill="#fff" stroke="#F17B0D" stroke-width="2"/>
+          <circle cx="6" cy="12" r="2.5" fill="#F17B0D"/>
+          <text x="32" y="16" font-family="DM Sans, sans-serif" font-size="10" font-weight="700" fill="#F17B0D" text-anchor="middle">%</text>
+        </g>
+
+        <!-- ── Sparkles ── -->
+        <g stroke="#044635" stroke-width="2.4" stroke-linecap="round">
+          <line x1="240" y1="60"  x2="240" y2="68"/>
+          <line x1="236" y1="64"  x2="244" y2="64"/>
+          <line x1="480" y1="200" x2="480" y2="208"/>
+          <line x1="476" y1="204" x2="484" y2="204"/>
+          <line x1="120" y1="160" x2="120" y2="166"/>
+          <line x1="117" y1="163" x2="123" y2="163"/>
+        </g>
+      </svg>
+
       <div class="auth-box">
         <p class="auth-title">Welcome back</p>
         <p class="auth-sub">Choose your account type to continue</p>
@@ -761,59 +931,6 @@
             <div class="role-name">Customer</div>
             <div class="role-desc">Shopper</div>
           </div>
-        </div>
-
-        <!-- Idle illustration (shown only until a role is picked) -->
-        <div class="auth-illu" id="authIllu">
-          <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <!-- soft backdrop blob -->
-            <defs>
-              <linearGradient id="illuBg" x1="0" x2="1" y1="0" y2="1">
-                <stop offset="0%"  stop-color="#FFFCF1"/>
-                <stop offset="100%" stop-color="#fff1de"/>
-              </linearGradient>
-              <linearGradient id="illuBag" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%"  stop-color="#F17B0D"/>
-                <stop offset="100%" stop-color="#c45f00"/>
-              </linearGradient>
-              <linearGradient id="illuBox" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%"  stop-color="#044635"/>
-                <stop offset="100%" stop-color="#02241b"/>
-              </linearGradient>
-            </defs>
-            <ellipse cx="160" cy="120" rx="120" ry="10" fill="rgba(4,70,53,.08)"/>
-
-            <!-- storefront box -->
-            <rect x="40"  y="34" width="78" height="68" rx="8" fill="url(#illuBox)"/>
-            <rect x="40"  y="34" width="78" height="14" rx="8" fill="rgba(255,255,255,.10)"/>
-            <rect x="56"  y="58" width="20" height="34" rx="3" fill="rgba(255,255,255,.18)"/>
-            <rect x="82"  y="58" width="20" height="34" rx="3" fill="rgba(255,255,255,.18)"/>
-            <rect x="56"  y="48" width="46" height="4"  fill="rgba(241,123,13,.85)"/>
-
-            <!-- shopping bag -->
-            <path d="M170 50 L240 50 L232 110 L178 110 Z" fill="url(#illuBag)"/>
-            <path d="M186 50 C186 38 224 38 224 50" stroke="#c45f00" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <circle cx="195" cy="78" r="4" fill="rgba(255,255,255,.9)"/>
-            <circle cx="215" cy="78" r="4" fill="rgba(255,255,255,.9)"/>
-            <path d="M192 92 Q205 100 218 92" stroke="rgba(255,255,255,.9)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-
-            <!-- floating sparkles -->
-            <g fill="#F17B0D">
-              <circle cx="138" cy="30" r="2.5"/>
-              <circle cx="262" cy="40" r="3"/>
-              <circle cx="280" cy="86" r="2"/>
-            </g>
-            <g stroke="#044635" stroke-width="2" stroke-linecap="round">
-              <line x1="128" y1="22" x2="128" y2="28"/>
-              <line x1="125" y1="25" x2="131" y2="25"/>
-              <line x1="270" y1="96" x2="270" y2="102"/>
-              <line x1="267" y1="99" x2="273" y2="99"/>
-            </g>
-          </svg>
-          <p class="auth-illu-tip">
-            <span class="illu-dot"></span>
-            Pick a role above to sign in to your dashboard.
-          </p>
         </div>
 
         <!-- ADMIN form -->
