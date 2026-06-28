@@ -297,7 +297,6 @@ def update_order_status(
 ):
     branch_id = session.get("branch_id")
 
-    # Only allow updating orders that belong to this manager's own branch
     existing = query(
         "SELECT 1 FROM online_order WHERE order_id = %s AND branch_id = %s",
         (order_id, branch_id)
@@ -313,11 +312,19 @@ def update_order_status(
         (order_status, order_id)
     )
 
+    if order_status == "DELIVERED":
+        execute("""
+            UPDATE sale s
+            SET    payment_status = 'PAID'
+            FROM   online_order oo
+            WHERE  oo.order_id = %s
+              AND  s.sale_id   = oo.sale_id
+        """, (order_id,))
+
     return RedirectResponse(
         f"/employee/branch/orders?success=Order+{order_id}+updated",
         status_code=302
     )
-
 #employee
 # ── REPLACE the existing employees_page GET route in employee.py with this ──
 

@@ -57,6 +57,30 @@
                 <input type="hidden" name="branch_id" value="{{ selected_branch_id }}">
             </div>
 
+           <div>
+    <label class="block text-sm font-semibold text-gray-700 mb-2">Expected Pickup Date & Time</label>
+    <div class="flex gap-2">
+        <input type="date" name="expected_date" required
+               value="{{ expected_date if expected_date else '' }}"
+               min="{{ min_expected_date if min_expected_date else '' }}"
+               class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#044635] transition">
+        <input type="time" name="expected_time" required
+               value="{{ expected_time if expected_time else '10:00' }}"
+               min="09:00" max="21:00"
+               class="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#044635] transition">
+    </div>
+    <p class="text-xs text-gray-400 mt-1">Branch hours: 9 AM – 9 PM</p>
+</div>
+
+
+<div>
+    <label class="block text-sm font-semibold text-gray-700 mb-2">Pickup / Delivery Address</label>
+    <textarea name="address" rows="2" required
+              placeholder="e.g. House 5, Mirpur-10, Dhaka-1216"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#044635] transition">{{ customer_address if customer_address else '' }}</textarea>
+    <p class="text-xs text-gray-400 mt-1">This is the address tied to your account — edit if you want it picked up/delivered somewhere else.</p>
+</div>
+
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
                 <div class="space-y-2">

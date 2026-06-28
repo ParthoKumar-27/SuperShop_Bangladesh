@@ -1,47 +1,22 @@
-from fastapi import APIRouter, Request, Form, Depends, Query
+from fastapi import APIRouter, Request, Form, Depends, Query, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.templating import Jinja2Templates
-from urllib.parse import quote
-from database import query, execute
-from auth import require_customer
-from fastapi import FastAPI, Request, Form, HTTPException, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from urllib.parse import quote
 from starlette.middleware.sessions import SessionMiddleware
+from datetime import datetime
 
+from database import query, execute
+from auth import require_customer
 
 customer_router = APIRouter(prefix="/customer", tags=["Customer"])
 templates = Jinja2Templates(directory="templates")
-# ══════════════════════════════════════════════════════════════════════════════
-#  CUSTOMER DASHBOARD  (protected — CUSTOMER only)
-# ══════════════════════════════════════════════════════════════════════════════
-# ══════════════════════════════════════════════════════════════════════════════
-#  CUSTOMER SHOP, CART & CHECKOUT
-# ══════════════════════════════════════════════════════════════════════════════
-# ══════════════════════════════════════════════════════════════════════════════
-#  ROOT — redirect based on role
-# ══════════════════════════════════════════════════════════════════════════════
-def _next_id(prefix: str, table: str, column: str, total_len: int = 8) -> str:
-    """Generate the next sequential ID like 'S-000001' for a VARCHAR(total_len) PK
-    that follows the pattern '<prefix><zero-padded number>'."""
-    width = total_len - len(prefix)
-    rows = query(f"""
-        SELECT COALESCE(MAX(CAST(SUBSTRING({column} FROM {len(prefix)+1}) AS INTEGER)), 0) + 1 AS next_num
-        FROM {table}
-        WHERE {column} ~ %s
-    """, (f"^{prefix}[0-9]+$",))
-    next_num = rows[0]["next_num"]
-    return f"{prefix}{str(next_num).zfill(width)}"
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  UTILITY FUNCTIONS
 # ══════════════════════════════════════════════════════════════════════════════
 def _next_id(prefix: str, table: str, column: str, total_len: int = 8) -> str:
-    """Generate the next sequential ID like 'S-000001' for a VARCHAR(total_len) PK
-    that follows the pattern '<prefix><zero-padded number>'."""
+    """Generate the next sequential ID like 'S-000001' for a VARCHAR(total_len) PK."""
     width = total_len - len(prefix)
     rows = query(f"""
         SELECT COALESCE(MAX(CAST(SUBSTRING({column} FROM {len(prefix)+1}) AS INTEGER)), 0) + 1 AS next_num
@@ -50,6 +25,7 @@ def _next_id(prefix: str, table: str, column: str, total_len: int = 8) -> str:
     """, (f"^{prefix}[0-9]+$",))
     next_num = rows[0]["next_num"]
     return f"{prefix}{str(next_num).zfill(width)}"
+
 
 def _get_active_discounts():
     rows = query("""
@@ -68,6 +44,7 @@ def _get_active_discounts():
             by_cat[r["cat_id"]] = r
     return by_product, by_cat
 
+
 def _apply_discount(unit_price, product_id, cat_id, by_product, by_cat):
     disc = by_product.get(product_id) or by_cat.get(cat_id)
     if not disc:
@@ -81,19 +58,23 @@ def _apply_discount(unit_price, product_id, cat_id, by_product, by_cat):
         label = f"৳{disc['discount_value']} off"
     return round(max(price - saved, 0), 2), label
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  CUSTOMER SHOP, CART & CHECKOUT
-# ══════════════════════════════════════════════════════════════════════════════
 
-
+# ══════════════════════════════════════════════════════════════════════════════
+#  INVOICE — returns HTML fragment for modal OR full page
+# ══════════════════════════════════════════════════════════════════════════════
 @customer_router.get("/invoice/{sale_id}", response_class=HTMLResponse)
-def view_invoice(sale_id: str, request: Request, session=Depends(require_customer)):
+def view_invoice(
+    sale_id: str,
+    request: Request,
+    modal: str = Query(default="0"),           # ?modal=1 → fragment, else full page
+    session=Depends(require_customer)
+):
     cust_id = session.get("user_id")
 
-    # Verify that this sale record actually belongs to the requesting customer
     sale_data = query("""
         SELECT s.sale_id, TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
                s.subtotal, s.discount_amt, s.tax_amt, s.total_amt, s.payment_status,
+               s.loyalty_points_earned,
                b.branch_name, b.address AS branch_address, b.phone AS branch_phone
         FROM sale s
         JOIN branch b ON s.branch_id = b.branch_id
@@ -103,7 +84,6 @@ def view_invoice(sale_id: str, request: Request, session=Depends(require_custome
     if not sale_data:
         raise HTTPException(status_code=404, detail="Invoice record not found")
 
-    # Fetch corresponding individual checkout line items
     invoice_items = query("""
         SELECT p.product_name, si.quantity, si.unit_price, si.line_total
         FROM sale_item si
@@ -111,22 +91,30 @@ def view_invoice(sale_id: str, request: Request, session=Depends(require_custome
         WHERE si.sale_id = %s
     """, (sale_id,))
 
+    template_name = "customer/invoice_modal.html" if modal == "1" else "customer/invoice.html"
+
     return templates.TemplateResponse(
         request,
-        "customer/invoice.html",
+        template_name,
         {
             "sale": sale_data[0],
             "items": invoice_items,
-            "user_name": session.get("user_name")
+            "user_name": session.get("user_name"),
         }
     )
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  CHECKOUT — place order + update loyalty points
+# ══════════════════════════════════════════════════════════════════════════════
 @customer_router.post("/checkout")
 def place_order(
     request: Request,
     branch_id: str = Form(default=None),
     payment_method: str = Form(...),
+    address: str = Form(default=None),
+    expected_date: str = Form(default=None),
+    expected_time: str = Form(default="10:00"), # Accept incoming time from HTML form
     session=Depends(require_customer)
 ):
     cart = request.session.get("cart", {})
@@ -135,14 +123,11 @@ def place_order(
 
     cust_id = session.get("user_id")
 
-    # Fallback to session branch if form did not submit one
     if not branch_id:
         branch_id = request.session.get("selected_branch")
-        
     if not branch_id:
         raise HTTPException(status_code=400, detail="No branch selected for checkout")
 
-    # 1. Get current prices and categories for items in cart, then apply active discounts
     by_product, by_cat = _get_active_discounts()
 
     products = query("""
@@ -159,11 +144,9 @@ def place_order(
         qty = cart.get(pid, 0)
         if not qty:
             continue
-        
         disc_price, _ = _apply_discount(p["unit_price"], pid, p["cat_id"], by_product, by_cat)
         original_line = float(p["unit_price"]) * qty
         disc_line = disc_price * qty
-        
         subtotal += original_line
         discount_amt += original_line - disc_line
         items.append((pid, qty, disc_price, disc_line))
@@ -175,7 +158,9 @@ def place_order(
     total_amt = subtotal - discount_amt + tax_amt
     payment_status = "PENDING" if payment_method == "CASH" else "PAID"
 
-    # 2. Find an employee at the chosen branch to attribute the sale to
+    # Calculate loyalty points earned (1 point per ৳10 spent)
+    points_earned = int(total_amt // 10)
+
     emp_row = query("""
         SELECT emp_id FROM employee
         WHERE branch_id = %s AND is_active = 'Y'
@@ -187,33 +172,44 @@ def place_order(
         raise HTTPException(status_code=500, detail="No employee available to process this order")
     emp_id = emp_row[0]["emp_id"]
 
-    # 3. Generate IDs
-    sale_id = _next_id("S-", "sale", "sale_id", 8)
-    order_id = _next_id("O-", "online_order", "order_id", 8)
+    sale_id  = _next_id("S-",   "sale",         "sale_id",  8)
+    order_id = _next_id("O-",   "online_order", "order_id", 8)
 
-    # 4. Insert sale
+    # Insert sale — store loyalty_points_earned in the sale row
     execute("""
         INSERT INTO sale
             (sale_id, branch_id, cust_id, emp_id, order_type,
-             subtotal, discount_amt, tax_amt, total_amt, payment_status)
-        VALUES (%s, %s, %s, %s, 'ONLINE', %s, %s, %s, %s, %s)
-    """, (sale_id, branch_id, cust_id, emp_id, subtotal, discount_amt, tax_amt, total_amt, payment_status))
+             subtotal, discount_amt, tax_amt, total_amt, payment_status,
+             loyalty_points_earned)
+        VALUES (%s, %s, %s, %s, 'ONLINE', %s, %s, %s, %s, %s, %s)
+    """, (sale_id, branch_id, cust_id, emp_id,
+          subtotal, discount_amt, tax_amt, total_amt, payment_status,
+          points_earned))
 
-    # 5. Insert sale items
     for pid, qty, unit_price, line_total in items:
         execute("""
             INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
             VALUES (%s, %s, %s, %s, %s)
         """, (sale_id, pid, qty, unit_price, line_total))
 
-    # 6. Insert online_order
+    # Use the address typed in checkout if provided, otherwise fallback to old pickup structure
+    delivery_address = address.strip() if address and address.strip() else f"Self pickup - branch {branch_id}"
+
+    # Process and combine expected_date and expected_time into a complete timestamp string
+    expected_delivery = None
+    if expected_date and expected_date.strip():
+        date_str = expected_date.strip()
+        time_str = expected_time.strip() if expected_time and expected_time.strip() else "10:00"
+        # Yields a cleanly formatted string: "YYYY-MM-DD HH:MM:00"
+        expected_delivery = f"{date_str} {time_str}:00"
+
     execute("""
         INSERT INTO online_order
-            (order_id, cust_id, branch_id, sale_id, order_status, delivery_address)
-        VALUES (%s, %s, %s, %s, 'PLACED', %s)
-    """, (order_id, cust_id, branch_id, sale_id, f"Self pickup - branch {branch_id}"))
+            (order_id, cust_id, branch_id, sale_id, order_status,
+             delivery_address, expected_delivery)
+        VALUES (%s, %s, %s, %s, 'PLACED', %s, %s)
+    """, (order_id, cust_id, branch_id, sale_id, delivery_address, expected_delivery))
 
-    # 7. Record payment (only for instant methods; CASH is collected on delivery)
     if payment_method != "CASH":
         payment_id = _next_id("PAY-", "payment", "payment_id", 8)
         execute("""
@@ -221,101 +217,84 @@ def place_order(
             VALUES (%s, %s, %s, %s, 'SUCCESS')
         """, (payment_id, sale_id, total_amt, payment_method))
 
-    # 8. Clear cart
+    # Add earned points to customer's loyalty balance
+    execute("""
+        UPDATE customer
+        SET loyalty_points = COALESCE(loyalty_points, 0) + %s
+        WHERE cust_id = %s
+    """, (points_earned, cust_id))
+
+    # Safe explicit cast to integer before updating session state
+    updated = query("SELECT loyalty_points FROM customer WHERE cust_id = %s", (cust_id,))
+    if updated and updated[0]["loyalty_points"] is not None:
+        request.session["loyalty_points"] = int(updated[0]["loyalty_points"])
+    else:
+        request.session["loyalty_points"] = 0
+
     request.session["cart"] = {}
 
     return RedirectResponse("/customer/dashboard?msg=order_placed", status_code=302)
 
-# @customer_router.post("/checkout")
-# def place_order(
-#     request: Request,
-#     branch_id: str = Form(default=None),
-#     payment_method: str = Form(...),
-#     session=Depends(require_customer)
-# ):
-#     cart = request.session.get("cart", {})
-#     if not cart:
-#         return RedirectResponse("/customer/shop", status_code=302)
 
-#     cust_id = session.get("user_id")
+# ══════════════════════════════════════════════════════════════════════════════
+#  DASHBOARD
+# ══════════════════════════════════════════════════════════════════════════════
+@customer_router.get("/dashboard", response_class=HTMLResponse)
+def customer_dashboard(request: Request, session=Depends(require_customer)):
+    cust_id = session.get("user_id")
 
-#     # 1. Get current prices for items in cart
-#     products = query("""
-#         SELECT product_id, unit_price
-#         FROM product
-#         WHERE product_id = ANY(%s) AND is_active = 'Y'
-#     """, (list(cart.keys()),))
-#     price_map = {p["product_id"]: float(p["unit_price"]) for p in products}
+    my_orders = query("""
+        SELECT s.sale_id,
+               TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
+               b.branch_name, s.total_amt,
+               s.payment_status, s.order_type,
+               oo.order_status, oo.delivery_address
+        FROM   sale s
+               JOIN branch b ON s.branch_id = b.branch_id
+               LEFT JOIN online_order oo ON s.sale_id = oo.sale_id
+        WHERE  s.cust_id = %s
+          AND  (s.hidden_by_customer IS NULL OR s.hidden_by_customer != 'Y')
+        ORDER BY s.sale_date DESC
+        LIMIT 10
+    """, (cust_id,))
 
-#     items = []
-#     subtotal = 0.0
-#     for pid, qty in cart.items():
-#         if pid not in price_map:
-#             continue
-#         line_total = price_map[pid] * qty
-#         subtotal += line_total
-#         items.append((pid, qty, price_map[pid], line_total))
+    # Always read fresh loyalty points from DB
+    cust_info = query(
+        "SELECT cust_name, loyalty_points, membership_type FROM customer WHERE cust_id = %s",
+        (cust_id,)
+    )
+    
+    if cust_info and cust_info[0]["loyalty_points"] is not None:
+        using_points = int(cust_info[0]["loyalty_points"])
+    else:
+        using_points = int(session.get("loyalty_points", 0))
 
-#     if not items:
-#         return RedirectResponse("/customer/shop", status_code=302)
+    return templates.TemplateResponse(request, "customer/dashboard.html", {
+        "my_orders":      my_orders,
+        "user_name":      session.get("user_name"),
+        "membership":     session.get("membership"),
+        "loyalty_points": using_points,
+        "role":           "CUSTOMER",
+    })
 
-#     discount_amt = 0.0
-#     tax_amt = 0.0
-#     total_amt = subtotal - discount_amt + tax_amt
-#     payment_status = "PENDING" if payment_method == "CASH" else "PAID"
 
-#     # 2. Find an employee at the chosen branch to attribute the sale to
-#     emp_row = query("""
-#         SELECT emp_id FROM employee
-#         WHERE branch_id = %s AND is_active = 'Y'
-#         ORDER BY emp_id LIMIT 1
-#     """, (branch_id,))
-#     if not emp_row:
-#         emp_row = query("SELECT emp_id FROM employee WHERE is_active = 'Y' ORDER BY emp_id LIMIT 1")
-#     if not emp_row:
-#         raise HTTPException(status_code=500, detail="No employee available to process this order")
-#     emp_id = emp_row[0]["emp_id"]
+# ══════════════════════════════════════════════════════════════════════════════
+#  HIDE ORDER
+# ══════════════════════════════════════════════════════════════════════════════
+@customer_router.post("/order/hide/{sale_id}")
+def hide_order(sale_id: str, session=Depends(require_customer)):
+    cust_id = session.get("user_id")
+    execute("""
+        UPDATE sale
+        SET hidden_by_customer = 'Y'
+        WHERE sale_id = %s AND cust_id = %s
+    """, (sale_id, cust_id))
+    return RedirectResponse("/customer/dashboard?msg=order_hidden", status_code=302)
 
-#     # 3. Generate IDs
-#     sale_id = _next_id("S-", "sale", "sale_id", 8)
-#     order_id = _next_id("O-", "online_order", "order_id", 8)
 
-#     # 4. Insert sale
-#     execute("""
-#         INSERT INTO sale
-#             (sale_id, branch_id, cust_id, emp_id, order_type,
-#              subtotal, discount_amt, tax_amt, total_amt, payment_status)
-#         VALUES (%s, %s, %s, %s, 'ONLINE', %s, %s, %s, %s, %s)
-#     """, (sale_id, branch_id, cust_id, emp_id, subtotal, discount_amt, tax_amt, total_amt, payment_status))
-
-#     # 5. Insert sale items
-#     for pid, qty, unit_price, line_total in items:
-#         execute("""
-#             INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
-#             VALUES (%s, %s, %s, %s, %s)
-#         """, (sale_id, pid, qty, unit_price, line_total))
-
-#     # 6. Insert online_order (delivery_address is NOT NULL, so use a placeholder
-#     #    since this UI is "pickup" style and doesn't collect an address)
-#     execute("""
-#         INSERT INTO online_order
-#             (order_id, cust_id, branch_id, sale_id, order_status, delivery_address)
-#         VALUES (%s, %s, %s, %s, 'PLACED', %s)
-#     """, (order_id, cust_id, branch_id, sale_id, f"Self pickup - branch {branch_id}"))
-
-#     # 7. Record payment (only for instant methods; CASH is collected on delivery)
-#     if payment_method != "CASH":
-#         payment_id = _next_id("PAY-", "payment", "payment_id", 8)
-#         execute("""
-#             INSERT INTO payment (payment_id, sale_id, amount, method, status)
-#             VALUES (%s, %s, %s, %s, 'SUCCESS')
-#         """, (payment_id, sale_id, total_amt, payment_method))
-
-#     # 8. Clear cart
-#     request.session["cart"] = {}
-
-#     return RedirectResponse("/customer/dashboard?msg=order_placed", status_code=302)
-
+# ══════════════════════════════════════════════════════════════════════════════
+#  SHOP
+# ══════════════════════════════════════════════════════════════════════════════
 @customer_router.post("/select-branch")
 def select_branch(
     request: Request,
@@ -325,21 +304,6 @@ def select_branch(
     request.session["selected_branch"] = branch_id
     return RedirectResponse("/customer/shop", status_code=302)
 
-
-# @customer_router.get("/shop", response_class=HTMLResponse)
-# def customer_shop(request: Request, session=Depends(require_customer)):
-#     products = query("""
-#         SELECT product_id, product_name, brand, unit_price, unit
-#         FROM product
-#         WHERE is_active = 'Y'
-#         ORDER BY product_name
-#     """)
-
-#     return templates.TemplateResponse(request, "customer/shop.html", {
-#         "products": products,
-#         "role": "CUSTOMER",
-#         "user_name": session.get("user_name"),
-#     })
 
 @customer_router.get("/shop", response_class=HTMLResponse)
 def customer_shop(request: Request, session=Depends(require_customer)):
@@ -372,11 +336,15 @@ def customer_shop(request: Request, session=Depends(require_customer)):
         "products": products,
         "branches": branches,
         "selected_branch": selected_branch,
+        "cart_locked": len(request.session.get("cart", {})) > 0,
         "role": "CUSTOMER",
         "user_name": session.get("user_name"),
     })
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  CART
+# ══════════════════════════════════════════════════════════════════════════════
 @customer_router.post("/cart/add")
 def add_to_cart(
     request: Request,
@@ -387,36 +355,7 @@ def add_to_cart(
     cart = request.session.get("cart", {})
     cart[product_id] = cart.get(product_id, 0) + max(1, quantity)
     request.session["cart"] = cart
-
     return RedirectResponse("/customer/shop?msg=added", status_code=302)
-
-
-# @customer_router.get("/cart", response_class=HTMLResponse)
-# def view_cart(request: Request, session=Depends(require_customer)):
-#     cart = request.session.get("cart", {})
-
-#     items = []
-#     grand_total = 0.0
-
-#     if cart:
-#         products = query("""
-#             SELECT product_id, product_name, brand, unit_price, unit
-#             FROM product
-#             WHERE product_id = ANY(%s)
-#         """, (list(cart.keys()),))
-
-#         for p in products:
-#             qty = cart.get(p["product_id"], 0)
-#             line_total = float(p["unit_price"]) * qty
-#             grand_total += line_total
-#             items.append({**p, "quantity": qty, "line_total": line_total})
-
-#     return templates.TemplateResponse(request, "customer/cart.html", {
-#         "items": items,
-#         "grand_total": grand_total,
-#         "role": "CUSTOMER",
-#         "user_name": session.get("user_name"),
-#     })
 
 
 @customer_router.get("/cart", response_class=HTMLResponse)
@@ -438,18 +377,15 @@ def view_cart(request: Request, session=Depends(require_customer)):
         for p in raw_products:
             qty = cart.get(p["product_id"], 0)
             disc_price, disc_label = _apply_discount(p["unit_price"], p["product_id"], p["cat_id"], by_product, by_cat)
-            
             line_total = disc_price * qty
             original_line = float(p["unit_price"]) * qty
-            
             total_savings += original_line - line_total
             grand_total += line_total
-            
             items.append({
-                **p, 
-                "quantity": qty, 
+                **p,
+                "quantity": qty,
                 "line_total": line_total,
-                "disc_price": disc_price, 
+                "disc_price": disc_price,
                 "disc_label": disc_label,
                 "original_price": float(p["unit_price"])
             })
@@ -463,7 +399,6 @@ def view_cart(request: Request, session=Depends(require_customer)):
     })
 
 
-
 @customer_router.post("/cart/update")
 def update_cart(
     request: Request,
@@ -472,12 +407,10 @@ def update_cart(
     session=Depends(require_customer)
 ):
     cart = request.session.get("cart", {})
-
     if quantity <= 0:
         cart.pop(product_id, None)
     else:
         cart[product_id] = quantity
-
     request.session["cart"] = cart
     return RedirectResponse("/customer/cart", status_code=302)
 
@@ -494,44 +427,9 @@ def remove_from_cart(
     return RedirectResponse("/customer/cart", status_code=302)
 
 
-# @customer_router.get("/checkout", response_class=HTMLResponse)
-# def checkout_page(request: Request, session=Depends(require_customer)):
-#     cart = request.session.get("cart", {})
-
-#     if not cart:
-#         return RedirectResponse("/customer/shop", status_code=302)
-
-#     products = query("""
-#         SELECT product_id, product_name, brand, unit_price, unit
-#         FROM product
-#         WHERE product_id = ANY(%s)
-#     """, (list(cart.keys()),))
-
-#     items = []
-#     grand_total = 0.0
-#     for p in products:
-#         qty = cart.get(p["product_id"], 0)
-
-
-#         line_total = float(p["unit_price"]) * qty
-#         grand_total += line_total
-#         items.append({**p, "quantity": qty, "line_total": line_total})
-
-#     branches = query("""
-#         SELECT branch_id, branch_name
-#         FROM branch
-#         WHERE is_active = 'Y'
-#         ORDER BY branch_name
-#     """)
-
-#     return templates.TemplateResponse(request, "customer/checkout.html", {
-#         "items": items,
-#         "grand_total": grand_total,
-#         "branches": branches,
-#         "role": "CUSTOMER",
-#         "user_name": session.get("user_name"),
-#     })
-
+# ══════════════════════════════════════════════════════════════════════════════
+#  CHECKOUT PAGE
+# ══════════════════════════════════════════════════════════════════════════════
 @customer_router.get("/checkout", response_class=HTMLResponse)
 def checkout_page(request: Request, session=Depends(require_customer)):
     cart = request.session.get("cart", {})
@@ -562,6 +460,13 @@ def checkout_page(request: Request, session=Depends(require_customer)):
     selected_branch_id = request.session.get("selected_branch")
     selected_branch = next((b for b in branches if b["branch_id"] == selected_branch_id), None)
 
+    # Fetch customer's saved profile address
+    cust_info = query(
+        "SELECT address FROM customer WHERE cust_id = %s",
+        (session.get("user_id"),)
+    )
+    customer_address = cust_info[0]["address"] if cust_info and cust_info[0]["address"] else ""
+
     return templates.TemplateResponse(request, "customer/checkout.html", {
         "items": items,
         "grand_total": subtotal,
@@ -569,45 +474,16 @@ def checkout_page(request: Request, session=Depends(require_customer)):
         "branches": branches,
         "selected_branch_id": selected_branch_id,
         "selected_branch": selected_branch,
+        "customer_address": customer_address, # Pass profile address to template context
+        "expected_time": "10:00",              # Pass fallback default time string
         "role": "CUSTOMER",
         "user_name": session.get("user_name"),
     })
 
 
-
-# POST /customer/checkout (place order) comes in the next step —
-# it needs to know the exact columns of sale, sale_item, and online_order.
-# @customer_router.get("/inventory", response_class=HTMLResponse)
-# def customer_inventory(
-#     request: Request,
-#     session=Depends(require_customer)
-# ):
-#     inventory = query("""
-#         SELECT
-#             b.branch_name,
-#             p.product_name,
-#             bi.quantity,
-#             CASE
-#                 WHEN bi.quantity <= bi.reorder_level
-#                 THEN 'LOW'
-#                 ELSE 'AVAILABLE'
-#             END AS stock_status
-#         FROM branch_inventory bi
-#         JOIN branch b USING(branch_id)
-#         JOIN product p USING(product_id)
-#         ORDER BY b.branch_name, p.product_name
-#     """)
-
-#     return templates.TemplateResponse(
-#         request,
-#         "customer/inventory.html",
-#         {
-#             "inventory": inventory,
-#             "role": "CUSTOMER",
-#             "user_name": session.get("user_name")
-#         }
-#     )
-
+# ══════════════════════════════════════════════════════════════════════════════
+#  INVENTORY
+# ══════════════════════════════════════════════════════════════════════════════
 @customer_router.get("/inventory", response_class=HTMLResponse)
 def customer_inventory(request: Request, branch_id: str = Query(default=None), session=Depends(require_customer)):
     branches = query("SELECT branch_id, branch_name FROM branch WHERE is_active = 'Y' ORDER BY branch_name")
@@ -649,141 +525,59 @@ def customer_inventory(request: Request, branch_id: str = Query(default=None), s
     })
 
 
-
+# ══════════════════════════════════════════════════════════════════════════════
+#  BRANCHES
+# ══════════════════════════════════════════════════════════════════════════════
 @customer_router.get("/branches", response_class=HTMLResponse)
-def customer_branches(
-    request: Request,
-    session=Depends(require_customer)
-):
-
+def customer_branches(request: Request, session=Depends(require_customer)):
     branches = query("""
-        SELECT
-            b.branch_id,
-            b.branch_name,
-            c.city_name,
-            b.address,
-            b.phone,
-            b.open_time,
-            b.close_time,
-            b.is_active
+        SELECT b.branch_id, b.branch_name, c.city_name,
+               b.address, b.phone, b.open_time, b.close_time, b.is_active
         FROM branch b
-        JOIN city c
-            ON b.city_id=c.city_id
+        JOIN city c ON b.city_id = c.city_id
         ORDER BY b.branch_name
     """)
-
-    return templates.TemplateResponse(
-        request,
-        "customer/branches.html",
-        {
-            "branches": branches,
-            "role": "CUSTOMER",
-            "user_name": session.get("user_name")
-        }
-    )
-
-
-@customer_router.post("/delete-account")
-def delete_customer_account(
-    request: Request,
-    session=Depends(require_customer)
-):
-    cust_id = session.get("user_id")
-
-    # Delete customer account
-    execute("""
-        DELETE FROM customer
-        WHERE cust_id = %s
-    """, (cust_id,))
-
-    # Clear session
-    request.session.clear()
-
-    return RedirectResponse(
-        "/?msg=account_deleted",
-        status_code=302
-    )
-
-@customer_router.get("/dashboard", response_class=HTMLResponse)
-def customer_dashboard(request: Request, session=Depends(require_customer)):
-    cust_id = session.get("user_id")
-
-    my_orders = query("""
-        SELECT s.sale_id,
-               TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
-               b.branch_name, s.total_amt,
-               s.payment_status, s.order_type,
-               oo.order_status, oo.delivery_address
-        FROM   sale s
-               JOIN branch b ON s.branch_id = b.branch_id
-               LEFT JOIN online_order oo ON s.sale_id = oo.sale_id
-        WHERE  s.cust_id = %s
-        ORDER BY s.sale_date DESC
-        LIMIT 10
-    """, (cust_id,))
-
-    cust_info = query(
-        "SELECT cust_name, loyalty_points, membership_type FROM customer WHERE cust_id = %s",
-        (cust_id,)
-    )
-
-    return templates.TemplateResponse(request, "customer/dashboard.html", {
-        "my_orders":      my_orders,
-        "user_name":      session.get("user_name"),
-        "membership":     session.get("membership"),
-        "loyalty_points": session.get("loyalty_points"),
-        "role":           "CUSTOMER",
+    return templates.TemplateResponse(request, "customer/branches.html", {
+        "branches": branches,
+        "role": "CUSTOMER",
+        "user_name": session.get("user_name")
     })
 
+
 # ══════════════════════════════════════════════════════════════════════════════
-#  CATEGORY PAGE — products filtered by category (and its subcategories)
+#  DELETE ACCOUNT
+# ══════════════════════════════════════════════════════════════════════════════
+@customer_router.post("/delete-account")
+def delete_customer_account(request: Request, session=Depends(require_customer)):
+    cust_id = session.get("user_id")
+    execute("DELETE FROM customer WHERE cust_id = %s", (cust_id,))
+    request.session.clear()
+    return RedirectResponse("/?msg=account_deleted", status_code=302)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CATEGORY PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 @customer_router.get("/category/{cat_id}", response_class=HTMLResponse)
 def category_page(request: Request, cat_id: str):
     category = query("""
         SELECT cat_id, cat_name, parent_cat_id, description
-        FROM category
-        WHERE cat_id = %s
+        FROM category WHERE cat_id = %s
     """, (cat_id,))
-
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
     products = query("""
-        SELECT p.product_id,
-               p.product_name,
-               p.brand,
-               p.unit_price,
-               p.unit
+        SELECT p.product_id, p.product_name, p.brand, p.unit_price, p.unit
         FROM product p
         WHERE p.is_active = 'Y'
-          AND (
-                p.cat_id = %s
-             OR p.cat_id IN (SELECT cat_id FROM category WHERE parent_cat_id = %s)
-          )
+          AND (p.cat_id = %s OR p.cat_id IN (SELECT cat_id FROM category WHERE parent_cat_id = %s))
         ORDER BY p.product_name
     """, (cat_id, cat_id))
 
-    return templates.TemplateResponse(
-        request,
-        "category.html",
-        {
-            "products": products,
-            "category": category[0],
-            "logged_in": bool(request.session.get("role")),
-            "role": request.session.get("role"),
-        }
-    )
-
-
-@customer_router.post("/order/hide/{sale_id}")
-def hide_order(sale_id: str, session=Depends(require_customer)):
-    cust_id = session.get("user_id")
-    
-    execute("""
-        UPDATE sale
-        SET hidden_by_customer = 'Y'
-        WHERE sale_id = %s AND cust_id = %s
-    """, (sale_id, cust_id))
-    
-    return RedirectResponse("/customer/dashboard?msg=order_hidden", status_code=302)
+    return templates.TemplateResponse(request, "category.html", {
+        "products": products,
+        "category": category[0],
+        "logged_in": bool(request.session.get("role")),
+        "role": request.session.get("role"),
+    })

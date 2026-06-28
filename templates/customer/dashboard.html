@@ -10,18 +10,40 @@
 <div class="grid md:grid-cols-3 gap-6 mb-8">
     <div class="bg-white p-6 rounded-2xl shadow">
         <p class="text-[#646464]">Membership</p>
-        <h3 class="text-2xl font-bold text-[#F17B0D]">
-            {{ membership }}
-        </h3>
+        <h3 class="text-2xl font-bold text-[#F17B0D]">{{ membership }}</h3>
     </div>
-
     <div class="bg-white p-6 rounded-2xl shadow">
         <p class="text-[#646464]">Loyalty Points</p>
-        <h3 class="text-2xl font-bold text-[#044635]">
-            {{ loyalty_points }}
-        </h3>
+        <h3 class="text-2xl font-bold text-[#044635]">{{ loyalty_points }}</h3>
     </div>
 </div>
+
+{% if request.query_params.get('msg') == 'order_hidden' %}
+<div id="hiddenMsg" class="mb-4 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl text-sm font-medium">
+    Order hidden from your dashboard.
+</div>
+<script>
+    setTimeout(() => {
+        const el = document.getElementById('hiddenMsg');
+        if (el) el.style.display = 'none';
+    }, 4000);
+</script>
+{% endif %}
+
+
+{% if request.query_params.get('msg') == 'order_placed' %}
+<div id="successMsg" class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm font-medium">
+    ✅ Order placed successfully! Your loyalty points have been updated.
+</div>
+<script>
+    setTimeout(() => {
+        const el = document.getElementById('successMsg');
+        if (el) el.style.display = 'none';
+    }, 4000);
+</script>
+{% endif %}
+
+
 
 <div class="bg-white rounded-2xl shadow overflow-hidden">
     <table class="w-full text-left border-collapse">
@@ -47,17 +69,19 @@
                 </td>
                 <td class="p-4 font-semibold">৳{{ o.total_amt }}</td>
                 <td class="p-4 text-center flex items-center justify-center gap-2">
-                    <a href="/customer/invoice/{{ o.sale_id }}" 
-                       target="_blank"
-                       class="inline-flex items-center gap-1 bg-[#F17B0D] hover:bg-[#d66a07] text-white text-sm font-medium px-4 py-2 rounded-xl shadow-sm transition">
+
+                    <!-- FIX 2: Get Bill now opens a modal instead of new page -->
+                    <button onclick="openInvoice('{{ o.sale_id }}')"
+                            class="inline-flex items-center gap-1 bg-[#F17B0D] hover:bg-[#d66a07] text-white text-sm font-medium px-4 py-2 rounded-xl shadow-sm transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         Get Bill
-                    </a>
+                    </button>
 
-                    <form action="/customer/order/hide/{{ o.sale_id }}" method="post" class="inline" onsubmit="return confirm('Hide this order from your dashboard?');">
-                        <button type="submit" 
+                    <form action="/customer/order/hide/{{ o.sale_id }}" method="post" class="inline"
+                          onsubmit="return confirm('Hide this order from your dashboard?');">
+                        <button type="submit"
                                 class="inline-flex items-center gap-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-xl shadow-sm transition">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
@@ -68,13 +92,18 @@
                 </td>
             </tr>
             {% endfor %}
+
+            {% if not my_orders %}
+            <tr>
+                <td colspan="4" class="p-8 text-center text-gray-400 text-sm">No orders yet.</td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
 </div>
 
 <div class="mt-8 text-center">
-    <form action="/customer/delete-account"
-          method="post"
+    <form action="/customer/delete-account" method="post"
           onsubmit="return confirm('Are you sure you want to permanently delete your account?');">
         <button type="submit"
                 class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition shadow">
@@ -82,5 +111,88 @@
         </button>
     </form>
 </div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     INVOICE MODAL  (FIX 2)
+     ════════════════════════════════════════════════════════ -->
+<div id="invoiceModal"
+     class="fixed inset-0 z-50 hidden flex items-center justify-center p-4"
+     style="background: rgba(0,0,0,0.55);">
+
+    <!-- Click outside to close -->
+    <div class="absolute inset-0" onclick="closeInvoice()"></div>
+
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+
+        <!-- Modal header bar -->
+        <div class="flex items-center justify-between px-6 py-4 bg-[#044635] text-white flex-shrink-0">
+            <h2 class="text-lg font-bold tracking-tight">Invoice</h2>
+            <div class="flex items-center gap-3">
+                <button onclick="printInvoice()"
+                        class="inline-flex items-center gap-1.5 bg-[#F17B0D] hover:bg-[#d66a07] text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4H7v4a2 2 0 002 2zM9 9V5a2 2 0 012-2h2a2 2 0 012 2v4" />
+                    </svg>
+                    Print
+                </button>
+                <button onclick="closeInvoice()"
+                        class="text-white/70 hover:text-white text-2xl leading-none font-bold px-1">&times;</button>
+            </div>
+        </div>
+
+        <!-- Scrollable invoice content -->
+        <div id="invoiceContent" class="overflow-y-auto flex-1 p-6 text-gray-800">
+            <div class="text-center text-gray-400 py-16">Loading invoice…</div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function openInvoice(saleId) {
+        const modal   = document.getElementById('invoiceModal');
+        const content = document.getElementById('invoiceContent');
+
+        content.innerHTML = '<div class="text-center text-gray-400 py-16">Loading…</div>';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+
+        fetch(`/customer/invoice/${saleId}?modal=1`)
+            .then(r => r.text())
+            .then(html => { content.innerHTML = html; })
+            .catch(() => {
+                content.innerHTML = '<div class="text-center text-red-500 py-16">Could not load invoice.</div>';
+            });
+    }
+
+    function closeInvoice() {
+        const modal = document.getElementById('invoiceModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+
+    function printInvoice() {
+        const content = document.getElementById('invoiceContent').innerHTML;
+        const win = window.open('', '_blank');
+        win.document.write(`
+            <!DOCTYPE html><html><head>
+            <meta charset="UTF-8">
+            <title>Invoice</title>
+            <script src="https://cdn.tailwindcss.com"><\/script>
+            <style>@media print { @page { margin: 15mm; } }</style>
+            </head><body class="p-8 text-gray-800 antialiased">${content}</body></html>
+        `);
+        win.document.close();
+        win.focus();
+        setTimeout(() => { win.print(); win.close(); }, 600);
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInvoice(); });
+</script>
 
 {% endblock %}

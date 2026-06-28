@@ -1,0 +1,113 @@
+{# ── invoice_modal.html ──────────────────────────────────────────────────────
+   This is a plain HTML *fragment* (no <html>/<head>) rendered inside the
+   dashboard modal. The print button in the modal serialises this content
+   into a fresh window and calls window.print().
+   ─────────────────────────────────────────────────────────────────────────── #}
+
+<!-- Store header -->
+<div class="bg-[#044635] text-white px-8 py-8 rounded-2xl flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold tracking-tight">SuperShop Bangladesh</h1>
+        <p class="text-emerald-200 text-sm mt-0.5 font-medium">{{ sale.branch_name }} Branch</p>
+        <div class="text-xs text-emerald-100/80 mt-3 space-y-0.5 font-light">
+            <p>{{ sale.branch_address }}</p>
+            <p>Hotline: <span class="font-semibold text-white">{{ sale.branch_phone }}</span></p>
+        </div>
+    </div>
+    <div class="sm:text-right">
+        <p class="text-xs uppercase tracking-widest text-emerald-200 font-bold">Invoice</p>
+        <p class="text-2xl font-mono font-bold text-[#F17B0D] mt-1">#{{ sale.sale_id }}</p>
+        <p class="text-xs text-emerald-100/90 mt-2">Date: <span class="font-medium text-white">{{ sale.sale_date }}</span></p>
+    </div>
+</div>
+
+<!-- Customer / payment info pills -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="bg-gray-50 border border-gray-100 p-4 rounded-xl">
+        <p class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Customer</p>
+        <p class="text-base font-bold text-[#044635]">{{ user_name }}</p>
+    </div>
+    <div class="bg-gray-50 border border-gray-100 p-4 rounded-xl">
+        <p class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Payment Status</p>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase
+            {% if sale.payment_status == 'PAID' %} bg-green-100 text-green-800
+            {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
+            <span class="w-2 h-2 rounded-full
+                {% if sale.payment_status == 'PAID' %} bg-green-600 {% else %} bg-yellow-500 {% endif %}"></span>
+            {{ sale.payment_status }}
+        </span>
+    </div>
+    <div class="bg-gray-50 border border-gray-100 p-4 rounded-xl">
+        <p class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Collection</p>
+        <p class="text-sm font-semibold text-gray-700">Priority Pickup</p>
+    </div>
+</div>
+
+<!-- Line items -->
+<div class="mb-6 overflow-hidden rounded-xl border border-gray-100">
+    <table class="w-full text-left border-collapse text-sm">
+        <thead>
+            <tr class="bg-[#044635] text-white text-xs font-bold uppercase tracking-wide">
+                <th class="p-3">Item</th>
+                <th class="p-3 text-center">Qty</th>
+                <th class="p-3 text-right">Unit Rate</th>
+                <th class="p-3 text-right">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for item in items %}
+            <tr class="hover:bg-gray-50/70 transition">
+                <td class="p-3 font-semibold text-[#044635]">{{ item.product_name }}</td>
+                <td class="p-3 text-center text-gray-600 font-medium">{{ item.quantity }}</td>
+                <td class="p-3 text-right text-gray-500 font-mono">৳{{ "{:,.2f}".format(item.unit_price|float) }}</td>
+                <td class="p-3 text-right font-bold text-gray-900 font-mono">৳{{ "{:,.2f}".format(item.line_total|float) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Totals -->
+<div class="flex justify-end mb-6">
+    <div class="w-full sm:w-72 bg-gray-50 border border-gray-100 rounded-xl p-5 space-y-2 text-sm">
+        <div class="flex justify-between text-gray-600">
+            <span>Subtotal:</span>
+            <span class="font-mono font-medium text-gray-900">৳{{ "{:,.2f}".format(sale.subtotal|float) }}</span>
+        </div>
+        {% if sale.discount_amt|float > 0 %}
+        <div class="flex justify-between text-emerald-700">
+            <span>Loyalty Discount:</span>
+            <span class="font-mono font-medium">-৳{{ "{:,.2f}".format(sale.discount_amt|float) }}</span>
+        </div>
+        {% endif %}
+        <div class="flex justify-between text-gray-600">
+            <span>VAT / Tax:</span>
+            <span class="font-mono font-medium text-gray-900">৳{{ "{:,.2f}".format(sale.tax_amt|float) }}</span>
+        </div>
+        <div class="pt-3 border-t border-gray-200 flex justify-between items-baseline">
+            <span class="font-bold text-[#044635]">Grand Total</span>
+            <span class="text-xl font-black text-[#F17B0D] font-mono">৳{{ "{:,.2f}".format(sale.total_amt|float) }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- FIX 3: Loyalty points earned notice -->
+{% set pts = sale.loyalty_points_earned if sale.loyalty_points_earned else 0 %}
+<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-4 flex items-center gap-3 mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+    </svg>
+    <div>
+        <p class="text-sm font-bold text-emerald-800">
+            🎉 You earned <span class="text-lg">{{ pts }}</span> loyalty point{{ 's' if pts != 1 else '' }} on this order!
+        </p>
+        <p class="text-xs text-emerald-600 mt-0.5">Points are added to your account and can be redeemed on future purchases.</p>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="text-center border-t border-gray-100 pt-4">
+    <p class="text-sm font-bold text-[#044635]">Thank you for shopping with SuperShop Bangladesh!</p>
+    <p class="text-xs text-gray-400 mt-1">This document serves as your official purchase receipt.</p>
+</div>

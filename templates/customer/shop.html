@@ -4,6 +4,9 @@
 {% block content %}
 
 {# ── Branch selector bar ── #}
+{% set cart = request.session.get('cart', {}) %}
+{% set cart_locked = cart and cart|length > 0 %}
+
 <div class="bg-white rounded-2xl shadow p-5 mb-8 flex flex-wrap items-center gap-4">
   <div class="flex items-center gap-2">
     <span class="text-xl">🏪</span>
@@ -18,7 +21,9 @@
 
   <form method="POST" action="/customer/select-branch" class="flex items-center gap-2 ml-auto">
     <select name="branch_id"
-            class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635]">
+            {% if cart_locked %}disabled{% endif %}
+            class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635]
+                   {% if cart_locked %}opacity-50 cursor-not-allowed{% endif %}">
       {% for branch in branches %}
       <option value="{{ branch.branch_id }}"
         {% if selected_branch and selected_branch.branch_id == branch.branch_id %}selected{% endif %}>
@@ -27,10 +32,19 @@
       {% endfor %}
     </select>
     <button type="submit"
-            class="bg-[#044635] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#0a6b50] transition">
+            {% if cart_locked %}disabled{% endif %}
+            class="bg-[#044635] text-white px-5 py-2 rounded-xl text-sm font-semibold transition
+                   {% if cart_locked %}opacity-50 cursor-not-allowed{% else %}hover:bg-[#0a6b50]{% endif %}">
       Switch
     </button>
   </form>
+
+  {% if cart_locked %}
+  <p class="w-full text-xs text-orange-600 font-medium mt-1">
+    🔒 Branch selection is locked while your cart has items. 
+    <a href="/customer/cart" class="underline font-semibold text-orange-700 hover:text-orange-800">Review/empty your cart</a> to switch branches.
+  </p>
+  {% endif %}
 </div>
 
 {# ── Header + search ── #}
