@@ -18,6 +18,19 @@
     <i class="fas fa-search"></i>
     <input type="text" id="salesSearch" class="filter-input" placeholder="Search sales..." />
   </div>
+
+  <select class="filter-input" id="typeFilter" onchange="applySalesFilters()">
+    <option value="">All Types</option>
+    <option value="ONLINE">Online</option>
+    <option value="IN_STORE">In-store</option>
+  </select>
+
+  <select class="filter-input" id="statusFilter" onchange="applySalesFilters()">
+    <option value="">All Statuses</option>
+    <option value="PAID">Paid</option>
+    <option value="PENDING">Pending</option>
+    <option value="CANCELLED">Cancelled</option>
+  </select>
 </div>
 
 <div class="card">
@@ -46,7 +59,7 @@
       </thead>
       <tbody>
         {% for s in sales %}
-        <tr>
+        <tr data-type="{{ s.order_type }}" data-status="{{ s.payment_status }}">
           <td><strong style="color:var(--green); font-family:monospace; font-size:11px;">{{ s.sale_id }}</strong></td>
           <td style="font-size:12px;">{{ s.sale_date }}</td>
           <td>
@@ -82,14 +95,21 @@
 
 {% block scripts %}
 <script>
+  function applySalesFilters() {
+    const q = document.getElementById("salesSearch").value.toLowerCase();
+    const type = document.getElementById("typeFilter").value;
+    const status = document.getElementById("statusFilter").value;
+    document.querySelectorAll("#salesTable tbody tr").forEach(row => {
+      const matchesText = !q || row.innerText.toLowerCase().includes(q);
+      const matchesType = !type || row.dataset.type === type;
+      const matchesStatus = !status || row.dataset.status === status;
+      row.style.display = matchesText && matchesType && matchesStatus ? "" : "none";
+    });
+  }
+
   const searchInput = document.getElementById("salesSearch");
   if (searchInput) {
-    searchInput.addEventListener("keyup", function () {
-      const filter = this.value.toLowerCase();
-      document.querySelectorAll("#salesTable tbody tr").forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-      });
-    });
+    searchInput.addEventListener("keyup", applySalesFilters);
   }
 </script>
 {% endblock %}
