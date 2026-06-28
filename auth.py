@@ -42,12 +42,17 @@ def _verify(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def _redirect_error(path: str, msg: str) -> RedirectResponse:
-    """Redirect to login page with an error message in the query string."""
+def _redirect_error(path: str, msg: str, identifier: str | None = None) -> RedirectResponse:
+    """Redirect to login page with an error message in the query string.
+
+    If ``identifier`` is provided (e.g. admin_id or phone), it is appended
+    as ``&id=`` so the form can be pre-filled after the redirect.
+    """
     from urllib.parse import quote
     separator = "&" if "?" in path else "?"
+    extra = f"&id={quote(identifier)}" if identifier else ""
     return RedirectResponse(
-        f"{path}{separator}error={quote(msg)}",
+        f"{path}{separator}error={quote(msg)}{extra}",
         status_code=302
     )
 
@@ -105,15 +110,15 @@ def admin_login(
     )
 
     if not rows:
-        return _redirect_error(FAIL, "Admin ID not found.")
+        return _redirect_error(FAIL, "Admin ID not found.", admin_id)
 
     admin = rows[0]
 
     if admin["is_active"] != "Y":
-        return _redirect_error(FAIL, "This admin account is inactive.")
+        return _redirect_error(FAIL, "This admin account is inactive.", admin_id)
 
     if not _verify(password, admin["password_hash"]):
-        return _redirect_error(FAIL, "Incorrect password.")
+        return _redirect_error(FAIL, "Incorrect password.", admin_id)
 
     # ── Set session ────────────────────────────────────────────────────────
     request.session["user_id"]   = admin["admin_id"]
@@ -146,15 +151,15 @@ def employee_login(
     )
 
     if not rows:
-        return _redirect_error(FAIL, "No employee account found for this phone number.")
+        return _redirect_error(FAIL, "No employee account found for this phone number.", phone)
 
     user = rows[0]
 
     if user["is_active"] != "Y":
-        return _redirect_error(FAIL, "This employee account is inactive.")
+        return _redirect_error(FAIL, "This employee account is inactive.", phone)
 
     if not _verify(password, user["password_hash"]):
-        return _redirect_error(FAIL, "Incorrect password.")
+        return _redirect_error(FAIL, "Incorrect password.", phone)
 
     # ── Load employee details (branch, position) ───────────────────────────
     emp = query(
@@ -163,7 +168,7 @@ def employee_login(
         (user["ref_id"],)
     )
     if not emp:
-        return _redirect_error(FAIL, "Employee record not found. Contact admin.")
+        return _redirect_error(FAIL, "Employee record not found. Contact admin.", phone)
 
     e = emp[0]
 
@@ -214,17 +219,18 @@ def customer_login(
         if ghost:
             return _redirect_error(
                 FAIL,
-                "You have shopped with us before! Please register to activate your account and see your loyalty points."
+                "You have shopped with us before! Please register to activate your account and see your loyalty points.",
+                phone,
             )
-        return _redirect_error(FAIL, "No account found. Please register first.")
+        return _redirect_error(FAIL, "No account found. Please register first.", phone)
 
     user = rows[0]
 
     if user["is_active"] != "Y":
-        return _redirect_error(FAIL, "Your account is inactive. Contact support.")
+        return _redirect_error(FAIL, "Your account is inactive. Contact support.", phone)
 
     if not _verify(password, user["password_hash"]):
-        return _redirect_error(FAIL, "Incorrect password.")
+        return _redirect_error(FAIL, "Incorrect password.", phone)
 
     # ── Load customer details ──────────────────────────────────────────────
     cust = query(
@@ -233,7 +239,7 @@ def customer_login(
         (user["ref_id"],)
     )
     if not cust:
-        return _redirect_error(FAIL, "Customer record not found. Contact support.")
+        return _redirect_error(FAIL, "Customer record not found. Contact support.", phone)
 
     c = cust[0]
 
