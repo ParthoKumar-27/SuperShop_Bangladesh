@@ -229,6 +229,40 @@
   .receipt-btn-new:hover { background: #e5e7eb; }
 
   /* Alerts */
+  /* ── Customer mode toggle ── */
+  .cust-mode-row {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .cust-mode-btn {
+    flex: 1; padding: 9px 12px; border: 1.5px solid var(--border);
+    border-radius: 9px; background: #fafafa; cursor: pointer;
+    font-family: "DM Sans", sans-serif; font-size: 12px; font-weight: 600;
+    color: var(--mid); transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .cust-mode-btn:hover { border-color: var(--green); color: var(--green); }
+  .cust-mode-btn.active-walkin {
+    border-color: var(--orange); background: #fff7ed; color: var(--orange);
+  }
+  .cust-mode-btn.active-registered {
+    border-color: var(--green); background: rgba(4,70,53,.07); color: var(--green);
+  }
+
+  /* Walk-in confirmation strip */
+  .walkin-strip {
+    background: #fff7ed; border: 1px solid #fed7aa;
+    border-radius: 9px; padding: 10px 14px;
+    font-size: 12px; display: flex; align-items: center; gap: 10px;
+  }
+  .walkin-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--orange); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .walkin-label { font-weight: 700; color: #92400e; font-size: 13px; }
+  .walkin-sub   { font-size: 11px; color: #b45309; }
+
   .pos-alert {
     padding: 9px 13px; border-radius: 8px; font-size: 12px;
     margin-bottom: 12px; display: none;
@@ -266,36 +300,62 @@
           <span class="section-title">Customer</span>
         </div>
         <div class="section-body">
-          <label class="pos-label">Phone Number</label>
-          <div class="phone-row">
-            <input type="text" id="phoneInput" class="pos-input"
-                   placeholder="01XXXXXXXXX" maxlength="15"
-                   oninput="onPhoneInput()" />
-            <button type="button" class="pos-btn pos-btn-green" onclick="lookupPhone()">
-              <i class="fas fa-search"></i> Find
+
+          <!-- Mode toggle -->
+          <div class="cust-mode-row">
+            <button type="button" class="cust-mode-btn active-walkin" id="btnWalkin"
+                    onclick="setWalkin()">
+              <i class="fas fa-walking"></i> Walk-in
             </button>
-            <button type="button" class="pos-btn pos-btn-outline" onclick="clearCustomer()">
-              Clear
+            <button type="button" class="cust-mode-btn" id="btnRegistered"
+                    onclick="setRegistered()">
+              <i class="fas fa-user-check"></i> Registered Customer
             </button>
           </div>
 
-          <!-- Found / new customer strip -->
-          <div id="custStrip" class="cust-strip">
-            <div class="cust-avatar" id="custAvatar">?</div>
+          <!-- Walk-in strip (default / active) -->
+          <div id="walkinStrip" class="walkin-strip">
+            <div class="walkin-icon"><i class="fas fa-walking"></i></div>
             <div>
-              <div class="cust-name" id="custName">—</div>
-              <div class="cust-meta" id="custMeta">—</div>
+              <div class="walkin-label">Walk-in Customer</div>
+              <div class="walkin-sub">No loyalty points. Sale proceeds anonymously.</div>
             </div>
-            <div id="custBadge"></div>
           </div>
 
-          <!-- New customer name (shown only for new) -->
-          <div id="newCustExtra" style="display:none; margin-top:10px;">
-            <label class="pos-label">Customer Name <span style="color:var(--mid);font-size:10px;">(optional — leave blank for Walk-in)</span></label>
-            <input type="text" id="newCustName" class="pos-input"
-                   placeholder="e.g. Rahim Ahmed"
-                   oninput="document.getElementById('hCustName').value = this.value" />
+          <!-- Registered customer lookup (hidden by default) -->
+          <div id="registeredPanel" style="display:none;">
+            <label class="pos-label">Phone Number</label>
+            <div class="phone-row">
+              <input type="text" id="phoneInput" class="pos-input"
+                     placeholder="01XXXXXXXXX" maxlength="15"
+                     oninput="onPhoneInput()" />
+              <button type="button" class="pos-btn pos-btn-green" onclick="lookupPhone()">
+                <i class="fas fa-search"></i> Find
+              </button>
+              <button type="button" class="pos-btn pos-btn-outline" onclick="clearPhoneOnly()">
+                Clear
+              </button>
+            </div>
+
+            <!-- Found / new customer strip -->
+            <div id="custStrip" class="cust-strip" style="margin-top:10px;">
+              <div class="cust-avatar" id="custAvatar">?</div>
+              <div>
+                <div class="cust-name" id="custName">—</div>
+                <div class="cust-meta" id="custMeta">—</div>
+              </div>
+              <div id="custBadge"></div>
+            </div>
+
+            <!-- New customer name (shown only for new) -->
+            <div id="newCustExtra" style="display:none; margin-top:10px;">
+              <label class="pos-label">Customer Name <span style="color:var(--mid);font-size:10px;">(optional)</span></label>
+              <input type="text" id="newCustName" class="pos-input"
+                     placeholder="e.g. Rahim Ahmed"
+                     oninput="document.getElementById('hCustName').value = this.value" />
+            </div>
           </div>
+
         </div>
       </div>
 
@@ -462,9 +522,46 @@ const _inv   = JSON.parse(document.getElementById('inventoryData').textContent);
 let   _cart  = [];           // [{product_id, inv_id, name, unit, price, qty, disc_id, disc_value, disc_type}]
 let   _payMethod = 'CASH';
 
+// ── Customer mode ─────────────────────────────────────────────────────────
+// Default: walk-in (no customer linked)
+
+function setWalkin() {
+  // Update buttons
+  document.getElementById('btnWalkin').className     = 'cust-mode-btn active-walkin';
+  document.getElementById('btnRegistered').className = 'cust-mode-btn';
+  // Show/hide panels
+  document.getElementById('walkinStrip').style.display    = '';
+  document.getElementById('registeredPanel').style.display = 'none';
+  // Clear any customer data
+  _clearCustData();
+}
+
+function setRegistered() {
+  // Update buttons
+  document.getElementById('btnRegistered').className = 'cust-mode-btn active-registered';
+  document.getElementById('btnWalkin').className     = 'cust-mode-btn';
+  // Show/hide panels
+  document.getElementById('walkinStrip').style.display    = 'none';
+  document.getElementById('registeredPanel').style.display = '';
+  // Focus phone input
+  setTimeout(() => document.getElementById('phoneInput').focus(), 50);
+}
+
+function _clearCustData() {
+  document.getElementById('hCustId').value    = '';
+  document.getElementById('hCustPhone').value = '';
+  document.getElementById('hCustName').value  = '';
+  document.getElementById('hIsNew').value     = '0';
+  const strip = document.getElementById('custStrip');
+  if (strip) strip.classList.remove('show');
+  const extra = document.getElementById('newCustExtra');
+  if (extra) extra.style.display = 'none';
+  const pi = document.getElementById('phoneInput');
+  if (pi) pi.value = '';
+}
+
 // ── Customer lookup ────────────────────────────────────────────────────────
 function onPhoneInput() {
-  // Auto-trigger lookup when 11 digits entered
   const v = document.getElementById('phoneInput').value.replace(/\D/g,'');
   if (v.length === 11) lookupPhone();
 }
@@ -482,7 +579,6 @@ async function lookupPhone() {
   strip.classList.add('show');
 
   if (data.found) {
-    // Existing customer
     document.getElementById('custAvatar').textContent = data.name[0].toUpperCase();
     document.getElementById('custName').textContent   = data.name;
     document.getElementById('custMeta').textContent   =
@@ -493,7 +589,6 @@ async function lookupPhone() {
     document.getElementById('hIsNew').value   = '0';
     document.getElementById('newCustExtra').style.display = 'none';
   } else {
-    // New customer — enroll automatically
     document.getElementById('custAvatar').textContent = '?';
     document.getElementById('custName').textContent   = 'New Customer';
     document.getElementById('custMeta').textContent   = 'Will be enrolled automatically';
@@ -506,15 +601,9 @@ async function lookupPhone() {
   checkSubmitReady();
 }
 
-function clearCustomer() {
-  document.getElementById('phoneInput').value = '';
-  document.getElementById('custStrip').classList.remove('show');
-  document.getElementById('newCustExtra').style.display = 'none';
-  document.getElementById('hCustId').value    = '';
-  document.getElementById('hCustPhone').value = '';
-  document.getElementById('hCustName').value  = '';
-  document.getElementById('hIsNew').value     = '0';
-  checkSubmitReady();
+function clearPhoneOnly() {
+  // Only clears the phone field + customer strip — stays in registered mode
+  _clearCustData();
 }
 
 // ── Product search ─────────────────────────────────────────────────────────
@@ -760,12 +849,11 @@ function closeReceipt() {
 function startNewSale() {
   closeReceipt();
   _cart = [];
-  clearCustomer();
+  setWalkin();          // reset to walk-in mode
   renderCart();
   document.getElementById('posForm').reset();
-  document.getElementById('hCartJson').value = '[]';
+  document.getElementById('hCartJson').value  = '[]';
   document.getElementById('hPayMethod').value = 'CASH';
-  // reset pay pill
   document.querySelectorAll('.pay-pill').forEach((p,i) => {
     p.classList.toggle('active', i === 0);
   });

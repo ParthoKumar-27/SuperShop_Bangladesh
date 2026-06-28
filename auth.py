@@ -53,23 +53,25 @@ def _redirect_error(path: str, msg: str) -> RedirectResponse:
 
 
 def _next_cust_id() -> str:
-    """Generate next customer ID like C-00016."""
-    rows = query("SELECT cust_id FROM customer ORDER BY cust_id DESC LIMIT 1")
-    if not rows:
-        return "C-00001"
-    last = rows[0]["cust_id"]          # e.g. "C-00015"
-    num  = int(last.split("-")[1]) + 1
-    return f"C-{num:05d}"
+    """Generate next customer ID like C-00016 (numeric-only MAX)."""
+    rows = query("""
+        SELECT MAX(CAST(SUBSTRING(cust_id FROM 3) AS INTEGER)) AS mx
+        FROM   customer
+        WHERE  cust_id ~ '^C-[0-9]+$'
+    """)
+    mx = rows[0]["mx"] if rows else None
+    return f"C-{(mx or 0) + 1:05d}"
 
 
 def _next_user_id() -> str:
-    """Generate a short unique user_id for app_user."""
-    rows = query("SELECT user_id FROM app_user ORDER BY user_id DESC LIMIT 1")
-    if not rows:
-        return "U-000001"
-    last = rows[0]["user_id"]
-    num  = int(last.split("-")[1]) + 1
-    return f"U-{num:06d}"
+    """Generate next app_user ID like U-000036 (numeric-only MAX)."""
+    rows = query("""
+        SELECT MAX(CAST(SUBSTRING(user_id FROM 3) AS INTEGER)) AS mx
+        FROM   app_user
+        WHERE  user_id ~ '^U-[0-9]+$'
+    """)
+    mx = rows[0]["mx"] if rows else None
+    return f"U-{(mx or 0) + 1:06d}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -207,6 +209,13 @@ def customer_login(
     )
 
     if not rows:
+        # Check if they exist as a ghost customer (enrolled by cashier, no password yet)
+        ghost = query("SELECT 1 FROM customer WHERE phone = %s", (phone,))
+        if ghost:
+            return _redirect_error(
+                FAIL,
+                "You have shopped with us before! Please register to activate your account and see your loyalty points."
+            )
         return _redirect_error(FAIL, "No account found. Please register first.")
 
     user = rows[0]
@@ -235,12 +244,24 @@ def customer_login(
     request.session["membership"]     = c["membership_type"]
     request.session["loyalty_points"] = int(c["loyalty_points"])
 
-    return RedirectResponse("/customer/dashboard", status_code=302)
+    return RedirectResponse("/", status_code=302)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER REGISTRATION
-#  Creates: customer row + app_user row (role=CUSTOMER)
+#
+#  Three cases handled:
+#
+#  Case 1 — Brand new customer (never visited):
+#    Phone not in customer table → create customer + app_user normally.
+#
+#  Case 2 — Ghost customer (enrolled by cashier, has customer row, no app_user):
+#    Phone exists in customer but NOT in app_user →
+#    Just create the app_user linked to the existing cust_id.
+#    Their loyalty points and purchase history carry over automatically.
+#
+#  Case 3 — Already fully registered (customer + app_user both exist):
+#    Block with a friendly "already registered, please log in" message.
 # ══════════════════════════════════════════════════════════════════════════════
 
 @auth_router.post("/customer/register")
@@ -257,34 +278,90 @@ def customer_register(
     phone = phone.strip()
     email = email.strip().lower()
 
-    # ── Validation ─────────────────────────────────────────────────────────
+    # ── Basic validation ───────────────────────────────────────────────────
     if len(password) < 6:
         return _redirect_error(FAIL, "Password must be at least 6 characters.")
 
-    # Check phone uniqueness in customer table
-    existing_phone = query("SELECT 1 FROM customer WHERE phone = %s", (phone,))
-    if existing_phone:
-        return _redirect_error(FAIL, "This phone number is already registered.")
+    # ── Check if a login already exists for this phone ─────────────────────
+    existing_user = query(
+        "SELECT user_id FROM app_user WHERE phone = %s AND role = 'CUSTOMER'",
+        (phone,)
+    )
+    if existing_user:
+        return _redirect_error(
+            FAIL,
+            "This phone number is already registered. Please log in instead."
+        )
 
-    # Check email uniqueness
-    existing_email = query("SELECT 1 FROM customer WHERE email = %s", (email,))
-    if existing_email:
-        return _redirect_error(FAIL, "This email is already in use.")
+    # ── Check if email is already taken (by any customer) ─────────────────
+    if email:
+        existing_email = query(
+            "SELECT 1 FROM customer WHERE email = %s", (email,)
+        )
+        if existing_email:
+            return _redirect_error(FAIL, "This email is already in use.")
 
-    # ── Generate IDs ───────────────────────────────────────────────────────
+    # ── Case 2: Ghost customer — phone exists in customer but no app_user ──
+    ghost = query(
+        "SELECT cust_id, cust_name, loyalty_points, membership_type "
+        "FROM customer WHERE phone = %s",
+        (phone,)
+    )
+
+    if ghost:
+        # Claim the existing customer record
+        existing_cust = ghost[0]
+        cust_id = existing_cust["cust_id"]
+
+        # Update their name, email, address, gender now that they've registered
+        execute("""
+            UPDATE customer
+            SET  cust_name = %s,
+                 email     = %s,
+                 address   = %s,
+                 gender    = %s
+            WHERE cust_id  = %s
+        """, (
+            cust_name.strip(),
+            email or None,
+            address.strip() or None,
+            gender,
+            cust_id,
+        ))
+
+        # Create the app_user login
+        user_id = _next_user_id()
+        execute("""
+            INSERT INTO app_user
+                (user_id, phone, password_hash, role, ref_id, is_active, created_at)
+            VALUES (%s, %s, %s, 'CUSTOMER', %s, 'Y', CURRENT_TIMESTAMP)
+        """, (user_id, phone, _hash(password), cust_id))
+
+        # Auto-login and show a welcome-back message via session flash
+        request.session["user_id"]        = cust_id
+        request.session["user_name"]      = cust_name.strip()
+        request.session["role"]           = "CUSTOMER"
+        request.session["membership"]     = existing_cust["membership_type"]
+        request.session["loyalty_points"] = int(existing_cust["loyalty_points"])
+        request.session["flash"]          = (
+            f"Welcome back! Your account is now active. "
+            f"You have {existing_cust['loyalty_points']} loyalty points from your previous visits."
+        )
+
+        return RedirectResponse("/customer/dashboard", status_code=302)
+
+    # ── Case 1: Brand new customer — create everything fresh ───────────────
     cust_id = _next_cust_id()
     user_id = _next_user_id()
     pw_hash = _hash(password)
 
-    # ── Insert customer ────────────────────────────────────────────────────
     execute("""
         INSERT INTO customer
             (cust_id, cust_name, email, phone, address, gender,
              join_date, loyalty_points, membership_type)
         VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 0, 'REGULAR')
-    """, (cust_id, cust_name.strip(), email, phone, address.strip(), gender))
+    """, (cust_id, cust_name.strip(), email or None, phone, address.strip() or None, gender))
 
-    # ── Insert app_user ────────────────────────────────────────────────────
     execute("""
         INSERT INTO app_user
             (user_id, phone, password_hash, role, ref_id, is_active, created_at)
