@@ -71,7 +71,11 @@
       font-size: 20px;
       font-weight: 700;
       letter-spacing: -.3px;
+      color: #fff;
+      text-decoration: none;
+      transition: opacity .15s ease;
     }
+    .topbar-logo:hover { opacity: .85; }
     .topbar-logo span { color: var(--orange); }
 
     /* ── Hero split layout ── */
@@ -304,12 +308,15 @@
       background: var(--white);
       border-radius: var(--radius);
       box-shadow: var(--shadow-lg);
-      padding: 40px 36px;
+      padding: 28px 30px 24px;
       width: 100%;
-      max-width: 420px;
+      max-width: 400px;
       position: relative;
       overflow: hidden;
       animation: cardIn .55s cubic-bezier(.16,1,.3,1) both;
+      max-height: calc(100vh - 120px);
+      display: flex;
+      flex-direction: column;
     }
     .auth-box::before {
       content: '';
@@ -323,15 +330,15 @@
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
     .auth-title {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
       color: var(--dark);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .auth-sub {
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--mid);
-      margin-bottom: 28px;
+      margin-bottom: 18px;
     }
 
     /* ── Role selector ── */
@@ -339,13 +346,13 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      margin-bottom: 28px;
+      margin-bottom: 22px;
     }
     .role-btn {
       border: 1.5px solid var(--border);
       background: var(--white);
       border-radius: 10px;
-      padding: 14px 8px 12px;
+      padding: 10px 8px 9px;
       text-align: center;
       cursor: pointer;
       transition: border-color .18s, background .18s, box-shadow .18s, transform .18s;
@@ -371,8 +378,8 @@
       font-weight: 700;
     }
     .role-icon {
-      font-size: 22px;
-      margin-bottom: 6px;
+      font-size: 20px;
+      margin-bottom: 4px;
       display: inline-block;
       transition: transform .25s cubic-bezier(.34,1.56,.64,1);
     }
@@ -392,13 +399,20 @@
 
     /* ── Form ── */
     .form-section { display: none; }
-    .form-section.visible { display: block; animation: formIn .35s ease both; }
+    .form-section.visible {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      animation: formIn .35s ease both;
+    }
     @keyframes formIn {
       from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .form-group { margin-bottom: 16px; }
+    .form-group { margin-bottom: 14px; }
     .form-label {
       display: block;
       font-size: 12px;
@@ -682,7 +696,7 @@
 
   <!-- Top bar -->
   <div class="topbar">
-    <span class="topbar-logo">🛒 SuperShop <span>Bangladesh</span></span>
+    <a href="/" class="topbar-logo">🛒 SuperShop <span>Bangladesh</span></a>
   </div>
 
   <!-- Hero split -->
@@ -747,6 +761,59 @@
             <div class="role-name">Customer</div>
             <div class="role-desc">Shopper</div>
           </div>
+        </div>
+
+        <!-- Idle illustration (shown only until a role is picked) -->
+        <div class="auth-illu" id="authIllu">
+          <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- soft backdrop blob -->
+            <defs>
+              <linearGradient id="illuBg" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%"  stop-color="#FFFCF1"/>
+                <stop offset="100%" stop-color="#fff1de"/>
+              </linearGradient>
+              <linearGradient id="illuBag" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%"  stop-color="#F17B0D"/>
+                <stop offset="100%" stop-color="#c45f00"/>
+              </linearGradient>
+              <linearGradient id="illuBox" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%"  stop-color="#044635"/>
+                <stop offset="100%" stop-color="#02241b"/>
+              </linearGradient>
+            </defs>
+            <ellipse cx="160" cy="120" rx="120" ry="10" fill="rgba(4,70,53,.08)"/>
+
+            <!-- storefront box -->
+            <rect x="40"  y="34" width="78" height="68" rx="8" fill="url(#illuBox)"/>
+            <rect x="40"  y="34" width="78" height="14" rx="8" fill="rgba(255,255,255,.10)"/>
+            <rect x="56"  y="58" width="20" height="34" rx="3" fill="rgba(255,255,255,.18)"/>
+            <rect x="82"  y="58" width="20" height="34" rx="3" fill="rgba(255,255,255,.18)"/>
+            <rect x="56"  y="48" width="46" height="4"  fill="rgba(241,123,13,.85)"/>
+
+            <!-- shopping bag -->
+            <path d="M170 50 L240 50 L232 110 L178 110 Z" fill="url(#illuBag)"/>
+            <path d="M186 50 C186 38 224 38 224 50" stroke="#c45f00" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="195" cy="78" r="4" fill="rgba(255,255,255,.9)"/>
+            <circle cx="215" cy="78" r="4" fill="rgba(255,255,255,.9)"/>
+            <path d="M192 92 Q205 100 218 92" stroke="rgba(255,255,255,.9)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+            <!-- floating sparkles -->
+            <g fill="#F17B0D">
+              <circle cx="138" cy="30" r="2.5"/>
+              <circle cx="262" cy="40" r="3"/>
+              <circle cx="280" cy="86" r="2"/>
+            </g>
+            <g stroke="#044635" stroke-width="2" stroke-linecap="round">
+              <line x1="128" y1="22" x2="128" y2="28"/>
+              <line x1="125" y1="25" x2="131" y2="25"/>
+              <line x1="270" y1="96" x2="270" y2="102"/>
+              <line x1="267" y1="99" x2="273" y2="99"/>
+            </g>
+          </svg>
+          <p class="auth-illu-tip">
+            <span class="illu-dot"></span>
+            Pick a role above to sign in to your dashboard.
+          </p>
         </div>
 
         <!-- ADMIN form -->
