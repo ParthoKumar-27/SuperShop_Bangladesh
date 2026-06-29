@@ -371,7 +371,7 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      transform: translate(-70%, -45%);
+      transform: translate(-25%, -45%);
       width: 520px;
       max-width: 90%;
       height: auto;
@@ -606,6 +606,73 @@
       margin-top: 4px;
     }
 
+    /* ── Password strength meter (registration modal) ── */
+    .pw-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 10px;
+      height: 5px;
+    }
+    .pw-strength-bar {
+      flex: 1;
+      height: 100%;
+      border-radius: 3px;
+      background: #e5e7eb;
+      transition: background .25s ease, transform .25s ease;
+      transform-origin: left center;
+    }
+    .pw-strength-bar.active.lv1 { background: linear-gradient(90deg, #e34b3c, #f17b0d); }
+    .pw-strength-bar.active.lv2 { background: linear-gradient(90deg, #f17b0d, #ffa63d); }
+    .pw-strength-bar.active.lv3 { background: linear-gradient(90deg, #e0a800, #d4c11f); }
+    .pw-strength-bar.active.lv4 { background: linear-gradient(90deg, #0a6b4f, #4caf50); }
+    .pw-strength-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--mid);
+      transition: color .2s ease;
+    }
+    .pw-strength-label .label-side {
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-weight: 600;
+    }
+    .pw-strength-label .label-text { font-weight: 700; }
+    .pw-strength-label.lv1 .label-text { color: #e34b3c; }
+    .pw-strength-label.lv2 .label-text { color: var(--orange); }
+    .pw-strength-label.lv3 .label-text { color: #b58900; }
+    .pw-strength-label.lv4 .label-text { color: var(--green-mid); }
+    .pw-strength-label.lv0 .label-text { color: var(--mid); }
+    .pw-rules {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--mid);
+    }
+    .pw-rule {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s ease;
+    }
+    .pw-rule .rule-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #d1d5db;
+      flex-shrink: 0;
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+    .pw-rule.met { color: var(--green-mid); }
+    .pw-rule.met .rule-dot {
+      background: var(--green-mid);
+      box-shadow: 0 0 0 3px rgba(10,107,79,.15);
+    }
+
     /* ── Submit button ── */
     .btn-submit {
       width: 100%;
@@ -823,6 +890,116 @@
       .hero-right { padding: 32px 20px; }
       .toast-stack { bottom: 14px; width: 94vw; }
     }
+
+    /* ── Registration success overlay (centered modal-style popup) ── */
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,36,27,.55);
+      backdrop-filter: blur(3px);
+      z-index: 250;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: overlayIn .25s ease both;
+    }
+    .success-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 64px rgba(2,36,27,.32);
+      padding: 32px 30px 28px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      position: relative;
+      animation: successIn .45s cubic-bezier(.16,1,.3,1) both;
+      overflow: hidden;
+    }
+    .success-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--green), var(--green-mid));
+    }
+    @keyframes successIn {
+      from { opacity: 0; transform: translateY(20px) scale(.94); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .success-check {
+      width: 64px;
+      height: 64px;
+      margin: 6px auto 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green-mid), var(--green));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(10,107,79,.35);
+      animation: checkPop .55s cubic-bezier(.34,1.56,.64,1) .15s both;
+      position: relative;
+    }
+    .success-check::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 2px solid rgba(10,107,79,.25);
+      animation: checkRing 1.2s ease-out .25s both;
+    }
+    @keyframes checkPop {
+      0%   { opacity: 0; transform: scale(.3); }
+      60%  { opacity: 1; transform: scale(1.15); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes checkRing {
+      0%   { opacity: .8; transform: scale(.9); }
+      100% { opacity: 0;  transform: scale(1.4); }
+    }
+    .success-check svg { width: 32px; height: 32px; }
+    .success-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 8px;
+    }
+    .success-sub {
+      font-size: 13.5px;
+      color: var(--mid);
+      line-height: 1.55;
+      margin-bottom: 22px;
+    }
+    .success-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .success-btn {
+      padding: 11px 20px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: transform .12s, box-shadow .15s, background .15s;
+    }
+    .success-btn-primary {
+      background: linear-gradient(120deg, var(--green), var(--green-mid));
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(4,70,53,.28);
+    }
+    .success-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(4,70,53,.35);
+    }
+    .success-btn-secondary {
+      background: var(--cream);
+      color: var(--dark);
+      border: 1.5px solid var(--border);
+    }
+    .success-btn-secondary:hover { background: rgba(4,70,53,.05); }
   </style>
 </head>
 <body>
@@ -1085,12 +1262,29 @@
         <div class="form-group">
           <label class="form-label">Password</label>
           <div class="input-wrap">
-            <input class="form-input" type="password" name="password"
+            <input class="form-input" type="password" name="password" id="registerPassword"
                    placeholder="Min. 6 characters" required minlength="6">
             <button type="button" class="eye-btn" onclick="togglePassword(this)" aria-label="Show password">
               <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M9.9 5.1A10.7 10.7 0 0 1 12 5c7 0 11 7 11 7a14 14 0 0 1-3.2 3.8M6.5 6.7C4 8.3 2 12 2 12s4 7 11 7c1.4 0 2.7-.3 3.9-.7"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/></svg>
             </button>
+          </div>
+          <!-- Live password strength meter -->
+          <div class="pw-strength" id="pwStrength" aria-hidden="true">
+            <div class="pw-strength-bar" data-seg="1"></div>
+            <div class="pw-strength-bar" data-seg="2"></div>
+            <div class="pw-strength-bar" data-seg="3"></div>
+            <div class="pw-strength-bar" data-seg="4"></div>
+          </div>
+          <div class="pw-strength-label lv0" id="pwStrengthLabel">
+            <span class="label-side">Strength</span>
+            <span class="label-text">—</span>
+          </div>
+          <div class="pw-rules" id="pwRules">
+            <div class="pw-rule" data-rule="len"><span class="rule-dot"></span>6+ characters</div>
+            <div class="pw-rule" data-rule="lower"><span class="rule-dot"></span>Lowercase letter</div>
+            <div class="pw-rule" data-rule="upper"><span class="rule-dot"></span>Uppercase letter</div>
+            <div class="pw-rule" data-rule="digit"><span class="rule-dot"></span>Number</div>
           </div>
         </div>
         <button type="submit" class="btn-submit">Create Account →</button>
@@ -1121,9 +1315,62 @@
       document.getElementById('registerModal').classList.remove('open');
     }
 
-    document.getElementById('registerModal').addEventListener('click', function(e) {
-      if (e.target === this) closeRegisterModal();
-    });
+    // Click-outside-to-close intentionally removed — modal now only
+    // dismisses via the ✕ button so an accidental click on the
+    // backdrop doesn't lose entered registration data.
+
+    /* ── Password strength meter (registration modal) ── */
+    (function () {
+      const pw       = document.getElementById('registerPassword');
+      const bars     = document.querySelectorAll('#pwStrength .pw-strength-bar');
+      const label    = document.getElementById('pwStrengthLabel');
+      const ruleEls  = document.querySelectorAll('#pwRules .pw-rule');
+
+      const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+
+      function score(value) {
+        const rules = {
+          len:   value.length >= 6,
+          lower: /[a-z]/.test(value),
+          upper: /[A-Z]/.test(value),
+          digit: /[0-9]/.test(value)
+        };
+        const met = Object.values(rules).filter(Boolean).length;
+        // Score 0..4 — len on its own gives 1, len+one-class gives 2, etc.
+        // Bonus point when length >= 10 for "Strong".
+        let s = met;
+        if (rules.len && value.length >= 10 && met >= 3) s = 4;
+        else if (rules.len && met >= 3) s = 3;
+        else if (rules.len && met === 2) s = 2;
+        else if (value.length > 0) s = 1;
+        return { s, rules };
+      }
+
+      function render() {
+        const value = pw.value;
+        const { s, rules } = score(value);
+
+        bars.forEach((b, i) => {
+          b.classList.toggle('active', i < s);
+          b.classList.toggle('lv1', s === 1 && i < s);
+          b.classList.toggle('lv2', s === 2 && i < s);
+          b.classList.toggle('lv3', s === 3 && i < s);
+          b.classList.toggle('lv4', s === 4 && i < s);
+        });
+
+        label.className = 'pw-strength-label lv' + s;
+        label.querySelector('.label-text').textContent =
+          value.length === 0 ? '—' : STRENGTH_LABELS[s];
+
+        ruleEls.forEach(el => {
+          const rule = el.dataset.rule;
+          el.classList.toggle('met', !!rules[rule]);
+        });
+      }
+
+      pw.addEventListener('input', render);
+      render();
+    })();
 
     /* ── Password show/hide ── */
     function togglePassword(btn) {
@@ -1174,6 +1421,50 @@
       stack.appendChild(el);
     }
 
+    /* ── Registration success popup ── */
+    function showRegistrationSuccess(title, sub) {
+      const overlay = document.createElement('div');
+      overlay.className = 'success-overlay';
+      overlay.id = 'regSuccessOverlay';
+      overlay.innerHTML = `
+        <div class="success-card" role="dialog" aria-modal="true" aria-labelledby="regSuccessTitle">
+          <div class="success-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <p class="success-title" id="regSuccessTitle"></p>
+          <p class="success-sub"></p>
+          <div class="success-actions">
+            <button class="success-btn success-btn-primary" id="regSuccessSignin">Sign in now</button>
+            <button class="success-btn success-btn-secondary" id="regSuccessClose">Close</button>
+          </div>
+        </div>
+      `;
+      overlay.querySelector('.success-title').textContent = title;
+      overlay.querySelector('.success-sub').textContent   = sub;
+      document.body.appendChild(overlay);
+
+      // Dismiss handlers — close on overlay click (but not on card click),
+      // and on Close / Sign in buttons.
+      const close = () => {
+        overlay.style.animation = 'overlayIn .2s ease reverse both';
+        setTimeout(() => overlay.remove(), 200);
+      };
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+      });
+      overlay.querySelector('#regSuccessClose').addEventListener('click', close);
+      overlay.querySelector('#regSuccessSignin').addEventListener('click', () => {
+        close();
+        const pwField = document.querySelector('#form-customer input[name="password"]');
+        if (pwField) setTimeout(() => pwField.focus(), 220);
+      });
+      // Esc to dismiss
+      const escHandler = (e) => {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); }
+      };
+      document.addEventListener('keydown', escHandler);
+    }
+
     /* Auto-select role from URL (?role=customer etc.) */
     const urlParams = new URLSearchParams(location.search);
     const urlRole = urlParams.get('role');
@@ -1214,6 +1505,52 @@
     /* Show login error toast only if an error param was present. */
     if (err) {
       showToast(decodeURIComponent(err), 'error');
+    }
+
+    /* ── Registration success popup ──
+       Triggered when /auth/login is reached with ?registered=1 after a
+       successful registration. Shows a celebratory toast with the new
+       customer's name, then pre-fills the customer login form so the
+       user only needs to type their password to sign in. */
+    if (urlParams.get('registered') === '1') {
+      const regName  = urlParams.get('name')  || 'Friend';
+      const regPhone = urlParams.get('phone') || '';
+      const isReturning = urlParams.get('welcome') === '1';
+      const points   = urlParams.get('points');
+
+      // Remove the registration params from the URL so refresh doesn't replay
+      urlParams.delete('registered');
+      urlParams.delete('welcome');
+      urlParams.delete('name');
+      urlParams.delete('phone');
+      urlParams.delete('points');
+      const clean2 = urlParams.toString()
+        ? location.pathname + '?' + urlParams.toString()
+        : location.pathname;
+      history.replaceState(null, '', clean2);
+
+      const greeting = isReturning
+        ? `Welcome back, ${decodeURIComponent(regName)}! Your account is now active.`
+        : `Account created! Welcome, ${decodeURIComponent(regName)}.`;
+      const sub = isReturning
+        ? (points
+            ? `You have ${points} loyalty points from previous visits. Please sign in below.`
+            : 'Your account is now active. Please sign in below.')
+        : 'Your registration was successful. Please sign in with your phone and password.';
+
+      showRegistrationSuccess(greeting, sub);
+
+      // Pre-fill phone in the customer login form and focus the password field
+      const custForm = document.getElementById('form-customer');
+      if (custForm && regPhone) {
+        const phoneField = custForm.querySelector('input[name="phone"]');
+        if (phoneField) {
+          phoneField.value = decodeURIComponent(regPhone);
+          phoneField.setSelectionRange(phoneField.value.length, phoneField.value.length);
+        }
+        const pwField = custForm.querySelector('input[name="password"]');
+        if (pwField) setTimeout(() => pwField.focus(), 400);
+      }
     }
   </script>
 </body>

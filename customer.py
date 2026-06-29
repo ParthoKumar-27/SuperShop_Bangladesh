@@ -595,19 +595,19 @@ def delete_customer_account(
 ):
     cust_id = session.get("user_id")
 
-    # Delete customer account
+    # Removes login access only — customer row, loyalty points and
+    # purchase history are fully preserved.
+    # Re-registering with the same phone will reconnect to all existing data
+    # via the ghost-customer path in /auth/customer/register.
     execute("""
-        DELETE FROM customer
-        WHERE cust_id = %s
+        DELETE FROM app_user
+        WHERE ref_id = %s AND role = 'CUSTOMER'
     """, (cust_id,))
 
-    # Clear session
     request.session.clear()
+    return RedirectResponse("/?msg=account_deleted", status_code=302)
 
-    return RedirectResponse(
-        "/?msg=account_deleted",
-        status_code=302
-    )
+
 
 @customer_router.get("/dashboard", response_class=HTMLResponse)
 def customer_dashboard(request: Request, session=Depends(require_customer)):

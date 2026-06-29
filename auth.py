@@ -15,6 +15,7 @@ from importlib.resources import path
 import os
 import re
 import uuid
+from urllib.parse import quote
 import bcrypt
 
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
@@ -343,18 +344,15 @@ def customer_register(
             VALUES (%s, %s, %s, 'CUSTOMER', %s, 'Y', CURRENT_TIMESTAMP)
         """, (user_id, phone, _hash(password), cust_id))
 
-        # Auto-login and show a welcome-back message via session flash
-        request.session["user_id"]        = cust_id
-        request.session["user_name"]      = cust_name.strip()
-        request.session["role"]           = "CUSTOMER"
-        request.session["membership"]     = existing_cust["membership_type"]
-        request.session["loyalty_points"] = int(existing_cust["loyalty_points"])
-        request.session["flash"]          = (
-            f"Welcome back! Your account is now active. "
-            f"You have {existing_cust['loyalty_points']} loyalty points from your previous visits."
+        # Do NOT auto-login. Instead, show a success popup on the login page.
+        return RedirectResponse(
+            "/auth/login?role=customer&registered=1"
+            f"&welcome=1"
+            f"&name={quote(cust_name.strip())}"
+            f"&phone={quote(phone)}"
+            f"&points={existing_cust['loyalty_points']}",
+            status_code=302,
         )
-
-        return RedirectResponse("/customer/dashboard", status_code=302)
 
     # ── Case 1: Brand new customer — create everything fresh ───────────────
     cust_id = _next_cust_id()
@@ -374,14 +372,15 @@ def customer_register(
         VALUES (%s, %s, %s, 'CUSTOMER', %s, 'Y', CURRENT_TIMESTAMP)
     """, (user_id, phone, pw_hash, cust_id))
 
-    # ── Auto-login after registration ──────────────────────────────────────
-    request.session["user_id"]        = cust_id
-    request.session["user_name"]      = cust_name.strip()
-    request.session["role"]           = "CUSTOMER"
-    request.session["membership"]     = "REGULAR"
-    request.session["loyalty_points"] = 0
-
-    return RedirectResponse("/customer/dashboard", status_code=302)
+    # Do NOT auto-login. Redirect back to login with a success flag so the
+    # page can display a "Registration successful" popup and ask the user
+    # to sign in with their new credentials.
+    return RedirectResponse(
+        "/auth/login?role=customer&registered=1"
+        f"&name={quote(cust_name.strip())}"
+        f"&phone={quote(phone)}",
+        status_code=302,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
