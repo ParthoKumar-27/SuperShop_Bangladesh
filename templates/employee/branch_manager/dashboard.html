@@ -19,176 +19,52 @@
 {% else %}
 
 <!-- ── Welcome banner ── -->
-<div
-  style="
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg,#044635 0%, #0a6a52 55%, #13876b 100%);
-    border-radius: 22px;
-    padding: 34px 36px;
-    margin-bottom: 26px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    color:white;
-    box-shadow:0 18px 45px rgba(4,70,53,.28);
-  "
->
+<div class="welcome-banner">
 
-  <!-- Decorative circles -->
-  <div style="
-      position:absolute;
-      width:220px;
-      height:220px;
-      border-radius:50%;
-      background:rgba(255,255,255,.06);
-      right:-70px;
-      top:-90px;
-  "></div>
+  <div class="welcome-content">
+    <div class="welcome-tag">
+      <span class="tag-dot"></span>
+      <i class="fas fa-store"></i>
+      Branch Dashboard
+    </div>
 
-  <div style="
-      position:absolute;
-      width:130px;
-      height:130px;
-      border-radius:50%;
-      background:rgba(255,255,255,.04);
-      right:120px;
-      bottom:-55px;
-  "></div>
+    <h1>
+      <span class="greet">Welcome back</span>
+      <span class="name">{{ user_name }}</span>
+    </h1>
 
-  <!-- Left -->
-  <div style="position:relative; z-index:2;">
-
-      <span style="
-          display:inline-flex;
-          align-items:center;
-          gap:8px;
-          padding:6px 14px;
-          border-radius:50px;
-          background:rgba(255,255,255,.12);
-          backdrop-filter:blur(8px);
-          font-size:11px;
-          font-weight:600;
-          letter-spacing:.08em;
-          text-transform:uppercase;
-      ">
-          <i class="fas fa-store"></i>
-          Branch Dashboard
-      </span>
-
-      <h2 style="
-          margin-top:18px;
-          font-size:30px;
-          font-weight:700;
-          line-height:1.2;
-      ">
-          Welcome back,
-          <span style="color:#FFD166;">
-              {{ user_name }}
-          </span>
-      </h2>
-
-      <p style="
-          margin-top:8px;
-          font-size:14px;
-          color:rgba(255,255,255,.82);
-      ">
-          {{ branch.branch_name }}
-          •
-          {{ branch.city_name }}
-          &nbsp;—&nbsp;
-          Here's today's business overview.
-      </p>
-
+    <div class="welcome-sub">
+      <i class="fas fa-map-marker-alt"></i>
+      <span>{{ branch.branch_name }}</span>
+      <span class="dot"></span>
+      <span>{{ branch.city_name }}</span>
+      <span class="dot"></span>
+      <span>Here's today's business overview.</span>
+    </div>
   </div>
 
-  <!-- Right Card -->
-  <div
-      style="
-          position:relative;
-          z-index:2;
-          min-width:220px;
-          padding:18px 24px;
-          border-radius:18px;
-          background:rgba(255,255,255,.12);
-          backdrop-filter:blur(18px);
-          border:1px solid rgba(255,255,255,.18);
-      "
-  >
-
-      <div style="
-          display:flex;
-          align-items:center;
-          gap:10px;
-          margin-bottom:12px;
-      ">
-          <div style="
-              width:42px;
-              height:42px;
-              border-radius:12px;
-              background:rgba(255,255,255,.15);
-              display:flex;
-              align-items:center;
-              justify-content:center;
-          ">
-              <i class="fas fa-clock"></i>
-          </div>
-
-          <div>
-              <div style="
-                  font-size:11px;
-                  text-transform:uppercase;
-                  letter-spacing:.08em;
-                  color:rgba(255,255,255,.65);
-              ">
-                  Branch Hours
-              </div>
-
-              <div style="
-                  font-size:16px;
-                  font-weight:700;
-                  margin-top:2px;
-              ">
-                  {{ branch.open_time }} – {{ branch.close_time }}
-              </div>
-          </div>
-
+  <div class="welcome-side">
+    <div class="info-box">
+      <div class="info-row">
+        <div class="info-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div>
+          <small>Branch Hours</small>
+          <strong>{{ branch.open_time }} – {{ branch.close_time }}</strong>
+        </div>
       </div>
 
-      <div style="
-          height:1px;
-          background:rgba(255,255,255,.12);
-          margin:10px 0;
-      "></div>
+      <div class="info-divider"></div>
 
-      <div style="
-          display:flex;
-          justify-content:space-between;
-          font-size:12px;
-          color:rgba(255,255,255,.75);
-      ">
-          <span>Status</span>
-
-          <span style="
-              display:flex;
-              align-items:center;
-              gap:6px;
-              color:#6EE7B7;
-              font-weight:700;
-          ">
-              <span style="
-                  width:8px;
-                  height:8px;
-                  border-radius:50%;
-                  background:#6EE7B7;
-                  box-shadow:0 0 10px #6EE7B7;
-              "></span>
-
-              Open
-          </span>
-
+      <div class="status-row">
+        <span>Operating Status</span>
+        <span class="status-pill">
+          <span class="status-dot"></span>
+          Open
+        </span>
       </div>
-
+    </div>
   </div>
 
 </div>
