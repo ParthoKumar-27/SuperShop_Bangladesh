@@ -1,91 +1,76 @@
 {% extends "customer/base.html" %}
-{% block title %}My Orders{% endblock %}
+{% block title %}My Account{% endblock %}
 
 {% block content %}
+<section>
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
 
-<h1 class="text-3xl font-bold text-[#044635] mb-6">
-    Welcome {{ user_name }}
-</h1>
+      <div class="flex items-start justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 class="text-xl font-bold text-[#044635]">My Orders</h2>
+          <p class="text-sm text-gray-400 mt-1">Track your recent purchases and delivery status.</p>
+        </div>
+      </div>
 
-<div class="grid md:grid-cols-3 gap-6 mb-8">
-    <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-[#646464]">Membership</p>
-        <h3 class="text-2xl font-bold text-[#F17B0D]">
-            {{ membership }}
-        </h3>
+      {% if not my_orders %}
+        <div class="text-center text-gray-400 py-20">
+          <p class="text-5xl mb-3">🛒</p>
+          <p class="text-gray-500 font-medium">No orders yet</p>
+          <p class="text-sm mt-1">Everything you buy will show up here.</p>
+          <a href="/customer/shop"
+             class="inline-block mt-5 bg-[#F17B0D] text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-orange-600 transition">
+            Start shopping →
+          </a>
+        </div>
+      {% else %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {% for o in my_orders %}
+          <div class="rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition">
+
+            <div class="h-28 flex items-center justify-center text-4xl bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ee]">
+              {% if o.order_type == 'ONLINE' %}🚚{% else %}🏬{% endif %}
+            </div>
+
+            <div class="p-4">
+              <p class="text-sm font-semibold text-gray-800">{{ o.sale_id }}</p>
+              <p class="text-xs text-gray-400 mb-2">{{ o.branch_name }} · {{ o.sale_date }}</p>
+
+              <div class="flex items-center gap-1.5 mb-3 flex-wrap">
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full
+                  {% if o.payment_status == 'PAID' %}bg-green-50 text-green-700
+                  {% elif o.payment_status == 'PENDING' %}bg-yellow-50 text-yellow-700
+                  {% else %}bg-red-50 text-red-600{% endif %}">
+                  {{ o.payment_status }}
+                </span>
+                {% if o.order_status %}
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#044635]/10 text-[#044635]">
+                  {{ o.order_status }}
+                </span>
+                {% endif %}
+              </div>
+
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-base font-bold text-[#F17B0D]">৳ {{ "%.0f"|format(o.total_amt) }}</span>
+                <div class="flex items-center gap-2">
+                  <form action="/customer/order/hide/{{ o.sale_id }}" method="post"
+                        onsubmit="return confirm('Hide this order from your account view?');">
+                    <button type="submit" title="Hide order"
+                            class="w-8 h-8 rounded-full border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 flex items-center justify-center transition">
+                      ✕
+                    </button>
+                  </form>
+                  <a href="/customer/invoice/{{ o.sale_id }}"
+                     class="bg-[#044635] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#033828] transition">
+                    Invoice
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
     </div>
-
-    <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-[#646464]">Loyalty Points</p>
-        <h3 class="text-2xl font-bold text-[#044635]">
-            {{ loyalty_points }}
-        </h3>
-    </div>
-</div>
-
-<div class="bg-white rounded-2xl shadow overflow-hidden">
-    <table class="w-full text-left border-collapse">
-        <thead class="bg-[#044635] text-white">
-            <tr>
-                <th class="p-4">Sale ID</th>
-                <th class="p-4">Status</th>
-                <th class="p-4">Total</th>
-                <th class="p-4 text-center">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for o in my_orders %}
-            <tr class="border-b hover:bg-gray-50 transition">
-                <td class="p-4 font-medium">{{ o.sale_id }}</td>
-                <td class="p-4">
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold 
-                        {% if o.order_status == 'PLACED' or o.order_status == 'PENDING' %} bg-yellow-100 text-yellow-800 
-                        {% elif o.order_status == 'DELIVERED' or o.payment_status == 'PAID' %} bg-green-100 text-green-800 
-                        {% else %} bg-gray-100 text-gray-800 {% endif %}">
-                        {{ o.order_status or 'PROCESSING' }}
-                    </span>
-                </td>
-                <td class="p-4 font-semibold">৳{{ o.total_amt }}</td>
-                <td class="p-4 text-center flex items-center justify-center gap-2">
-                    <a href="/customer/invoice/{{ o.sale_id }}" 
-                       target="_blank"
-                       class="inline-flex items-center gap-1 bg-[#F17B0D] hover:bg-[#d66a07] text-white text-sm font-medium px-4 py-2 rounded-xl shadow-sm transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Get Bill
-                    </a>
-
-                    <form action="/customer/order/hide/{{ o.sale_id }}" method="post" class="inline" onsubmit="return confirm('Hide this order from your dashboard?');">
-                        <button type="submit" 
-                                class="inline-flex items-center gap-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-xl shadow-sm transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                            </svg>
-                            Hide
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<div class="mt-8 text-center">
-    <p class="text-sm text-gray-500 mb-2">
-        Removing your account only removes login access.<br>
-        Your orders and loyalty points are saved — re-register with the same
-        phone number to get everything back.
-    </p>
-    <form action="/customer/delete-account"
-          method="post"
-          onsubmit="return confirm('This removes your login access only.\n\nYour order history and loyalty points are preserved.\nRegister again with the same phone number to recover them.\n\nContinue?');">
-        <button type="submit"
-                class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg transition shadow">
-            Remove My Account Access
-        </button>
-    </form>
-</div>
-
+</section>
 {% endblock %}

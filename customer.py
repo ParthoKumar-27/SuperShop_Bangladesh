@@ -81,6 +81,37 @@ def _apply_discount(unit_price, product_id, cat_id, by_product, by_cat):
         label = f"৳{disc['discount_value']} off"
     return round(max(price - saved, 0), 2), label
 
+
+def _refresh_customer_session(request: Request, session) -> None:
+    """Re-read the live loyalty_points and membership_type from the DB and
+    mirror them into the session so the persistent sidebar in
+    customer/base.html always renders the *current* values instead of the
+    stale ones captured at login time."""
+    cust_id = session.get("user_id")
+    if not cust_id:
+        return
+    rows = query(
+        "SELECT membership_type, loyalty_points FROM customer WHERE cust_id = %s",
+        (cust_id,),
+    )
+    if not rows:
+        return
+    request.session["membership"]     = rows[0].get("membership_type") or "REGULAR"
+    request.session["loyalty_points"] = int(rows[0].get("loyalty_points") or 0)
+
+
+def _customer_context(request: Request, session) -> dict:
+    """Standard context keys every customer template needs so the sidebar
+    (rendered from customer/base.html) keeps a single source of truth for
+    name / membership / loyalty points."""
+    _refresh_customer_session(request, session)
+    return {
+        "role":           "CUSTOMER",
+        "user_name":      session.get("user_name"),
+        "membership":     session.get("membership"),
+        "loyalty_points": session.get("loyalty_points"),
+    }
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER SHOP, CART & CHECKOUT
 # ══════════════════════════════════════════════════════════════════════════════
@@ -223,6 +254,11 @@ def place_order(
 
     # 8. Clear cart
     request.session["cart"] = {}
+
+    # 9. Sync loyalty_points / membership into the session so the sidebar on
+    # the next page shows the freshly-updated values (triggers/badges, etc.
+    # mutate customer.loyalty_points inside the DB transaction above).
+    _refresh_customer_session(request, session)
 
     return RedirectResponse("/customer/dashboard?msg=order_placed", status_code=302)
 
@@ -372,8 +408,7 @@ def customer_shop(request: Request, session=Depends(require_customer)):
         "products": products,
         "branches": branches,
         "selected_branch": selected_branch,
-        "role": "CUSTOMER",
-        "user_name": session.get("user_name"),
+        **_customer_context(request, session),
     })
 
 
@@ -432,8 +467,7 @@ def view_cart(request: Request, session=Depends(require_customer)):
         "items": items,
         "grand_total": grand_total,
         "total_savings": total_savings,
-        "role": "CUSTOMER",
-        "user_name": session.get("user_name"),
+        **_customer_context(request, session),
     })
 
 
@@ -506,8 +540,7 @@ def checkout_page(request: Request, session=Depends(require_customer)):
         "branches": branches,
         "selected_branch_id": selected_branch_id,
         "selected_branch": selected_branch,
-        "role": "CUSTOMER",
-        "user_name": session.get("user_name"),
+        **_customer_context(request, session),
     })
 
 
@@ -582,10 +615,113 @@ def customer_branches(
         "customer/branches.html",
         {
             "branches": branches,
-            "role": "CUSTOMER",
-            "user_name": session.get("user_name")
+            **_customer_context(request, session),
         }
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CUSTOMER PROFILE — view & update personal info
+# ══════════════════════════════════════════════════════════════════════════════
+@customer_router.get("/profile", response_class=HTMLResponse)
+def customer_profile(request: Request, session=Depends(require_customer)):
+    cust_id = session.get("user_id")
+
+    rows = query("""
+        SELECT cust_id, cust_name, email, phone, address, dob, gender,
+               loyalty_points, membership_type, join_date
+        FROM customer
+        WHERE cust_id = %s
+    """, (cust_id,))
+
+    if not rows:
+        return RedirectResponse("/auth/login", status_code=302)
+
+    profile = rows[0]
+    # dob is a date object in psycopg2 — convert to ISO so the <input type="date">
+    # value attribute picks it up correctly.
+    if profile.get("dob"):
+        profile["dob"] = profile["dob"].isoformat()
+
+    return templates.TemplateResponse(request, "customer/profile.html", {
+        "profile":        profile,
+        **_customer_context(request, session),
+        "msg":            request.query_params.get("msg"),
+    })
+
+
+@customer_router.post("/profile")
+def customer_profile_update(
+    request: Request,
+    cust_name: str = Form(...),
+    phone:     str = Form(...),
+    email:     str = Form(""),
+    address:   str = Form(""),
+    dob:       str = Form(""),
+    gender:    str = Form(""),
+    session=Depends(require_customer),
+):
+    cust_id = session.get("user_id")
+
+    # Normalize / validate
+    cust_name = cust_name.strip()
+    phone     = phone.strip()
+    email     = email.strip() or None
+    address   = address.strip() or None
+    dob       = dob.strip() or None
+    gender    = gender.strip().upper() or None
+    if gender and gender not in ("M", "F"):
+        gender = None
+
+    if not cust_name or not phone:
+        return RedirectResponse(
+            f"/customer/profile?error=Name+and+phone+are+required",
+            status_code=302,
+        )
+
+    # Uniqueness check on email (DB has UNIQUE constraint) so we can return a
+    # friendly message instead of a 500 from the INSERT/UPDATE raising.
+    if email:
+        clash = query(
+            "SELECT cust_id FROM customer WHERE email = %s AND cust_id <> %s",
+            (email, cust_id),
+        )
+        if clash:
+            return RedirectResponse(
+                "/customer/profile?error=This+email+is+already+used+by+another+account",
+                status_code=302,
+            )
+
+    clash_phone = query(
+        "SELECT cust_id FROM customer WHERE phone = %s AND cust_id <> %s",
+        (phone, cust_id),
+    )
+    if clash_phone:
+        return RedirectResponse(
+            "/customer/profile?error=This+phone+number+is+already+used+by+another+account",
+            status_code=302,
+        )
+
+    try:
+        execute("""
+            UPDATE customer
+               SET cust_name = %s,
+                   email     = %s,
+                   phone     = %s,
+                   address   = %s,
+                   dob       = %s,
+                   gender    = %s
+             WHERE cust_id = %s
+        """, (cust_name, email, phone, address, dob, gender, cust_id))
+    except Exception as e:
+        return RedirectResponse(
+            f"/customer/profile?error=Could+not+update:+{quote(str(e))}",
+            status_code=302,
+        )
+
+    # Keep session display name in sync
+    request.session["user_name"] = cust_name
+    return RedirectResponse("/customer/profile?msg=profile_updated", status_code=302)
 
 
 @customer_router.post("/delete-account")
@@ -634,10 +770,7 @@ def customer_dashboard(request: Request, session=Depends(require_customer)):
 
     return templates.TemplateResponse(request, "customer/dashboard.html", {
         "my_orders":      my_orders,
-        "user_name":      session.get("user_name"),
-        "membership":     session.get("membership"),
-        "loyalty_points": session.get("loyalty_points"),
-        "role":           "CUSTOMER",
+        **_customer_context(request, session),
     })
 
 # ══════════════════════════════════════════════════════════════════════════════

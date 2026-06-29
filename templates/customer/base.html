@@ -120,8 +120,7 @@
             <!-- Nav, active state driven by the real URL -->
             {% set path = request.url.path %}
             {% set nav_items = [
-                ('/customer/dashboard', '👤', 'My Account'),
-                ('/customer/shop',      '🛍️', 'Shop'),
+                ('/customer/dashboard', '👤', 'My Orders'),                ('/customer/profile',   '🪪', 'Profile'),                ('/customer/shop',      '🛍️', 'Shop'),
                 ('/customer/cart',      '🛒', 'Cart'),
                 ('/customer/branches',  '📍', 'Branches'),
             ] %}
