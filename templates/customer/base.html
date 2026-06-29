@@ -1,213 +1,171 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SuperShop BD - {% block title %}{% endblock %}</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
 
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-    :root{
-        --green:#044635;
-        --orange:#F17B0D;
-        --cream:#FFFCF1;
-    }
-
-    body{
-        background:#f5f7fa;
-    }
-
-    .glass{
-        backdrop-filter:blur(12px);
-        background:rgba(255,255,255,.85);
-    }
-</style>
-
-
+    <style>
+        :root{
+            --green:#044635;
+            --orange:#F17B0D;
+            --cream:#FFFCF1;
+        }
+        body{
+            background:#f5f7fa;
+        }
+        .glass{
+            backdrop-filter:blur(12px);
+            background:rgba(255,255,255,.85);
+        }
+    </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
 
 <!-- NAVBAR -->
-
 <nav class="sticky top-0 z-50 bg-[#044635] shadow-lg">
-
-
 <div class="max-w-7xl mx-auto px-6">
-
     <div class="flex justify-between items-center h-20">
 
         <!-- Logo -->
         <a href="/" class="flex items-center gap-3">
-
             <div class="w-12 h-12 rounded-xl bg-[#F17B0D] flex items-center justify-center text-2xl">
                 🛒
             </div>
-
             <div>
-                <h1 class="text-white text-xl font-bold">
-                    SuperShop BD
-                </h1>
-
-                <p class="text-green-200 text-xs">
-                    Bangladesh Retail Network
-                </p>
+                <h1 class="text-white text-xl font-bold">SuperShop BD</h1>
+                <p class="text-green-200 text-xs">Bangladesh Retail Network</p>
             </div>
-
         </a>
 
-        <!-- Menu -->
+        <!-- Right side -->
         <div class="flex items-center gap-3">
 
             {% if role == "CUSTOMER" %}
-
-    {% set cart = request.session.get('cart', {}) %}
-    {% set cart_count = cart.values() | sum if cart else 0 %}
-
-    <a href="/customer/dashboard"
-       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-        Profile
-    </a>
-
-    <a href="/customer/shop"
-       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-        Shop
-    </a>
-
-    <a href="/customer/cart"
-       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-        Cart
-        {% if cart_count > 0 %}
-        <span class="bg-[#F17B0D] text-white text-xs rounded-full px-2 py-0.5 ml-1">{{ cart_count }}</span>
-        {% endif %}
-    </a>
-
-    <!-- <a href="/customer/inventory"
-       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-        Inventory
-    </a> -->
-
-    <a href="/customer/branches"
-       class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-        Branches
-    </a>
-
-{% elif role == "EMPLOYEE" %}
-
-                <a href="/products"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Products
+                {% set cart = request.session.get('cart', {}) %}
+                {% set cart_count = cart.values() | sum if cart else 0 %}
+                <a href="/customer/cart"
+                   title="Cart"
+                   class="relative text-white hover:bg-white/10 w-11 h-11 rounded-xl flex items-center justify-center text-lg transition">
+                    🛒
+                    {% if cart_count > 0 %}
+                    <span class="absolute -top-1 -right-1 bg-[#F17B0D] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {{ cart_count }}
+                    </span>
+                    {% endif %}
                 </a>
 
-                <a href="/sales"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Sales
-                </a>
-
-                <a href="/inventory"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Inventory
-                </a>
+            {% elif role == "EMPLOYEE" %}
+                <a href="/products" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Products</a>
+                <a href="/sales" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Sales</a>
+                <a href="/inventory" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Inventory</a>
 
             {% elif role == "ADMIN" %}
-
-                <a href="/admin/dashboard"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Dashboard
-                </a>
-
-                <a href="/admin/dashboard/products"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Products
-                </a>
-
-                <a href="/admin/dashboard/sales"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Sales
-                </a>
-
-                <a href="/admin/dashboard/inventory"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Inventory
-                </a>
-
-                <a href="/admin/dashboard/branches"
-                   class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">
-                    Branches
-                </a>
-
+                <a href="/admin/dashboard" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Dashboard</a>
+                <a href="/admin/dashboard/products" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Products</a>
+                <a href="/admin/dashboard/sales" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Sales</a>
+                <a href="/admin/dashboard/inventory" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Inventory</a>
+                <a href="/admin/dashboard/branches" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Branches</a>
             {% endif %}
 
             {% if role %}
-
             <div class="flex items-center gap-3 ml-4">
-
                 <div class="text-right">
-                    <p class="text-white text-sm font-semibold">
-                        {{ user_name or "User" }}
-                    </p>
-
-                    <p class="text-green-200 text-xs">
-                        {{ role }}
-                    </p>
+                    <p class="text-white text-sm font-semibold">{{ user_name or "User" }}</p>
+                    <p class="text-green-200 text-xs">{{ role }}</p>
                 </div>
-
                 <a href="/auth/logout"
                    class="bg-[#F17B0D] hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-semibold transition">
                     Logout
                 </a>
-
             </div>
-
             {% else %}
-
             <a href="/auth/login"
                class="bg-[#F17B0D] hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-semibold transition">
                 Login
             </a>
-
             {% endif %}
 
         </div>
+    </div>
+</div>
+</nav>
 
+<!-- PAGE BODY -->
+<main class="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+<div class="flex flex-col lg:flex-row gap-6">
+
+    {% if role == "CUSTOMER" %}
+    <!-- ══ PERSISTENT CUSTOMER SIDEBAR ══ -->
+    <aside class="w-full lg:w-72 flex-shrink-0">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:sticky lg:top-28">
+
+            <!-- Profile -->
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-14 h-14 rounded-full bg-[#044635] flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+                    {{ (user_name or "U")[0] | upper }}
+                </div>
+                <div class="min-w-0">
+                    <p class="font-semibold text-gray-800 truncate">{{ user_name or "Customer" }}</p>
+                    <p class="text-xs text-gray-400">{{ membership or "REGULAR" }} member</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs text-[#F17B0D] font-semibold mb-5 pl-1">
+                <span>🪙</span> {{ loyalty_points or 0 }} loyalty points
+            </div>
+
+            <!-- Nav, active state driven by the real URL -->
+            {% set path = request.url.path %}
+            {% set nav_items = [
+                ('/customer/dashboard', '👤', 'My Account'),
+                ('/customer/shop',      '🛍️', 'Shop'),
+                ('/customer/cart',      '🛒', 'Cart'),
+                ('/customer/branches',  '📍', 'Branches'),
+            ] %}
+            <nav class="space-y-1">
+                {% for href, icon, label in nav_items %}
+                {% set is_active = path.startswith(href) %}
+                <a href="{{ href }}"
+                   class="flex items-center justify-between px-4 py-2.5 rounded-xl transition
+                          {% if is_active %}bg-[#044635]/10 text-[#044635] font-semibold border-l-4 border-[#F17B0D]{% else %}text-gray-600 hover:bg-gray-50 hover:text-[#044635]{% endif %}">
+                    <span class="flex items-center gap-3"><span class="text-base">{{ icon }}</span> {{ label }}</span>
+                    <span class="text-gray-300">›</span>
+                </a>
+                {% endfor %}
+            </nav>
+
+            <!-- Danger zone -->
+            <div class="border-t border-gray-100 mt-5 pt-4">
+                <form action="/customer/delete-account" method="post"
+                      onsubmit="return confirm('Delete your account? You will lose access to this login, but your order history and points stay safe if you sign up again with the same phone number.');">
+                    <button type="submit"
+                            class="w-full text-left px-4 py-2.5 rounded-xl text-red-500 text-sm font-medium hover:bg-red-50 transition flex items-center gap-3">
+                        <span class="text-base">🗑️</span> Delete account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+    {% endif %}
+
+    <!-- ══ PAGE-SPECIFIC CONTENT ══ -->
+    <div class="flex-1 min-w-0">
+        {% block content %}{% endblock %}
     </div>
 
 </div>
-
-
-</nav>
-
-<!-- PAGE CONTENT -->
-
-<main class="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
-    {% block content %}{% endblock %}
 </main>
 
 <!-- FOOTER -->
-
 <footer class="bg-white border-t mt-10">
-
-
 <div class="max-w-7xl mx-auto px-6 py-6 text-center">
-
-    <h3 class="font-bold text-[#044635] text-lg">
-        SuperShop Bangladesh
-    </h3>
-
-    <p class="text-gray-500 mt-2">
-        Multi-Branch Retail Management System
-    </p>
-
-    <p class="text-gray-400 text-sm mt-3">
-        © 2025 SuperShop Bangladesh | University Project
-    </p>
-
+    <h3 class="font-bold text-[#044635] text-lg">SuperShop Bangladesh</h3>
+    <p class="text-gray-500 mt-2">Multi-Branch Retail Management System</p>
+    <p class="text-gray-400 text-sm mt-3">© 2025 SuperShop Bangladesh | University Project</p>
 </div>
-
-
 </footer>
 
 </body>
