@@ -46,6 +46,8 @@
 --                    delivery_fee, rating, note
 -- ============================================================
 -- Table drops;
+DROP TABLE admin_account;
+DROP TABLE app_user;
 DROP TABLE delivery;
 DROP TABLE payment;
 DROP TABLE online_order;
@@ -65,6 +67,8 @@ DROP TABLE branch;
 DROP TABLE city;
 
 -- Data delete
+DELETE FROM admin_account;
+DELETE FROM app_user;
 DELETE FROM delivery;
 DELETE FROM payment;
 DELETE FROM online_order;
@@ -262,7 +266,7 @@ INSERT INTO supplier VALUES ('SUP-008', 'Olympic Industries',     'Salim Khan', 
 
 
 -- ============================================================
---  10. PRODUCT  (20 rows)
+--  10. PRODUCT  (20+30 rows)
 -- ============================================================
 INSERT INTO product VALUES ('P-00001', 'Full Cream Milk 1L',      'Pran',         'CAT-D1', 'SUP-001',  95.00,  72.00, 'litre',   7, 'Y');
 INSERT INTO product VALUES ('P-00002', 'Plain Yogurt 400g',       'Aarong Dairy', 'CAT-D1', 'SUP-002',  75.00,  55.00, 'pcs',     5, 'Y');
@@ -284,42 +288,523 @@ INSERT INTO product VALUES ('P-00017', 'USB-C Charger 20W',       'Transcom',   
 INSERT INTO product VALUES ('P-00018', 'Earphone Wired',          'Transcom',     'CAT-M1', 'SUP-006', 350.00, 255.00, 'pcs',   730, 'Y');
 INSERT INTO product VALUES ('P-00019', 'Cotton T-Shirt (M)',      'Generic',      'CAT-C1', 'SUP-007', 450.00, 320.00, 'pcs',  NULL, 'Y');
 INSERT INTO product VALUES ('P-00020', 'Discontinued Jam 250g',   'Pran',         'CAT-B1', 'SUP-001',  80.00,  58.00, 'pcs',   180, 'N');
+-- ============================================================
+-- ADDITIONAL PRODUCTS (P-00021 - P-00050)
+-- ============================================================
+INSERT INTO product VALUES ('P-00021','Instant Noodles 8 Pack','Pran','CAT-F1','SUP-001',240.00,185.00,'pack',365,'Y');
+INSERT INTO product VALUES ('P-00022','Premium Flour 2kg','ACI','CAT-F1','SUP-003',145.00,112.00,'kg',365,'Y');
+INSERT INTO product VALUES ('P-00023','Lentil (Masoor) 1kg','Bashundhara','CAT-F1','SUP-002',160.00,125.00,'kg',365,'Y');
+INSERT INTO product VALUES ('P-00024','Salt 1kg','Fresh','CAT-F1','SUP-004',42.00,30.00,'kg',730,'Y');
+INSERT INTO product VALUES ('P-00025','Tomato Ketchup 500g','Pran','CAT-F1','SUP-001',135.00,101.00,'pcs',365,'Y');
+
+INSERT INTO product VALUES ('P-00026','Chocolate Cookies 250g','Olympic','CAT-B1','SUP-008',95.00,71.00,'pcs',180,'Y');
+INSERT INTO product VALUES ('P-00027','Cream Crackers 300g','Olympic','CAT-B1','SUP-008',75.00,56.00,'pcs',180,'Y');
+INSERT INTO product VALUES ('P-00028','Toast Biscuits 350g','Pran','CAT-B1','SUP-001',110.00,82.00,'pcs',180,'Y');
+INSERT INTO product VALUES ('P-00029','Fruit Cake 300g','Pran','CAT-B1','SUP-001',170.00,130.00,'pcs',120,'Y');
+INSERT INTO product VALUES ('P-00030','Oat Biscuits 200g','Olympic','CAT-B1','SUP-008',85.00,63.00,'pcs',180,'Y');
+
+INSERT INTO product VALUES ('P-00031','Orange Juice 1L','Pran','CAT-BV','SUP-001',120.00,92.00,'litre',180,'Y');
+INSERT INTO product VALUES ('P-00032','Apple Juice 1L','Pran','CAT-BV','SUP-001',125.00,96.00,'litre',180,'Y');
+INSERT INTO product VALUES ('P-00033','Mineral Water 1L','Fresh','CAT-BV','SUP-004',30.00,20.00,'litre',365,'Y');
+INSERT INTO product VALUES ('P-00034','Energy Drink 250ml','Akij','CAT-BV','SUP-007',95.00,72.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00035','Coffee 200g','ACI','CAT-BV','SUP-003',380.00,295.00,'pcs',730,'Y');
+
+INSERT INTO product VALUES ('P-00036','Laundry Detergent 1kg','Square','CAT-P1','SUP-005',240.00,182.00,'kg',730,'Y');
+INSERT INTO product VALUES ('P-00037','Dishwashing Liquid 500ml','Square','CAT-P1','SUP-005',145.00,110.00,'ml',730,'Y');
+INSERT INTO product VALUES ('P-00038','Hand Wash 250ml','ACI','CAT-P1','SUP-003',180.00,136.00,'ml',730,'Y');
+INSERT INTO product VALUES ('P-00039','Toilet Cleaner 750ml','ACI','CAT-P1','SUP-003',165.00,125.00,'ml',730,'Y');
+INSERT INTO product VALUES ('P-00040','Floor Cleaner 1L','Square','CAT-P1','SUP-005',210.00,160.00,'litre',730,'Y');
+
+INSERT INTO product VALUES ('P-00041','LED Bulb 12W','Transcom','CAT-M1','SUP-006',280.00,210.00,'pcs',1095,'Y');
+INSERT INTO product VALUES ('P-00042','Power Strip 4 Port','Transcom','CAT-M1','SUP-006',890.00,690.00,'pcs',1095,'Y');
+INSERT INTO product VALUES ('P-00043','AA Battery (4 Pack)','Transcom','CAT-M1','SUP-006',220.00,165.00,'pack',1825,'Y');
+INSERT INTO product VALUES ('P-00044','USB Flash Drive 32GB','Transcom','CAT-M1','SUP-006',850.00,660.00,'pcs',1825,'Y');
+INSERT INTO product VALUES ('P-00045','Phone Data Cable','Transcom','CAT-M1','SUP-006',280.00,205.00,'pcs',1095,'Y');
+
+INSERT INTO product VALUES ('P-00046','Men''s Polo Shirt (L)','Generic','CAT-C1','SUP-007',850.00,650.00,'pcs',NULL,'Y');
+INSERT INTO product VALUES ('P-00047','Women''s T-Shirt (M)','Generic','CAT-C1','SUP-007',620.00,470.00,'pcs',NULL,'Y');
+INSERT INTO product VALUES ('P-00048','Denim Jeans 32','Generic','CAT-C1','SUP-007',1450.00,1120.00,'pcs',NULL,'Y');
+INSERT INTO product VALUES ('P-00049','Sports Cap','Generic','CAT-C1','SUP-007',320.00,240.00,'pcs',NULL,'Y');
+INSERT INTO product VALUES ('P-00050','Cotton Socks (3 Pair)','Generic','CAT-C1','SUP-007',290.00,215.00,'pack',NULL,'Y');
+
+-- ============================================================
+--  11. BRANCH_INVENTORY  (200 rows)
+-- ============================================================
+INSERT INTO branch_inventory VALUES ('I-00001','B-DH01','P-00001',120.00,20.00,'2025-05-20','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00002','B-DH01','P-00002',85.00,15.00,'2025-05-21','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00003','B-DH01','P-00003',65.00,20.00,'2025-05-18','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00004','B-DH01','P-00004',90.00,15.00,'2025-05-22','B1-S1');
+INSERT INTO branch_inventory VALUES ('I-00005','B-DH01','P-00005',180.00,30.00,'2025-05-17','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00006','B-DH01','P-00006',240.00,30.00,'2025-05-19','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00007','B-DH01','P-00007',170.00,25.00,'2025-05-18','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00008','B-DH01','P-00008',320.00,40.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00009','B-DH01','P-00009',45.00,10.00,'2025-05-16','C1-S2');
+INSERT INTO branch_inventory VALUES ('I-00010','B-DH01','P-00010',260.00,35.00,'2025-05-23','C1-S3');
+INSERT INTO branch_inventory VALUES ('I-00011','B-DH01','P-00011',70.00,15.00,'2025-05-22','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00012','B-DH01','P-00012',40.00,10.00,'2025-05-15','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00013','B-DH01','P-00013',150.00,20.00,'2025-05-19','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00014','B-DH01','P-00014',280.00,40.00,'2025-05-11','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00015','B-DH01','P-00015',55.00,15.00,'2025-05-10','D1-S2');
+INSERT INTO branch_inventory VALUES ('I-00016','B-DH01','P-00016',190.00,25.00,'2025-05-12','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00017','B-DH01','P-00017',18.00,5.00,'2025-04-30','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00018','B-DH01','P-00018',35.00,5.00,'2025-04-30','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00019','B-DH01','P-00019',45.00,10.00,'2025-05-01','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00020','B-DH01','P-00020',0.00,10.00,'2025-03-20','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00021','B-DH01','P-00021',75.00,20.00,'2025-05-20','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00022','B-DH01','P-00022',60.00,15.00,'2025-05-22','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00023','B-DH01','P-00023',55.00,15.00,'2025-05-19','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00024','B-DH01','P-00024',130.00,20.00,'2025-05-21','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00025','B-DH01','P-00025',45.00,10.00,'2025-05-18','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00026','B-DH01','P-00026',95.00,20.00,'2025-05-19','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00027','B-DH01','P-00027',110.00,20.00,'2025-05-20','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00028','B-DH01','P-00028',85.00,20.00,'2025-05-18','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00029','B-DH01','P-00029',35.00,10.00,'2025-05-17','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00030','B-DH01','P-00030',90.00,20.00,'2025-05-22','C2-S2');
+INSERT INTO branch_inventory VALUES ('I-00031','B-DH01','P-00031',60.00,15.00,'2025-05-20','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00032','B-DH01','P-00032',55.00,15.00,'2025-05-20','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00033','B-DH01','P-00033',220.00,40.00,'2025-05-22','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00034','B-DH01','P-00034',30.00,10.00,'2025-05-16','C3-S2');
+INSERT INTO branch_inventory VALUES ('I-00035','B-DH01','P-00035',22.00,10.00,'2025-05-18','C3-S3');
+INSERT INTO branch_inventory VALUES ('I-00036','B-DH01','P-00036',80.00,20.00,'2025-05-19','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00037','B-DH01','P-00037',65.00,15.00,'2025-05-18','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00038','B-DH01','P-00038',48.00,15.00,'2025-05-21','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00039','B-DH01','P-00039',40.00,15.00,'2025-05-20','D2-S4');
+INSERT INTO branch_inventory VALUES ('I-00040','B-DH01','P-00040',38.00,15.00,'2025-05-21','D3-S1');
+INSERT INTO branch_inventory VALUES ('I-00041','B-DH01','P-00041',28.00,8.00,'2025-05-15','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00042','B-DH01','P-00042',12.00,5.00,'2025-05-12','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00043','B-DH01','P-00043',75.00,15.00,'2025-05-18','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00044','B-DH01','P-00044',18.00,5.00,'2025-05-14','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00045','B-DH01','P-00045',40.00,10.00,'2025-05-17','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00046','B-DH01','P-00046',20.00,5.00,'2025-05-11','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00047','B-DH01','P-00047',22.00,5.00,'2025-05-10','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00048','B-DH01','P-00048',14.00,5.00,'2025-05-09','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00049','B-DH01','P-00049',40.00,10.00,'2025-05-13','F2-S4');
+INSERT INTO branch_inventory VALUES ('I-00050','B-DH01','P-00050',55.00,10.00,'2025-05-16','F3-S1');
+
+-- ============================================================
+-- BRANCH INVENTORY (B-DH02)
+-- I-00051 - I-00100
+-- ============================================================
+
+INSERT INTO branch_inventory VALUES ('I-00051','B-DH02','P-00001',95.00,20.00,'2025-05-21','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00052','B-DH02','P-00002',75.00,15.00,'2025-05-22','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00053','B-DH02','P-00003',50.00,20.00,'2025-05-18','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00054','B-DH02','P-00004',65.00,15.00,'2025-05-20','B1-S1');
+INSERT INTO branch_inventory VALUES ('I-00055','B-DH02','P-00005',210.00,30.00,'2025-05-19','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00056','B-DH02','P-00006',185.00,30.00,'2025-05-17','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00057','B-DH02','P-00007',145.00,25.00,'2025-05-18','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00058','B-DH02','P-00008',420.00,50.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00059','B-DH02','P-00009',9.00,15.00,'2025-05-12','C1-S2');   -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00060','B-DH02','P-00010',310.00,40.00,'2025-05-23','C1-S3');
+
+INSERT INTO branch_inventory VALUES ('I-00061','B-DH02','P-00011',58.00,15.00,'2025-05-22','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00062','B-DH02','P-00012',35.00,10.00,'2025-05-15','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00063','B-DH02','P-00013',125.00,20.00,'2025-05-19','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00064','B-DH02','P-00014',295.00,40.00,'2025-05-11','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00065','B-DH02','P-00015',62.00,20.00,'2025-05-14','D1-S2');
+INSERT INTO branch_inventory VALUES ('I-00066','B-DH02','P-00016',175.00,30.00,'2025-05-16','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00067','B-DH02','P-00017',20.00,5.00,'2025-04-30','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00068','B-DH02','P-00018',38.00,5.00,'2025-04-30','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00069','B-DH02','P-00019',28.00,5.00,'2025-05-02','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00070','B-DH02','P-00020',0.00,10.00,'2025-03-15','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00071','B-DH02','P-00021',70.00,20.00,'2025-05-21','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00072','B-DH02','P-00022',52.00,15.00,'2025-05-20','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00073','B-DH02','P-00023',48.00,15.00,'2025-05-18','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00074','B-DH02','P-00024',115.00,20.00,'2025-05-22','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00075','B-DH02','P-00025',36.00,10.00,'2025-05-19','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00076','B-DH02','P-00026',82.00,20.00,'2025-05-18','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00077','B-DH02','P-00027',98.00,20.00,'2025-05-20','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00078','B-DH02','P-00028',74.00,20.00,'2025-05-18','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00079','B-DH02','P-00029',27.00,10.00,'2025-05-17','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00080','B-DH02','P-00030',81.00,20.00,'2025-05-22','C2-S2');
+
+INSERT INTO branch_inventory VALUES ('I-00081','B-DH02','P-00031',48.00,15.00,'2025-05-20','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00082','B-DH02','P-00032',44.00,15.00,'2025-05-20','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00083','B-DH02','P-00033',190.00,40.00,'2025-05-22','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00084','B-DH02','P-00034',24.00,10.00,'2025-05-18','C3-S2');
+INSERT INTO branch_inventory VALUES ('I-00085','B-DH02','P-00035',6.00,10.00,'2025-05-15','C3-S3');   -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00086','B-DH02','P-00036',72.00,20.00,'2025-05-19','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00087','B-DH02','P-00037',58.00,15.00,'2025-05-21','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00088','B-DH02','P-00038',40.00,15.00,'2025-05-20','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00089','B-DH02','P-00039',32.00,15.00,'2025-05-17','D2-S4');
+INSERT INTO branch_inventory VALUES ('I-00090','B-DH02','P-00040',29.00,15.00,'2025-05-19','D3-S1');
+
+INSERT INTO branch_inventory VALUES ('I-00091','B-DH02','P-00041',25.00,8.00,'2025-05-16','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00092','B-DH02','P-00042',15.00,5.00,'2025-05-15','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00093','B-DH02','P-00043',66.00,15.00,'2025-05-18','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00094','B-DH02','P-00044',20.00,5.00,'2025-05-14','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00095','B-DH02','P-00045',34.00,10.00,'2025-05-17','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00096','B-DH02','P-00046',18.00,5.00,'2025-05-12','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00097','B-DH02','P-00047',21.00,5.00,'2025-05-10','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00098','B-DH02','P-00048',12.00,5.00,'2025-05-09','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00099','B-DH02','P-00049',4.00,10.00,'2025-05-13','F2-S4');   -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00100','B-DH02','P-00050',48.00,10.00,'2025-05-16','F3-S1');
 
 
 -- ============================================================
---  11. BRANCH_INVENTORY  (30 rows)
+-- BRANCH INVENTORY (B-DH03)
+-- I-00101 - I-00150
 -- ============================================================
-INSERT INTO branch_inventory VALUES ('I-00001', 'B-DH01', 'P-00001', 120.00, 20.00, '2025-05-20', 'A1-S1');
-INSERT INTO branch_inventory VALUES ('I-00002', 'B-DH01', 'P-00004',  80.00, 15.00, '2025-05-22', 'B2-S3');
-INSERT INTO branch_inventory VALUES ('I-00003', 'B-DH01', 'P-00006', 200.00, 30.00, '2025-05-18', 'C3-S2');
-INSERT INTO branch_inventory VALUES ('I-00004', 'B-DH01', 'P-00011',  55.00, 10.00, '2025-05-25', 'A2-S1');
-INSERT INTO branch_inventory VALUES ('I-00005', 'B-DH01', 'P-00012',  30.00, 10.00, '2025-05-15', 'A2-S2');
-INSERT INTO branch_inventory VALUES ('I-00006', 'B-DH01', 'P-00014', 350.00, 50.00, '2025-05-10', 'D1-S1');
-INSERT INTO branch_inventory VALUES ('I-00007', 'B-DH02', 'P-00001',  90.00, 20.00, '2025-05-21', 'A1-S1');
-INSERT INTO branch_inventory VALUES ('I-00008', 'B-DH02', 'P-00002',  60.00, 15.00, '2025-05-23', 'A1-S2');
-INSERT INTO branch_inventory VALUES ('I-00009', 'B-DH02', 'P-00008', 500.00, 50.00, '2025-05-20', 'B1-S4');
-INSERT INTO branch_inventory VALUES ('I-00010', 'B-DH02', 'P-00017',  25.00,  5.00, '2025-04-30', 'E1-S1');
-INSERT INTO branch_inventory VALUES ('I-00011', 'B-DH02', 'P-00018',  40.00,  5.00, '2025-04-30', 'E1-S2');
-INSERT INTO branch_inventory VALUES ('I-00012', 'B-DH02', 'P-00013', 150.00, 20.00, '2025-05-19', 'A3-S1');
-INSERT INTO branch_inventory VALUES ('I-00013', 'B-DH03', 'P-00003',  45.00, 10.00, '2025-05-12', 'A1-S3');
-INSERT INTO branch_inventory VALUES ('I-00014', 'B-DH03', 'P-00005', 180.00, 25.00, '2025-05-17', 'B2-S1');
-INSERT INTO branch_inventory VALUES ('I-00015', 'B-DH03', 'P-00009',  12.00, 15.00, '2025-04-25', 'B3-S2'); -- LOW STOCK
-INSERT INTO branch_inventory VALUES ('I-00016', 'B-DH03', 'P-00016', 220.00, 30.00, '2025-05-08', 'D2-S3');
-INSERT INTO branch_inventory VALUES ('I-00017', 'B-CT01', 'P-00001',  75.00, 20.00, '2025-05-20', 'A1-S1');
-INSERT INTO branch_inventory VALUES ('I-00018', 'B-CT01', 'P-00006', 160.00, 30.00, '2025-05-19', 'C2-S1');
-INSERT INTO branch_inventory VALUES ('I-00019', 'B-CT01', 'P-00007', 110.00, 20.00, '2025-05-14', 'C2-S2');
-INSERT INTO branch_inventory VALUES ('I-00020', 'B-CT01', 'P-00011',  40.00, 10.00, '2025-05-22', 'A2-S1');
-INSERT INTO branch_inventory VALUES ('I-00021', 'B-CT01', 'P-00015',  18.00, 20.00, '2025-04-20', 'D1-S4'); -- LOW STOCK
-INSERT INTO branch_inventory VALUES ('I-00022', 'B-CT02', 'P-00002',  50.00, 15.00, '2025-05-18', 'A1-S2');
-INSERT INTO branch_inventory VALUES ('I-00023', 'B-CT02', 'P-00010', 300.00, 40.00, '2025-05-23', 'B1-S3');
-INSERT INTO branch_inventory VALUES ('I-00024', 'B-CT02', 'P-00012',  25.00, 10.00, '2025-05-11', 'A2-S2');
-INSERT INTO branch_inventory VALUES ('I-00025', 'B-CT02', 'P-00019',  35.00,  5.00, '2025-04-28', 'F1-S1');
-INSERT INTO branch_inventory VALUES ('I-00026', 'B-SY01', 'P-00001',  55.00, 15.00, '2025-05-20', 'A1-S1');
-INSERT INTO branch_inventory VALUES ('I-00027', 'B-SY01', 'P-00004',   8.00, 10.00, '2025-04-15', 'B1-S2'); -- LOW STOCK
-INSERT INTO branch_inventory VALUES ('I-00028', 'B-SY01', 'P-00014', 190.00, 30.00, '2025-05-05', 'D1-S1');
-INSERT INTO branch_inventory VALUES ('I-00029', 'B-RJ01', 'P-00011',  60.00, 10.00, '2025-05-19', 'A1-S1');
-INSERT INTO branch_inventory VALUES ('I-00030', 'B-RJ01', 'P-00013', 130.00, 20.00, '2025-05-16', 'A3-S2');
 
+INSERT INTO branch_inventory VALUES ('I-00101','B-DH03','P-00001',82.00,20.00,'2025-05-20','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00102','B-DH03','P-00002',58.00,15.00,'2025-05-21','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00103','B-DH03','P-00003',42.00,10.00,'2025-05-18','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00104','B-DH03','P-00004',72.00,15.00,'2025-05-22','B1-S1');
+INSERT INTO branch_inventory VALUES ('I-00105','B-DH03','P-00005',165.00,25.00,'2025-05-17','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00106','B-DH03','P-00006',205.00,30.00,'2025-05-19','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00107','B-DH03','P-00007',138.00,25.00,'2025-05-18','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00108','B-DH03','P-00008',285.00,40.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00109','B-DH03','P-00009',12.00,15.00,'2025-05-12','C1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00110','B-DH03','P-00010',240.00,35.00,'2025-05-23','C1-S3');
+
+INSERT INTO branch_inventory VALUES ('I-00111','B-DH03','P-00011',52.00,15.00,'2025-05-22','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00112','B-DH03','P-00012',28.00,10.00,'2025-05-15','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00113','B-DH03','P-00013',118.00,20.00,'2025-05-19','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00114','B-DH03','P-00014',245.00,40.00,'2025-05-11','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00115','B-DH03','P-00015',16.00,20.00,'2025-05-10','D1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00116','B-DH03','P-00016',182.00,30.00,'2025-05-12','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00117','B-DH03','P-00017',14.00,5.00,'2025-04-30','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00118','B-DH03','P-00018',27.00,5.00,'2025-04-30','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00119','B-DH03','P-00019',33.00,5.00,'2025-05-01','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00120','B-DH03','P-00020',0.00,10.00,'2025-03-18','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00121','B-DH03','P-00021',62.00,20.00,'2025-05-20','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00122','B-DH03','P-00022',48.00,15.00,'2025-05-22','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00123','B-DH03','P-00023',40.00,15.00,'2025-05-19','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00124','B-DH03','P-00024',102.00,20.00,'2025-05-21','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00125','B-DH03','P-00025',34.00,10.00,'2025-05-18','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00126','B-DH03','P-00026',76.00,20.00,'2025-05-19','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00127','B-DH03','P-00027',89.00,20.00,'2025-05-20','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00128','B-DH03','P-00028',68.00,20.00,'2025-05-18','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00129','B-DH03','P-00029',24.00,10.00,'2025-05-17','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00130','B-DH03','P-00030',74.00,20.00,'2025-05-22','C2-S2');
+
+INSERT INTO branch_inventory VALUES ('I-00131','B-DH03','P-00031',46.00,15.00,'2025-05-20','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00132','B-DH03','P-00032',39.00,15.00,'2025-05-20','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00133','B-DH03','P-00033',175.00,40.00,'2025-05-22','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00134','B-DH03','P-00034',18.00,10.00,'2025-05-16','C3-S2');
+INSERT INTO branch_inventory VALUES ('I-00135','B-DH03','P-00035',8.00,10.00,'2025-05-18','C3-S3'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00136','B-DH03','P-00036',66.00,20.00,'2025-05-19','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00137','B-DH03','P-00037',52.00,15.00,'2025-05-18','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00138','B-DH03','P-00038',36.00,15.00,'2025-05-21','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00139','B-DH03','P-00039',28.00,15.00,'2025-05-20','D2-S4');
+INSERT INTO branch_inventory VALUES ('I-00140','B-DH03','P-00040',25.00,15.00,'2025-05-21','D3-S1');
+
+INSERT INTO branch_inventory VALUES ('I-00141','B-DH03','P-00041',21.00,8.00,'2025-05-15','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00142','B-DH03','P-00042',11.00,5.00,'2025-05-12','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00143','B-DH03','P-00043',58.00,15.00,'2025-05-18','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00144','B-DH03','P-00044',15.00,5.00,'2025-05-14','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00145','B-DH03','P-00045',29.00,10.00,'2025-05-17','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00146','B-DH03','P-00046',16.00,5.00,'2025-05-11','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00147','B-DH03','P-00047',18.00,5.00,'2025-05-10','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00148','B-DH03','P-00048',10.00,5.00,'2025-05-09','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00149','B-DH03','P-00049',6.00,10.00,'2025-05-13','F2-S4'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00150','B-DH03','P-00050',41.00,10.00,'2025-05-16','F3-S1');
+
+-- ============================================================
+-- BRANCH INVENTORY (B-CT01)
+-- I-00151 - I-00200
+-- ============================================================
+
+INSERT INTO branch_inventory VALUES ('I-00151','B-CT01','P-00001',75.00,20.00,'2025-05-20','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00152','B-CT01','P-00002',62.00,15.00,'2025-05-21','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00153','B-CT01','P-00003',38.00,10.00,'2025-05-18','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00154','B-CT01','P-00004',68.00,15.00,'2025-05-22','B1-S1');
+INSERT INTO branch_inventory VALUES ('I-00155','B-CT01','P-00005',150.00,25.00,'2025-05-17','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00156','B-CT01','P-00006',160.00,30.00,'2025-05-19','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00157','B-CT01','P-00007',110.00,20.00,'2025-05-18','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00158','B-CT01','P-00008',240.00,40.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00159','B-CT01','P-00009',18.00,15.00,'2025-05-14','C1-S2');
+INSERT INTO branch_inventory VALUES ('I-00160','B-CT01','P-00010',210.00,35.00,'2025-05-23','C1-S3');
+
+INSERT INTO branch_inventory VALUES ('I-00161','B-CT01','P-00011',40.00,10.00,'2025-05-22','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00162','B-CT01','P-00012',26.00,10.00,'2025-05-15','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00163','B-CT01','P-00013',95.00,20.00,'2025-05-19','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00164','B-CT01','P-00014',205.00,40.00,'2025-05-11','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00165','B-CT01','P-00015',18.00,20.00,'2025-05-10','D1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00166','B-CT01','P-00016',145.00,30.00,'2025-05-12','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00167','B-CT01','P-00017',11.00,5.00,'2025-04-30','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00168','B-CT01','P-00018',23.00,5.00,'2025-04-30','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00169','B-CT01','P-00019',28.00,5.00,'2025-05-01','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00170','B-CT01','P-00020',0.00,10.00,'2025-03-20','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00171','B-CT01','P-00021',54.00,20.00,'2025-05-20','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00172','B-CT01','P-00022',42.00,15.00,'2025-05-22','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00173','B-CT01','P-00023',36.00,15.00,'2025-05-19','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00174','B-CT01','P-00024',92.00,20.00,'2025-05-21','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00175','B-CT01','P-00025',31.00,10.00,'2025-05-18','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00176','B-CT01','P-00026',70.00,20.00,'2025-05-19','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00177','B-CT01','P-00027',82.00,20.00,'2025-05-20','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00178','B-CT01','P-00028',62.00,20.00,'2025-05-18','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00179','B-CT01','P-00029',21.00,10.00,'2025-05-17','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00180','B-CT01','P-00030',67.00,20.00,'2025-05-22','C2-S2');
+
+INSERT INTO branch_inventory VALUES ('I-00181','B-CT01','P-00031',42.00,15.00,'2025-05-20','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00182','B-CT01','P-00032',35.00,15.00,'2025-05-20','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00183','B-CT01','P-00033',160.00,40.00,'2025-05-22','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00184','B-CT01','P-00034',15.00,10.00,'2025-05-16','C3-S2');
+INSERT INTO branch_inventory VALUES ('I-00185','B-CT01','P-00035',7.00,10.00,'2025-05-18','C3-S3'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00186','B-CT01','P-00036',58.00,20.00,'2025-05-19','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00187','B-CT01','P-00037',45.00,15.00,'2025-05-18','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00188','B-CT01','P-00038',32.00,15.00,'2025-05-21','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00189','B-CT01','P-00039',24.00,15.00,'2025-05-20','D2-S4');
+INSERT INTO branch_inventory VALUES ('I-00190','B-CT01','P-00040',22.00,15.00,'2025-05-21','D3-S1');
+
+INSERT INTO branch_inventory VALUES ('I-00191','B-CT01','P-00041',18.00,8.00,'2025-05-15','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00192','B-CT01','P-00042',9.00,5.00,'2025-05-12','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00193','B-CT01','P-00043',50.00,15.00,'2025-05-18','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00194','B-CT01','P-00044',13.00,5.00,'2025-05-14','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00195','B-CT01','P-00045',25.00,10.00,'2025-05-17','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00196','B-CT01','P-00046',14.00,5.00,'2025-05-11','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00197','B-CT01','P-00047',16.00,5.00,'2025-05-10','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00198','B-CT01','P-00048',9.00,5.00,'2025-05-09','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00199','B-CT01','P-00049',5.00,10.00,'2025-05-13','F2-S4'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00200','B-CT01','P-00050',38.00,10.00,'2025-05-16','F3-S1');
+
+-- ============================================================
+-- BRANCH INVENTORY (B-CT02)
+-- I-00201 - I-00250
+-- ============================================================
+
+INSERT INTO branch_inventory VALUES ('I-00201','B-CT02','P-00001',68.00,20.00,'2025-05-20','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00202','B-CT02','P-00002',50.00,15.00,'2025-05-18','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00203','B-CT02','P-00003',32.00,10.00,'2025-05-19','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00204','B-CT02','P-00004',54.00,15.00,'2025-05-21','B1-S1');
+INSERT INTO branch_inventory VALUES ('I-00205','B-CT02','P-00005',142.00,25.00,'2025-05-17','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00206','B-CT02','P-00006',138.00,30.00,'2025-05-20','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00207','B-CT02','P-00007',95.00,20.00,'2025-05-18','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00208','B-CT02','P-00008',205.00,40.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00209','B-CT02','P-00009',14.00,15.00,'2025-05-14','C1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00210','B-CT02','P-00010',300.00,40.00,'2025-05-23','C1-S3');
+
+INSERT INTO branch_inventory VALUES ('I-00211','B-CT02','P-00011',35.00,10.00,'2025-05-22','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00212','B-CT02','P-00012',25.00,10.00,'2025-05-11','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00213','B-CT02','P-00013',110.00,20.00,'2025-05-19','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00214','B-CT02','P-00014',188.00,40.00,'2025-05-11','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00215','B-CT02','P-00015',22.00,20.00,'2025-05-10','D1-S2');
+INSERT INTO branch_inventory VALUES ('I-00216','B-CT02','P-00016',132.00,30.00,'2025-05-12','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00217','B-CT02','P-00017',10.00,5.00,'2025-04-30','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00218','B-CT02','P-00018',19.00,5.00,'2025-04-30','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00219','B-CT02','P-00019',35.00,5.00,'2025-05-01','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00220','B-CT02','P-00020',0.00,10.00,'2025-03-18','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00221','B-CT02','P-00021',48.00,20.00,'2025-05-20','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00222','B-CT02','P-00022',36.00,15.00,'2025-05-22','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00223','B-CT02','P-00023',30.00,15.00,'2025-05-19','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00224','B-CT02','P-00024',85.00,20.00,'2025-05-21','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00225','B-CT02','P-00025',28.00,10.00,'2025-05-18','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00226','B-CT02','P-00026',62.00,20.00,'2025-05-19','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00227','B-CT02','P-00027',74.00,20.00,'2025-05-20','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00228','B-CT02','P-00028',56.00,20.00,'2025-05-18','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00229','B-CT02','P-00029',18.00,10.00,'2025-05-17','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00230','B-CT02','P-00030',59.00,20.00,'2025-05-22','C2-S2');
+
+INSERT INTO branch_inventory VALUES ('I-00231','B-CT02','P-00031',38.00,15.00,'2025-05-20','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00232','B-CT02','P-00032',30.00,15.00,'2025-05-20','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00233','B-CT02','P-00033',145.00,40.00,'2025-05-22','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00234','B-CT02','P-00034',12.00,10.00,'2025-05-16','C3-S2');
+INSERT INTO branch_inventory VALUES ('I-00235','B-CT02','P-00035',9.00,10.00,'2025-05-18','C3-S3'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00236','B-CT02','P-00036',52.00,20.00,'2025-05-19','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00237','B-CT02','P-00037',40.00,15.00,'2025-05-18','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00238','B-CT02','P-00038',28.00,15.00,'2025-05-21','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00239','B-CT02','P-00039',22.00,15.00,'2025-05-20','D2-S4');
+INSERT INTO branch_inventory VALUES ('I-00240','B-CT02','P-00040',20.00,15.00,'2025-05-21','D3-S1');
+
+INSERT INTO branch_inventory VALUES ('I-00241','B-CT02','P-00041',15.00,8.00,'2025-05-15','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00242','B-CT02','P-00042',8.00,5.00,'2025-05-12','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00243','B-CT02','P-00043',45.00,15.00,'2025-05-18','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00244','B-CT02','P-00044',11.00,5.00,'2025-05-14','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00245','B-CT02','P-00045',22.00,10.00,'2025-05-17','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00246','B-CT02','P-00046',12.00,5.00,'2025-05-11','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00247','B-CT02','P-00047',14.00,5.00,'2025-05-10','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00248','B-CT02','P-00048',8.00,5.00,'2025-05-09','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00249','B-CT02','P-00049',4.00,10.00,'2025-05-13','F2-S4'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00250','B-CT02','P-00050',35.00,10.00,'2025-05-16','F3-S1');
+
+
+-- ============================================================
+-- BRANCH INVENTORY (B-SY01)
+-- I-00251 - I-00300
+-- ============================================================
+
+INSERT INTO branch_inventory VALUES ('I-00251','B-SY01','P-00001',55.00,15.00,'2025-05-20','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00252','B-SY01','P-00002',45.00,15.00,'2025-05-18','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00253','B-SY01','P-00003',28.00,10.00,'2025-05-17','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00254','B-SY01','P-00004',8.00,10.00,'2025-04-15','B1-S1'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00255','B-SY01','P-00005',120.00,25.00,'2025-05-16','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00256','B-SY01','P-00006',110.00,30.00,'2025-05-18','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00257','B-SY01','P-00007',85.00,20.00,'2025-05-17','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00258','B-SY01','P-00008',170.00,40.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00259','B-SY01','P-00009',16.00,15.00,'2025-05-13','C1-S2');
+INSERT INTO branch_inventory VALUES ('I-00260','B-SY01','P-00010',180.00,35.00,'2025-05-22','C1-S3');
+
+INSERT INTO branch_inventory VALUES ('I-00261','B-SY01','P-00011',30.00,10.00,'2025-05-19','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00262','B-SY01','P-00012',18.00,10.00,'2025-05-11','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00263','B-SY01','P-00013',90.00,20.00,'2025-05-16','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00264','B-SY01','P-00014',190.00,30.00,'2025-05-05','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00265','B-SY01','P-00015',14.00,20.00,'2025-05-09','D1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00266','B-SY01','P-00016',115.00,30.00,'2025-05-10','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00267','B-SY01','P-00017',8.00,5.00,'2025-04-29','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00268','B-SY01','P-00018',15.00,5.00,'2025-04-29','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00269','B-SY01','P-00019',24.00,5.00,'2025-05-01','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00270','B-SY01','P-00020',0.00,10.00,'2025-03-15','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00271','B-SY01','P-00021',40.00,20.00,'2025-05-18','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00272','B-SY01','P-00022',28.00,15.00,'2025-05-19','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00273','B-SY01','P-00023',25.00,15.00,'2025-05-18','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00274','B-SY01','P-00024',65.00,20.00,'2025-05-20','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00275','B-SY01','P-00025',22.00,10.00,'2025-05-17','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00276','B-SY01','P-00026',48.00,20.00,'2025-05-18','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00277','B-SY01','P-00027',60.00,20.00,'2025-05-19','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00278','B-SY01','P-00028',42.00,20.00,'2025-05-17','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00279','B-SY01','P-00029',15.00,10.00,'2025-05-16','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00280','B-SY01','P-00030',45.00,20.00,'2025-05-20','C2-S2');
+
+INSERT INTO branch_inventory VALUES ('I-00281','B-SY01','P-00031',28.00,15.00,'2025-05-18','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00282','B-SY01','P-00032',24.00,15.00,'2025-05-18','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00283','B-SY01','P-00033',120.00,40.00,'2025-05-21','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00284','B-SY01','P-00034',10.00,10.00,'2025-05-15','C3-S2');
+INSERT INTO branch_inventory VALUES ('I-00285','B-SY01','P-00035',5.00,10.00,'2025-05-16','C3-S3'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00286','B-SY01','P-00036',42.00,20.00,'2025-05-18','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00287','B-SY01','P-00037',32.00,15.00,'2025-05-17','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00288','B-SY01','P-00038',24.00,15.00,'2025-05-19','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00289','B-SY01','P-00039',18.00,15.00,'2025-05-18','D2-S4');
+INSERT INTO branch_inventory VALUES ('I-00290','B-SY01','P-00040',16.00,15.00,'2025-05-19','D3-S1');
+
+INSERT INTO branch_inventory VALUES ('I-00291','B-SY01','P-00041',12.00,8.00,'2025-05-14','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00292','B-SY01','P-00042',6.00,5.00,'2025-05-12','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00293','B-SY01','P-00043',32.00,15.00,'2025-05-17','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00294','B-SY01','P-00044',8.00,5.00,'2025-05-13','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00295','B-SY01','P-00045',16.00,10.00,'2025-05-15','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00296','B-SY01','P-00046',9.00,5.00,'2025-05-10','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00297','B-SY01','P-00047',11.00,5.00,'2025-05-09','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00298','B-SY01','P-00048',6.00,5.00,'2025-05-08','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00299','B-SY01','P-00049',3.00,10.00,'2025-05-12','F2-S4'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00300','B-SY01','P-00050',28.00,10.00,'2025-05-14','F3-S1');
+
+
+-- ============================================================
+-- BRANCH INVENTORY (B-RJ01)
+-- I-00301 - I-00350
+-- ============================================================
+
+INSERT INTO branch_inventory VALUES ('I-00301','B-RJ01','P-00001',48.00,15.00,'2025-05-19','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00302','B-RJ01','P-00002',36.00,15.00,'2025-05-18','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00303','B-RJ01','P-00003',25.00,10.00,'2025-05-17','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00304','B-RJ01','P-00004',42.00,15.00,'2025-05-18','B1-S1');
+INSERT INTO branch_inventory VALUES ('I-00305','B-RJ01','P-00005',110.00,25.00,'2025-05-16','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00306','B-RJ01','P-00006',95.00,30.00,'2025-05-18','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00307','B-RJ01','P-00007',75.00,20.00,'2025-05-17','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00308','B-RJ01','P-00008',150.00,40.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00309','B-RJ01','P-00009',11.00,15.00,'2025-05-13','C1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00310','B-RJ01','P-00010',160.00,35.00,'2025-05-21','C1-S3');
+
+INSERT INTO branch_inventory VALUES ('I-00311','B-RJ01','P-00011',60.00,10.00,'2025-05-19','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00312','B-RJ01','P-00012',20.00,10.00,'2025-05-15','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00313','B-RJ01','P-00013',130.00,20.00,'2025-05-16','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00314','B-RJ01','P-00014',155.00,30.00,'2025-05-11','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00315','B-RJ01','P-00015',17.00,20.00,'2025-05-09','D1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00316','B-RJ01','P-00016',102.00,30.00,'2025-05-10','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00317','B-RJ01','P-00017',9.00,5.00,'2025-04-29','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00318','B-RJ01','P-00018',13.00,5.00,'2025-04-29','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00319','B-RJ01','P-00019',18.00,5.00,'2025-05-01','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00320','B-RJ01','P-00020',0.00,10.00,'2025-03-18','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00321','B-RJ01','P-00021',35.00,20.00,'2025-05-18','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00322','B-RJ01','P-00022',24.00,15.00,'2025-05-19','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00323','B-RJ01','P-00023',20.00,15.00,'2025-05-18','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00324','B-RJ01','P-00024',55.00,20.00,'2025-05-20','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00325','B-RJ01','P-00025',18.00,10.00,'2025-05-17','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00326','B-RJ01','P-00026',40.00,20.00,'2025-05-18','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00327','B-RJ01','P-00027',48.00,20.00,'2025-05-19','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00328','B-RJ01','P-00028',36.00,20.00,'2025-05-17','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00329','B-RJ01','P-00029',12.00,10.00,'2025-05-16','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00330','B-RJ01','P-00030',38.00,20.00,'2025-05-20','C2-S2');
+
+INSERT INTO branch_inventory VALUES ('I-00331','B-RJ01','P-00031',24.00,15.00,'2025-05-18','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00332','B-RJ01','P-00032',20.00,15.00,'2025-05-18','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00333','B-RJ01','P-00033',95.00,40.00,'2025-05-21','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00334','B-RJ01','P-00034',8.00,10.00,'2025-05-15','C3-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00335','B-RJ01','P-00035',4.00,10.00,'2025-05-16','C3-S3'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00336','B-RJ01','P-00036',34.00,20.00,'2025-05-18','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00337','B-RJ01','P-00037',26.00,15.00,'2025-05-17','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00338','B-RJ01','P-00038',18.00,15.00,'2025-05-19','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00339','B-RJ01','P-00039',14.00,15.00,'2025-05-18','D2-S4'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00340','B-RJ01','P-00040',12.00,15.00,'2025-05-19','D3-S1'); -- LOW STOCK
+
+INSERT INTO branch_inventory VALUES ('I-00341','B-RJ01','P-00041',10.00,8.00,'2025-05-14','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00342','B-RJ01','P-00042',5.00,5.00,'2025-05-12','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00343','B-RJ01','P-00043',24.00,15.00,'2025-05-17','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00344','B-RJ01','P-00044',6.00,5.00,'2025-05-13','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00345','B-RJ01','P-00045',12.00,10.00,'2025-05-15','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00346','B-RJ01','P-00046',6.00,5.00,'2025-05-10','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00347','B-RJ01','P-00047',8.00,5.00,'2025-05-09','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00348','B-RJ01','P-00048',5.00,5.00,'2025-05-08','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00349','B-RJ01','P-00049',2.00,10.00,'2025-05-12','F2-S4'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00350','B-RJ01','P-00050',20.00,10.00,'2025-05-14','F3-S1');
+
+
+-- ============================================================
+-- BRANCH INVENTORY (B-KH01)
+-- I-00351 - I-00400
+-- ============================================================
+
+INSERT INTO branch_inventory VALUES ('I-00351','B-KH01','P-00001',52.00,15.00,'2025-05-20','A1-S1');
+INSERT INTO branch_inventory VALUES ('I-00352','B-KH01','P-00002',40.00,15.00,'2025-05-18','A1-S2');
+INSERT INTO branch_inventory VALUES ('I-00353','B-KH01','P-00003',30.00,10.00,'2025-05-17','A1-S3');
+INSERT INTO branch_inventory VALUES ('I-00354','B-KH01','P-00004',46.00,15.00,'2025-05-19','B1-S1');
+INSERT INTO branch_inventory VALUES ('I-00355','B-KH01','P-00005',118.00,25.00,'2025-05-16','B1-S2');
+INSERT INTO branch_inventory VALUES ('I-00356','B-KH01','P-00006',108.00,30.00,'2025-05-18','B1-S3');
+INSERT INTO branch_inventory VALUES ('I-00357','B-KH01','P-00007',82.00,20.00,'2025-05-17','B1-S4');
+INSERT INTO branch_inventory VALUES ('I-00358','B-KH01','P-00008',165.00,40.00,'2025-05-20','C1-S1');
+INSERT INTO branch_inventory VALUES ('I-00359','B-KH01','P-00009',13.00,15.00,'2025-05-13','C1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00360','B-KH01','P-00010',175.00,35.00,'2025-05-22','C1-S3');
+
+INSERT INTO branch_inventory VALUES ('I-00361','B-KH01','P-00011',42.00,10.00,'2025-05-19','A2-S1');
+INSERT INTO branch_inventory VALUES ('I-00362','B-KH01','P-00012',22.00,10.00,'2025-05-15','A2-S2');
+INSERT INTO branch_inventory VALUES ('I-00363','B-KH01','P-00013',105.00,20.00,'2025-05-16','A2-S3');
+INSERT INTO branch_inventory VALUES ('I-00364','B-KH01','P-00014',172.00,30.00,'2025-05-11','D1-S1');
+INSERT INTO branch_inventory VALUES ('I-00365','B-KH01','P-00015',15.00,20.00,'2025-05-09','D1-S2'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00366','B-KH01','P-00016',118.00,30.00,'2025-05-10','D1-S3');
+INSERT INTO branch_inventory VALUES ('I-00367','B-KH01','P-00017',11.00,5.00,'2025-04-29','E1-S1');
+INSERT INTO branch_inventory VALUES ('I-00368','B-KH01','P-00018',16.00,5.00,'2025-04-29','E1-S2');
+INSERT INTO branch_inventory VALUES ('I-00369','B-KH01','P-00019',26.00,5.00,'2025-05-01','F1-S1');
+INSERT INTO branch_inventory VALUES ('I-00370','B-KH01','P-00020',0.00,10.00,'2025-03-15','B2-S4');
+
+INSERT INTO branch_inventory VALUES ('I-00371','B-KH01','P-00021',42.00,20.00,'2025-05-18','A3-S1');
+INSERT INTO branch_inventory VALUES ('I-00372','B-KH01','P-00022',30.00,15.00,'2025-05-19','A3-S2');
+INSERT INTO branch_inventory VALUES ('I-00373','B-KH01','P-00023',24.00,15.00,'2025-05-18','A3-S3');
+INSERT INTO branch_inventory VALUES ('I-00374','B-KH01','P-00024',68.00,20.00,'2025-05-20','A3-S4');
+INSERT INTO branch_inventory VALUES ('I-00375','B-KH01','P-00025',24.00,10.00,'2025-05-17','B2-S1');
+INSERT INTO branch_inventory VALUES ('I-00376','B-KH01','P-00026',52.00,20.00,'2025-05-18','B2-S2');
+INSERT INTO branch_inventory VALUES ('I-00377','B-KH01','P-00027',64.00,20.00,'2025-05-19','B2-S3');
+INSERT INTO branch_inventory VALUES ('I-00378','B-KH01','P-00028',46.00,20.00,'2025-05-17','B2-S4');
+INSERT INTO branch_inventory VALUES ('I-00379','B-KH01','P-00029',16.00,10.00,'2025-05-16','C2-S1');
+INSERT INTO branch_inventory VALUES ('I-00380','B-KH01','P-00030',48.00,20.00,'2025-05-20','C2-S2');
+
+INSERT INTO branch_inventory VALUES ('I-00381','B-KH01','P-00031',30.00,15.00,'2025-05-18','C2-S3');
+INSERT INTO branch_inventory VALUES ('I-00382','B-KH01','P-00032',26.00,15.00,'2025-05-18','C2-S4');
+INSERT INTO branch_inventory VALUES ('I-00383','B-KH01','P-00033',128.00,40.00,'2025-05-21','C3-S1');
+INSERT INTO branch_inventory VALUES ('I-00384','B-KH01','P-00034',11.00,10.00,'2025-05-15','C3-S2');
+INSERT INTO branch_inventory VALUES ('I-00385','B-KH01','P-00035',6.00,10.00,'2025-05-16','C3-S3'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00386','B-KH01','P-00036',45.00,20.00,'2025-05-18','D2-S1');
+INSERT INTO branch_inventory VALUES ('I-00387','B-KH01','P-00037',35.00,15.00,'2025-05-17','D2-S2');
+INSERT INTO branch_inventory VALUES ('I-00388','B-KH01','P-00038',25.00,15.00,'2025-05-19','D2-S3');
+INSERT INTO branch_inventory VALUES ('I-00389','B-KH01','P-00039',19.00,15.00,'2025-05-18','D2-S4');
+INSERT INTO branch_inventory VALUES ('I-00390','B-KH01','P-00040',17.00,15.00,'2025-05-19','D3-S1');
+
+INSERT INTO branch_inventory VALUES ('I-00391','B-KH01','P-00041',13.00,8.00,'2025-05-14','E2-S1');
+INSERT INTO branch_inventory VALUES ('I-00392','B-KH01','P-00042',7.00,5.00,'2025-05-12','E2-S2');
+INSERT INTO branch_inventory VALUES ('I-00393','B-KH01','P-00043',36.00,15.00,'2025-05-17','E2-S3');
+INSERT INTO branch_inventory VALUES ('I-00394','B-KH01','P-00044',9.00,5.00,'2025-05-13','E2-S4');
+INSERT INTO branch_inventory VALUES ('I-00395','B-KH01','P-00045',18.00,10.00,'2025-05-15','E3-S1');
+INSERT INTO branch_inventory VALUES ('I-00396','B-KH01','P-00046',10.00,5.00,'2025-05-10','F2-S1');
+INSERT INTO branch_inventory VALUES ('I-00397','B-KH01','P-00047',12.00,5.00,'2025-05-09','F2-S2');
+INSERT INTO branch_inventory VALUES ('I-00398','B-KH01','P-00048',7.00,5.00,'2025-05-08','F2-S3');
+INSERT INTO branch_inventory VALUES ('I-00399','B-KH01','P-00049',3.00,10.00,'2025-05-12','F2-S4'); -- LOW STOCK
+INSERT INTO branch_inventory VALUES ('I-00400','B-KH01','P-00050',30.00,10.00,'2025-05-14','F3-S1');
 
 -- ============================================================
 --  12. DISCOUNT  (8 rows)
