@@ -6,19 +6,298 @@
     <title>SuperShop BD - {% block title %}{% endblock %}</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root{
             --green:#044635;
+            --green-deep:#02241b;
+            --green-mid:#0a6b4f;
             --orange:#F17B0D;
+            --orange-deep:#c45f00;
+            --orange-soft:#ffb35c;
+            --teal:#14b8a6;
             --cream:#FFFCF1;
+            --dark:#464646;
+            --mid:#646464;
+            --white:#ffffff;
+            --border:#e5e7eb;
+            --shadow-sm:0 4px 16px rgba(4,70,53,.08);
+            --shadow:0 8px 28px rgba(4,70,53,.12);
+            --shadow-lg:0 22px 50px rgba(2,36,27,.22);
+            --radius:14px;
+            --radius-lg:22px;
         }
+
         body{
-            background:#f5f7fa;
+            font-family:'DM Sans',sans-serif;
+            background:
+                radial-gradient(1200px 600px at 0% 0%,rgba(20,184,166,.06),transparent 60%),
+                radial-gradient(900px 600px at 100% 0%,rgba(241,123,13,.06),transparent 60%),
+                #f5f7fa;
+            color:var(--dark);
         }
-        .glass{
-            backdrop-filter:blur(12px);
-            background:rgba(255,255,255,.85);
+        .glass{backdrop-filter:blur(12px);background:rgba(255,255,255,.85);}
+
+        /* respects the user's motion preference site-wide */
+        @media (prefers-reduced-motion: reduce){
+            *,*::before,*::after{
+                animation-duration:.001ms !important;
+                animation-iteration-count:1 !important;
+                transition-duration:.001ms !important;
+            }
+        }
+
+        /* ══════════════════ NAVBAR — gradient + animated sheen ══════════════════ */
+        .cs-navbar{
+            position:sticky;top:0;z-index:50;
+            background:linear-gradient(105deg,var(--green-deep) 0%,var(--green) 45%,var(--green-mid) 100%);
+            color:#fff;
+            box-shadow:0 8px 28px rgba(2,36,27,.22);
+            isolation:isolate;
+            overflow:hidden;
+        }
+        .cs-navbar::before{
+            content:'';
+            position:absolute;inset:0;
+            background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.06) 45%,rgba(255,255,255,.14) 50%,rgba(255,255,255,.06) 55%,transparent 70%);
+            background-size:220% 100%;
+            animation:csSheen 7s ease-in-out infinite;
+            pointer-events:none;z-index:-1;
+        }
+        .cs-navbar::after{
+            content:'';
+            position:absolute;top:-40px;right:6%;
+            width:320px;height:320px;
+            background:radial-gradient(circle,rgba(241,123,13,.28) 0%,transparent 70%);
+            pointer-events:none;z-index:-1;
+        }
+        @keyframes csSheen{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+
+        .cs-logo-badge{
+            width:48px;height:48px;border-radius:14px;
+            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
+            display:flex;align-items:center;justify-content:center;font-size:22px;
+            box-shadow:0 6px 14px rgba(241,123,13,.4),inset 0 1px 0 rgba(255,255,255,.25);
+            transition:transform .25s ease,box-shadow .25s ease;
+        }
+        .cs-logo-badge:hover{transform:rotate(-6deg) scale(1.04);box-shadow:0 10px 20px rgba(241,123,13,.55);}
+
+        .cs-nav-link{
+            color:rgba(255,255,255,.85);
+            padding:8px 14px;border-radius:10px;font-size:13.5px;font-weight:600;
+            transition:background .15s ease,color .15s ease,transform .15s ease;
+        }
+        .cs-nav-link:hover{background:rgba(255,255,255,.10);color:#fff;transform:translateY(-1px);}
+
+        .cs-btn-orange{
+            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
+            color:#fff;
+            padding:9px 20px;border-radius:10px;font-size:13px;font-weight:700;
+            box-shadow:0 6px 14px rgba(241,123,13,.32),inset 0 1px 0 rgba(255,255,255,.18);
+            transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
+        }
+        .cs-btn-orange:hover{
+            transform:translateY(-1px);
+            box-shadow:0 10px 20px rgba(241,123,13,.42);
+            filter:brightness(1.05);
+        }
+        .cs-btn-orange:active{transform:translateY(0) scale(.97);}
+
+        .cs-btn-ghost{
+            background:transparent;color:#fff;
+            border:1.5px solid rgba(255,255,255,.4);
+            padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;
+            transition:background .15s,border-color .15s;
+        }
+        .cs-btn-ghost:hover{background:rgba(255,255,255,.12);border-color:#fff;}
+
+        .cs-cart-btn{
+            position:relative;
+            color:#fff;background:rgba(255,255,255,.06);
+            width:42px;height:42px;border-radius:12px;
+            display:flex;align-items:center;justify-content:center;font-size:18px;
+            border:1px solid rgba(255,255,255,.12);
+            transition:background .15s ease,transform .15s ease,border-color .15s ease;
+        }
+        .cs-cart-btn:hover{
+            background:linear-gradient(135deg,rgba(241,123,13,.35) 0%,rgba(241,123,13,.12) 100%);
+            border-color:rgba(241,123,13,.6);
+            transform:translateY(-2px);
+        }
+        .cs-cart-badge{
+            position:absolute;top:-4px;right:-4px;
+            min-width:20px;height:20px;padding:0 5px;
+            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
+            color:#fff;font-size:10px;font-weight:800;border-radius:999px;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 10px rgba(241,123,13,.4);
+            border:2px solid var(--green-deep);
+        }
+
+        .cs-user-chip{
+            display:flex;align-items:center;gap:10px;
+            padding:5px 6px 5px 5px;
+            border-radius:999px;
+            background:rgba(255,255,255,.06);
+            border:1px solid rgba(255,255,255,.12);
+            transition:background .15s ease;
+        }
+        .cs-user-chip:hover{background:rgba(255,255,255,.12);}
+        .cs-user-chip-avatar{
+            width:32px;height:32px;border-radius:50%;
+            background:linear-gradient(135deg,#ffb347 0%,var(--orange) 55%,#d96500 100%);
+            display:flex;align-items:center;justify-content:center;
+            font-size:13px;font-weight:800;color:#fff;
+            border:2px solid rgba(255,255,255,.25);
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
+        }
+
+        /* ══════════════════ SIDEBAR ══════════════════ */
+        .cs-side{
+            width:100%;
+            flex-shrink:0;
+        }
+        .cs-side-card{
+            position:relative;
+            background:
+                linear-gradient(160deg,#ffffff 0%,#fff7ec 45%,#ffe7cf 100%);
+            border:1px solid rgba(241,123,13,.18);
+            border-radius:var(--radius-lg);
+            box-shadow:0 18px 42px rgba(255,146,4,.18),0 4px 14px rgba(4,70,53,.05);
+            padding:22px 18px 16px;
+            animation:csSlideIn .55s cubic-bezier(.2,.8,.2,1) both;
+            overflow:hidden;
+        }
+        .cs-side-card::before{
+            content:'';
+            position:absolute;inset:0;
+            background:radial-gradient(380px 220px at -10% -20%,rgba(20,184,166,.18),transparent 65%);
+            pointer-events:none;
+        }
+        @keyframes csSlideIn{
+            from{opacity:0;transform:translateX(-12px);}
+            to  {opacity:1;transform:translateX(0);}
+        }
+
+        .cs-side-avatar{
+            width:56px;height:56px;border-radius:50%;
+            background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);
+            color:#fff;font-size:20px;font-weight:800;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 8px 18px rgba(4,70,53,.30),inset 0 1px 0 rgba(255,255,255,.18);
+            flex-shrink:0;
+            position:relative;
+        }
+        .cs-side-avatar::after{
+            content:'';
+            position:absolute;inset:-3px;
+            border-radius:50%;
+            background:linear-gradient(135deg,var(--orange) 0%,transparent 70%);
+            opacity:.35;
+            z-index:-1;
+            filter:blur(8px);
+        }
+
+        .cs-points-chip{
+            display:inline-flex;align-items:center;gap:6px;
+            padding:5px 11px;border-radius:999px;
+            background:linear-gradient(95deg,#fff3e0 0%,#ffe7cf 100%);
+            border:1px solid rgba(241,123,13,.22);
+            color:var(--orange-deep);
+            font-size:11.5px;font-weight:800;
+            box-shadow:0 4px 10px rgba(241,123,13,.12);
+        }
+        .cs-points-chip i{color:var(--orange);font-size:11px;}
+
+        .cs-nav-label{
+            font-size:10px;font-weight:800;text-transform:uppercase;
+            letter-spacing:.14em;color:#b08e6f;
+            padding:14px 6px 6px;
+            display:flex;align-items:center;gap:6px;
+        }
+        .cs-nav-label::before{
+            content:'';width:14px;height:1px;
+            background:linear-gradient(90deg,rgba(241,123,13,.6),transparent);
+        }
+
+        .cs-nav{
+            display:flex;flex-direction:column;gap:3px;
+        }
+        .cs-nav a{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:10px 12px;
+            font-size:13.5px;color:var(--dark);font-weight:500;
+            border-radius:12px;
+            transition:background .2s ease,color .2s ease,transform .2s ease,box-shadow .2s ease;
+            position:relative;
+            border-left:3px solid transparent;
+        }
+        .cs-nav a:hover{
+            background:rgba(241,123,13,.10);
+            color:var(--orange-deep);
+            transform:translateX(4px);
+        }
+        .cs-nav a.active{
+            background:linear-gradient(95deg,var(--orange) 0%,var(--orange-soft) 100%);
+            color:#fff;font-weight:700;
+            box-shadow:0 10px 22px rgba(241,123,13,.32),inset 0 1px 0 rgba(255,255,255,.25);
+            border-left-color:var(--orange-deep);
+        }
+        .cs-nav a.active .cs-nav-arrow{color:rgba(255,255,255,.9);}
+        .cs-nav-arrow{color:var(--mid);font-size:11px;transition:transform .2s ease;}
+        .cs-nav a:hover .cs-nav-arrow{transform:translateX(2px);}
+
+        .cs-danger-zone{
+            margin-top:18px;padding-top:14px;
+            border-top:1px solid rgba(241,123,13,.18);
+        }
+        .cs-danger-btn{
+            width:100%;text-align:left;
+            padding:10px 12px;border-radius:12px;
+            color:#dc2626;font-size:13px;font-weight:600;
+            background:transparent;border:none;cursor:pointer;
+            display:flex;align-items:center;gap:10px;
+            transition:background .15s ease,color .15s ease;
+        }
+        .cs-danger-btn:hover{background:rgba(220,38,38,.08);color:#b91c1c;}
+        .cs-danger-btn i{width:18px;text-align:center;}
+
+        /* ══════════════════ FOOTER ══════════════════ */
+        .cs-footer{
+            background:linear-gradient(105deg,var(--green-deep),var(--green) 55%,var(--green-mid));
+            color:rgba(255,255,255,.7);
+            margin-top:40px;
+            position:relative;overflow:hidden;
+        }
+        .cs-footer::before{
+            content:'';position:absolute;inset:0;
+            background:radial-gradient(800px 200px at 50% -50%,rgba(241,123,13,.28),transparent 60%);
+            pointer-events:none;
+        }
+        .cs-footer-inner{
+            position:relative;z-index:1;
+            max-width:1280px;margin:0 auto;
+            padding:28px 24px;
+            text-align:center;
+        }
+        .cs-footer h3{color:#fff;font-size:18px;font-weight:800;letter-spacing:-.01em;}
+        .cs-footer .cs-footer-tag{color:var(--orange-soft);font-weight:700;}
+
+        /* ══════════════════ UTILITY ══════════════════ */
+        .cs-link-emerald{
+            color:var(--green);
+            font-weight:600;
+            transition:color .15s ease;
+        }
+        .cs-link-emerald:hover{color:var(--orange);}
+
+        /* gentle entrance for the content area */
+        .cs-content{animation:csFadeUp .5s cubic-bezier(.2,.8,.2,1) .05s both;}
+        @keyframes csFadeUp{
+            from{opacity:0;transform:translateY(8px);}
+            to  {opacity:1;transform:translateY(0);}
         }
     </style>
 </head>
@@ -26,67 +305,58 @@
 <body class="min-h-screen flex flex-col">
 
 <!-- NAVBAR -->
-<nav class="sticky top-0 z-50 bg-[#044635] shadow-lg">
+<nav class="cs-navbar">
 <div class="max-w-7xl mx-auto px-6">
     <div class="flex justify-between items-center h-20">
 
         <!-- Logo -->
         <a href="/" class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-[#F17B0D] flex items-center justify-center text-2xl">
-                🛒
-            </div>
+            <div class="cs-logo-badge">🛒</div>
             <div>
-                <h1 class="text-white text-xl font-bold">SuperShop BD</h1>
-                <p class="text-green-200 text-xs">Bangladesh Retail Network</p>
+                <h1 class="text-white text-xl font-extrabold tracking-tight">SuperShop <span class="text-[#ffb35c]">BD</span></h1>
+                <p class="text-green-200 text-[11px] tracking-wide uppercase">Bangladesh Retail Network</p>
             </div>
         </a>
 
         <!-- Right side -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 md:gap-3">
 
             {% if role == "CUSTOMER" %}
                 {% set cart = request.session.get('cart', {}) %}
                 {% set cart_count = cart.values() | sum if cart else 0 %}
-                <a href="/customer/cart"
-                   title="Cart"
-                   class="relative text-white hover:bg-white/10 w-11 h-11 rounded-xl flex items-center justify-center text-lg transition">
+                <a href="/customer/cart" title="Cart" class="cs-cart-btn">
                     🛒
                     {% if cart_count > 0 %}
-                    <span class="absolute -top-1 -right-1 bg-[#F17B0D] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                        {{ cart_count }}
-                    </span>
+                    <span class="cs-cart-badge">{{ cart_count }}</span>
                     {% endif %}
                 </a>
 
             {% elif role == "EMPLOYEE" %}
-                <a href="/products" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Products</a>
-                <a href="/sales" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Sales</a>
-                <a href="/inventory" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Inventory</a>
+                <a href="/products" class="cs-nav-link hidden md:inline-block">Products</a>
+                <a href="/sales" class="cs-nav-link hidden md:inline-block">Sales</a>
+                <a href="/inventory" class="cs-nav-link hidden md:inline-block">Inventory</a>
 
             {% elif role == "ADMIN" %}
-                <a href="/admin/dashboard" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Dashboard</a>
-                <a href="/admin/dashboard/products" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Products</a>
-                <a href="/admin/dashboard/sales" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Sales</a>
-                <a href="/admin/dashboard/inventory" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Inventory</a>
-                <a href="/admin/dashboard/branches" class="text-white hover:bg-white/10 px-4 py-2 rounded-xl transition">Branches</a>
+                <a href="/admin/dashboard" class="cs-nav-link hidden md:inline-block">Dashboard</a>
+                <a href="/admin/dashboard/products" class="cs-nav-link hidden md:inline-block">Products</a>
+                <a href="/admin/dashboard/sales" class="cs-nav-link hidden md:inline-block">Sales</a>
+                <a href="/admin/dashboard/inventory" class="cs-nav-link hidden md:inline-block">Inventory</a>
+                <a href="/admin/dashboard/branches" class="cs-nav-link hidden md:inline-block">Branches</a>
             {% endif %}
 
             {% if role %}
-            <div class="flex items-center gap-3 ml-4">
-                <div class="text-right">
-                    <p class="text-white text-sm font-semibold">{{ user_name or "User" }}</p>
-                    <p class="text-green-200 text-xs">{{ role }}</p>
+            <div class="cs-user-chip ml-2">
+                <div class="cs-user-chip-avatar">
+                    {{ (user_name or "U")[0] | upper }}
                 </div>
-                <a href="/auth/logout"
-                   class="bg-[#F17B0D] hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-semibold transition">
-                    Logout
-                </a>
+                <div class="text-right pr-2 hidden sm:block">
+                    <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
+                    <p class="text-green-200 text-[10px] uppercase tracking-wider">{{ role }}</p>
+                </div>
+                <a href="/auth/logout" class="cs-btn-orange ml-1">Logout</a>
             </div>
             {% else %}
-            <a href="/auth/login"
-               class="bg-[#F17B0D] hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-semibold transition">
-                Login
-            </a>
+            <a href="/auth/login" class="cs-btn-orange">Login</a>
             {% endif %}
 
         </div>
@@ -100,49 +370,54 @@
 
     {% if role == "CUSTOMER" %}
     <!-- ══ PERSISTENT CUSTOMER SIDEBAR ══ -->
-    <aside class="w-full lg:w-72 flex-shrink-0">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:sticky lg:top-28">
+    <aside class="cs-side lg:w-72">
+        <div class="cs-side-card lg:sticky lg:top-28">
 
             <!-- Profile -->
-            <div class="flex items-center gap-3 mb-1">
-                <div class="w-14 h-14 rounded-full bg-[#044635] flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+            <div class="flex items-center gap-3 mb-2 relative z-[1]">
+                <div class="cs-side-avatar">
                     {{ (user_name or "U")[0] | upper }}
                 </div>
                 <div class="min-w-0">
-                    <p class="font-semibold text-gray-800 truncate">{{ user_name or "Customer" }}</p>
-                    <p class="text-xs text-gray-400">{{ membership or "REGULAR" }} member</p>
+                    <p class="font-bold text-gray-800 truncate text-[15px]">{{ user_name or "Customer" }}</p>
+                    <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">{{ membership or "REGULAR" }} member</p>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 text-xs text-[#F17B0D] font-semibold mb-5 pl-1">
-                <span>🪙</span> {{ loyalty_points or 0 }} loyalty points
+            <div class="mb-5 pl-1 relative z-[1]">
+                <span class="cs-points-chip">
+                    <i class="fas fa-coins"></i> {{ loyalty_points or 0 }} loyalty points
+                </span>
             </div>
 
             <!-- Nav, active state driven by the real URL -->
             {% set path = request.url.path %}
             {% set nav_items = [
-                ('/customer/dashboard', '👤', 'My Orders'),                ('/customer/profile',   '🪪', 'Profile'),                ('/customer/shop',      '🛍️', 'Shop'),
-                ('/customer/cart',      '🛒', 'Cart'),
-                ('/customer/branches',  '📍', 'Branches'),
+                ('/customer/dashboard', 'fa-house-chimney', 'My Account'),
+                ('/customer/profile',   'fa-id-card',      'Profile'),
+                ('/customer/shop',      'fa-bag-shopping', 'Shop'),
+                ('/customer/cart',      'fa-cart-shopping','Cart'),
+                ('/customer/branches',  'fa-location-dot', 'Branches'),
             ] %}
-            <nav class="space-y-1">
+            <div class="cs-nav-label">Navigation</div>
+            <nav class="cs-nav">
                 {% for href, icon, label in nav_items %}
                 {% set is_active = path.startswith(href) %}
-                <a href="{{ href }}"
-                   class="flex items-center justify-between px-4 py-2.5 rounded-xl transition
-                          {% if is_active %}bg-[#044635]/10 text-[#044635] font-semibold border-l-4 border-[#F17B0D]{% else %}text-gray-600 hover:bg-gray-50 hover:text-[#044635]{% endif %}">
-                    <span class="flex items-center gap-3"><span class="text-base">{{ icon }}</span> {{ label }}</span>
-                    <span class="text-gray-300">›</span>
+                <a href="{{ href }}" class="{{ 'active' if is_active }}">
+                    <span class="flex items-center gap-3">
+                        <i class="fa-solid {{ icon }}" style="width:18px;text-align:center"></i>
+                        <span>{{ label }}</span>
+                    </span>
+                    <span class="cs-nav-arrow">›</span>
                 </a>
                 {% endfor %}
             </nav>
 
             <!-- Danger zone -->
-            <div class="border-t border-gray-100 mt-5 pt-4">
+            <div class="cs-danger-zone">
                 <form action="/customer/delete-account" method="post"
                       onsubmit="return confirm('Delete your account? You will lose access to this login, but your order history and points stay safe if you sign up again with the same phone number.');">
-                    <button type="submit"
-                            class="w-full text-left px-4 py-2.5 rounded-xl text-red-500 text-sm font-medium hover:bg-red-50 transition flex items-center gap-3">
-                        <span class="text-base">🗑️</span> Delete account
+                    <button type="submit" class="cs-danger-btn">
+                        <i class="fa-solid fa-trash-can"></i> Delete account
                     </button>
                 </form>
             </div>
@@ -151,7 +426,7 @@
     {% endif %}
 
     <!-- ══ PAGE-SPECIFIC CONTENT ══ -->
-    <div class="flex-1 min-w-0">
+    <div class="flex-1 min-w-0 cs-content">
         {% block content %}{% endblock %}
     </div>
 
@@ -159,11 +434,11 @@
 </main>
 
 <!-- FOOTER -->
-<footer class="bg-white border-t mt-10">
-<div class="max-w-7xl mx-auto px-6 py-6 text-center">
-    <h3 class="font-bold text-[#044635] text-lg">SuperShop Bangladesh</h3>
-    <p class="text-gray-500 mt-2">Multi-Branch Retail Management System</p>
-    <p class="text-gray-400 text-sm mt-3">© 2025 SuperShop Bangladesh | University Project</p>
+<footer class="cs-footer">
+<div class="cs-footer-inner">
+    <h3>SuperShop Bangladesh</h3>
+    <p class="text-gray-300 mt-2 text-sm">Multi-Branch Retail Management System</p>
+    <p class="text-green-200/70 text-xs mt-3">© 2025 SuperShop Bangladesh | University Project · <span class="cs-footer-tag">Powered by FastAPI + PostgreSQL</span></p>
 </div>
 </footer>
 
