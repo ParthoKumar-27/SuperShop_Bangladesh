@@ -391,32 +391,6 @@ def add_to_cart(
     return RedirectResponse("/customer/shop?msg=added", status_code=302)
 
 
-# @customer_router.get("/cart", response_class=HTMLResponse)
-# def view_cart(request: Request, session=Depends(require_customer)):
-#     cart = request.session.get("cart", {})
-
-#     items = []
-#     grand_total = 0.0
-
-#     if cart:
-#         products = query("""
-#             SELECT product_id, product_name, brand, unit_price, unit
-#             FROM product
-#             WHERE product_id = ANY(%s)
-#         """, (list(cart.keys()),))
-
-#         for p in products:
-#             qty = cart.get(p["product_id"], 0)
-#             line_total = float(p["unit_price"]) * qty
-#             grand_total += line_total
-#             items.append({**p, "quantity": qty, "line_total": line_total})
-
-#     return templates.TemplateResponse(request, "customer/cart.html", {
-#         "items": items,
-#         "grand_total": grand_total,
-#         "role": "CUSTOMER",
-#         "user_name": session.get("user_name"),
-#     })
 
 
 @customer_router.get("/cart", response_class=HTMLResponse)
@@ -494,43 +468,6 @@ def remove_from_cart(
     return RedirectResponse("/customer/cart", status_code=302)
 
 
-# @customer_router.get("/checkout", response_class=HTMLResponse)
-# def checkout_page(request: Request, session=Depends(require_customer)):
-#     cart = request.session.get("cart", {})
-
-#     if not cart:
-#         return RedirectResponse("/customer/shop", status_code=302)
-
-#     products = query("""
-#         SELECT product_id, product_name, brand, unit_price, unit
-#         FROM product
-#         WHERE product_id = ANY(%s)
-#     """, (list(cart.keys()),))
-
-#     items = []
-#     grand_total = 0.0
-#     for p in products:
-#         qty = cart.get(p["product_id"], 0)
-
-
-#         line_total = float(p["unit_price"]) * qty
-#         grand_total += line_total
-#         items.append({**p, "quantity": qty, "line_total": line_total})
-
-#     branches = query("""
-#         SELECT branch_id, branch_name
-#         FROM branch
-#         WHERE is_active = 'Y'
-#         ORDER BY branch_name
-#     """)
-
-#     return templates.TemplateResponse(request, "customer/checkout.html", {
-#         "items": items,
-#         "grand_total": grand_total,
-#         "branches": branches,
-#         "role": "CUSTOMER",
-#         "user_name": session.get("user_name"),
-#     })
 
 @customer_router.get("/checkout", response_class=HTMLResponse)
 def checkout_page(request: Request, session=Depends(require_customer)):
@@ -575,38 +512,6 @@ def checkout_page(request: Request, session=Depends(require_customer)):
 
 
 
-# POST /customer/checkout (place order) comes in the next step —
-# it needs to know the exact columns of sale, sale_item, and online_order.
-# @customer_router.get("/inventory", response_class=HTMLResponse)
-# def customer_inventory(
-#     request: Request,
-#     session=Depends(require_customer)
-# ):
-#     inventory = query("""
-#         SELECT
-#             b.branch_name,
-#             p.product_name,
-#             bi.quantity,
-#             CASE
-#                 WHEN bi.quantity <= bi.reorder_level
-#                 THEN 'LOW'
-#                 ELSE 'AVAILABLE'
-#             END AS stock_status
-#         FROM branch_inventory bi
-#         JOIN branch b USING(branch_id)
-#         JOIN product p USING(product_id)
-#         ORDER BY b.branch_name, p.product_name
-#     """)
-
-#     return templates.TemplateResponse(
-#         request,
-#         "customer/inventory.html",
-#         {
-#             "inventory": inventory,
-#             "role": "CUSTOMER",
-#             "user_name": session.get("user_name")
-#         }
-#     )
 
 @customer_router.get("/inventory", response_class=HTMLResponse)
 def customer_inventory(request: Request, branch_id: str = Query(default=None), session=Depends(require_customer)):
