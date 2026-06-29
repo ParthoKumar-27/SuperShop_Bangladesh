@@ -23,332 +23,190 @@
 
     /* ── TOP NAV ── */
     .topnav {
-      background: var(--green);
-      padding: 12px 28px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background: var(--green); padding: 12px 28px;
+      display: flex; align-items: center; gap: 20px;
+      position: sticky; top: 0; z-index: 100;
     }
-    .topnav-logo {
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-    }
+    .topnav-logo { font-size: 20px; font-weight: 700; color: #fff; white-space: nowrap; }
     .topnav-logo span { color: var(--orange); }
-    .topnav-search {
-      flex: 1;
-      max-width: 580px;
-      display: flex;
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    .topnav-search { flex: 1; max-width: 580px; display: flex; border-radius: 8px; overflow: hidden; }
     .topnav-search input {
-      flex: 1;
-      padding: 10px 16px;
-      border: none;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      color: var(--dark);
-      outline: none;
+      flex: 1; padding: 10px 16px; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark); outline: none;
     }
-    .topnav-search button {
-      width: 48px;
-      background: var(--orange);
-      border: none;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .topnav-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-left: auto;
-    }
+    .topnav-search button { width: 48px; background: var(--orange); border: none; color: #fff; font-size: 16px; cursor: pointer; }
+    .topnav-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
     .btn-signin {
-      background: var(--orange);
-      color: #fff;
-      padding: 9px 20px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      white-space: nowrap;
-      transition: background .15s;
+      background: var(--orange); color: #fff; padding: 9px 20px;
+      border-radius: 8px; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background .15s;
     }
     .btn-signin:hover { background: #d96b00; }
-    .topnav-hotline {
-      font-size: 12px;
-      color: rgba(255,255,255,.6);
-      white-space: nowrap;
+    .btn-logout {
+      background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.4);
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      white-space: nowrap; transition: background .15s, border-color .15s;
     }
+    .btn-logout:hover { background: rgba(255,255,255,.12); border-color: #fff; }
+    .topnav-hotline { font-size: 12px; color: rgba(255,255,255,.6); white-space: nowrap; }
 
     /* ── LAYOUT ── */
-    .layout {
-      display: flex;
-      max-width: 1440px;
-      margin: 0 auto;
-    }
+    .layout { display: flex; max-width: 1440px; margin: 0 auto; }
 
     /* ── SIDEBAR ── */
     .sidebar {
-      width: 230px;
-      flex-shrink: 0;
-      background: var(--white);
-      border-right: 1px solid var(--border);
+      width: 230px; flex-shrink: 0;
+      background: var(--white); border-right: 1px solid var(--border);
       min-height: calc(100vh - 60px);
     }
     .sidebar-header {
-      padding: 14px 18px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: var(--green);
-      border-bottom: 1px solid var(--border);
+      padding: 14px 18px; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--green); border-bottom: 1px solid var(--border);
     }
     .sidebar-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 11px 18px;
-      font-size: 13px;
-      color: var(--dark);
-      border-bottom: 1px solid #f3f4f6;
-      cursor: pointer;
-      transition: background .12s;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 18px; font-size: 13px; color: var(--dark);
+      border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background .12s;
     }
     .sidebar-item:hover { background: rgba(4,70,53,.04); color: var(--green); }
     .sidebar-item.active {
-      background: rgba(4,70,53,.08);
-      color: var(--green);
-      font-weight: 600;
-      box-shadow: inset 3px 0 0 0 var(--orange);
+      background: rgba(4,70,53,.08); color: var(--green);
+      font-weight: 600; box-shadow: inset 3px 0 0 0 var(--orange);
     }
     .sidebar-item-left { display: flex; align-items: center; gap: 10px; }
     .sidebar-icon { font-size: 16px; width: 22px; text-align: center; }
     .sidebar-arrow { color: var(--mid); font-size: 11px; }
+    /* sub-category indent */
+    .sidebar-item.sub {
+      padding-left: 40px; font-size: 12px; color: var(--mid);
+      background: #fafafa; border-bottom-color: #f3f4f6;
+    }
+    .sidebar-item.sub:hover { color: var(--green); background: rgba(4,70,53,.04); }
+    .sidebar-item.sub.active { color: var(--green); background: rgba(4,70,53,.06); }
 
-    /* ── MAIN CONTENT ── */
+    /* ── MAIN ── */
     .main { flex: 1; padding: 16px 20px; min-width: 0; }
 
-    /* ── HERO BANNER ── */
+    /* ── HERO ── */
     .hero-banner {
-      background: var(--green);
-      border-radius: var(--radius);
-      padding: 36px 44px;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      position: relative;
-      overflow: hidden;
+      background: var(--green); border-radius: var(--radius);
+      padding: 36px 44px; color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; position: relative; overflow: hidden;
     }
     .hero-banner::before {
-      content: '';
-      position: absolute;
-      width: 320px; height: 320px;
-      background: rgba(241,123,13,.12);
-      border-radius: 50%;
-      top: -80px; right: -60px;
+      content: ''; position: absolute; width: 320px; height: 320px;
+      background: rgba(241,123,13,.12); border-radius: 50%; top: -80px; right: -60px;
     }
     .hero-banner::after {
-      content: '';
-      position: absolute;
-      width: 180px; height: 180px;
-      background: rgba(255,255,255,.05);
-      border-radius: 50%;
-      bottom: -40px; left: 200px;
+      content: ''; position: absolute; width: 180px; height: 180px;
+      background: rgba(255,255,255,.05); border-radius: 50%; bottom: -40px; left: 200px;
     }
     .hero-badge {
-      display: inline-block;
-      background: rgba(241,123,13,.22);
-      color: var(--orange);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      padding: 4px 12px;
-      border-radius: 20px;
-      margin-bottom: 14px;
+      display: inline-block; background: rgba(241,123,13,.22); color: var(--orange);
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;
     }
-    .hero-heading {
-      font-size: 34px;
-      font-weight: 700;
-      line-height: 1.18;
-      margin-bottom: 10px;
-    }
+    .hero-heading { font-size: 34px; font-weight: 700; line-height: 1.18; margin-bottom: 10px; }
     .hero-heading span { color: var(--orange); }
-    .hero-sub {
-      font-size: 14px;
-      color: rgba(255,255,255,.65);
-      margin-bottom: 22px;
-      max-width: 340px;
-    }
+    .hero-sub { font-size: 14px; color: rgba(255,255,255,.65); margin-bottom: 22px; max-width: 340px; }
     .hero-cta {
-      background: var(--orange);
-      color: #fff;
-      padding: 11px 24px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 14px;
-      transition: background .15s;
-      position: relative; z-index: 1;
+      background: var(--orange); color: #fff; padding: 11px 24px;
+      border-radius: 10px; font-weight: 600; font-size: 14px;
+      transition: background .15s; position: relative; z-index: 1; display: inline-block;
     }
     .hero-cta:hover { background: #d96b00; }
     .hero-emoji { font-size: 88px; position: relative; z-index: 1; }
 
-    /* ── QUICK CATEGORY TILES ── */
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--green);
-      margin-bottom: 12px;
-    }
+    /* ── CATEGORY TILES ── */
+    .section-title { font-size: 16px; font-weight: 700; color: var(--green); margin-bottom: 12px; }
     .cat-tiles {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px; margin-bottom: 24px;
     }
     .cat-tile {
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      background: var(--white);
-      box-shadow: var(--shadow);
-      transition: transform .15s;
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      background: var(--white); box-shadow: var(--shadow); transition: transform .15s;
     }
     .cat-tile:hover { transform: translateY(-3px); }
-    .cat-tile.active {
-      box-shadow: 0 0 0 3px var(--orange) inset;
-      transform: translateY(-3px);
-    }
-    .cat-tile img {
-      width: 100%;
-      height: 100px;
-      object-fit: cover;
-      display: block;
+    .cat-tile.active { box-shadow: 0 0 0 3px var(--orange) inset; transform: translateY(-3px); }
+    .cat-tile-img {
+      width: 100%; height: 90px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 42px; background: linear-gradient(135deg, #f0f9f4, #e8f5ee);
     }
     .cat-tile-label {
-      background: var(--orange);
-      color: #fff;
-      text-align: center;
-      padding: 7px;
-      font-size: 12px;
-      font-weight: 600;
+      background: var(--orange); color: #fff;
+      text-align: center; padding: 7px; font-size: 12px; font-weight: 600;
     }
 
-    /* ── PRODUCTS GRID ── */
-    .products-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .view-all {
-      font-size: 13px;
-      color: var(--orange);
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-    }
+    /* ── PRODUCTS ── */
+    .products-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .view-all { font-size: 13px; color: var(--orange); font-weight: 600; cursor: pointer; }
+    .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
     .product-card {
-      background: var(--white);
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: 0 2px 12px rgba(4,70,53,.07);
-      transition: box-shadow .15s;
+      background: var(--white); border-radius: var(--radius); overflow: hidden;
+      box-shadow: 0 2px 12px rgba(4,70,53,.07); transition: box-shadow .15s;
     }
     .product-card:hover { box-shadow: 0 6px 24px rgba(4,70,53,.14); }
-    .product-card img { width: 100%; height: 148px; object-fit: cover; display: block; background: #eef1ee; }
+    .product-card-img {
+      width: 100%; height: 148px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 56px; background: linear-gradient(135deg, #f0f9f4, #e8f5ee);
+    }
     .product-card-body { padding: 12px 14px 14px; }
     .product-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--dark);
-      margin-bottom: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 13px; font-weight: 600; color: var(--dark);
+      margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .product-brand { font-size: 11px; color: var(--mid); margin-bottom: 10px; }
     .product-footer { display: flex; align-items: center; justify-content: space-between; }
     .product-price { font-size: 16px; font-weight: 700; color: var(--orange); }
     .btn-add {
-      background: var(--green);
-      color: #fff;
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: none;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      transition: background .15s;
+      background: var(--green); color: #fff; padding: 6px 14px;
+      border-radius: 8px; border: none; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .15s;
     }
     .btn-add:hover { background: #033828; }
-
-    /* ── NO RESULTS ── */
+    .btn-login-buy {
+      background: var(--green); color: #fff; padding: 6px 14px;
+      border-radius: 8px; font-size: 12px; font-weight: 600; display: inline-block;
+    }
     .no-results {
-      display: none;
-      text-align: center;
-      color: var(--mid);
-      font-size: 14px;
-      padding: 50px 0;
-      grid-column: 1 / -1;
+      display: none; text-align: center; color: var(--mid);
+      font-size: 14px; padding: 50px 0; grid-column: 1 / -1;
     }
 
     /* ── FEATURE STRIP ── */
     .feature-strip {
-      background: var(--white);
-      border-top: 1px solid var(--border);
-      margin-top: 32px;
-      padding: 28px 48px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
+      background: var(--white); border-top: 1px solid var(--border);
+      margin-top: 32px; padding: 28px 48px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
     }
     .feature-item { display: flex; align-items: center; gap: 14px; }
     .feature-icon {
-      width: 46px; height: 46px;
-      border-radius: 50%;
+      width: 46px; height: 46px; border-radius: 50%;
       border: 2px solid rgba(4,70,53,.20);
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
+      font-size: 20px; flex-shrink: 0;
     }
     .feature-title { font-size: 14px; font-weight: 700; color: var(--dark); }
     .feature-sub { font-size: 12px; color: var(--mid); margin-top: 2px; }
 
     /* ── FOOTER ── */
     footer {
-      background: var(--green);
-      color: rgba(255,255,255,.6);
-      text-align: center;
-      padding: 18px;
-      font-size: 12px;
-      margin-top: 0;
+      background: var(--green); color: rgba(255,255,255,.6);
+      text-align: center; padding: 18px; font-size: 12px;
     }
     footer span { color: var(--orange); }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 1024px) {
       .sidebar { display: none; }
-      .cat-tiles { grid-template-columns: repeat(3, 1fr); }
       .products-grid { grid-template-columns: repeat(3, 1fr); }
     }
     @media (max-width: 640px) {
       .topnav-search { display: none; }
-      .cat-tiles { grid-template-columns: repeat(2, 1fr); }
       .products-grid { grid-template-columns: repeat(2, 1fr); }
       .feature-strip { grid-template-columns: repeat(2, 1fr); padding: 20px; }
       .hero-heading { font-size: 24px; }
@@ -358,324 +216,288 @@
 </head>
 <body>
 
-  <!-- ══ TOP NAVBAR ══ -->
-  <nav class="topnav">
-    <a href="/" class="topnav-logo">🛒 SuperShop <span>BD</span></a>
+<!-- ══ TOP NAVBAR ══ -->
+<nav class="topnav">
+  <a href="/" class="topnav-logo">🛒 SuperShop <span>BD</span></a>
+  <div class="topnav-search">
+    <input type="text" placeholder="Search your products…" id="storeSearch">
+    <button>🔍</button>
+  </div>
+  <div class="topnav-actions">
+    <span class="topnav-hotline">📞 Help: 16516</span>
+    {% if role == 'CUSTOMER' %}
+      <a href="/customer/dashboard" class="btn-signin">My Account</a>
+      <a href="/auth/logout" class="btn-logout">Logout</a>
+    {% elif role == 'ADMIN' %}
+      <a href="/admin/dashboard" class="btn-signin">Dashboard</a>
+      <a href="/auth/logout" class="btn-logout">Logout</a>
+    {% elif role == 'EMPLOYEE' %}
+      <a href="/employee/dashboard" class="btn-signin">Dashboard</a>
+      <a href="/auth/logout" class="btn-logout">Logout</a>
+    {% else %}
+      <a href="/auth/login" class="btn-signin">Sign in / Sign up</a>
+    {% endif %}
+  </div>
+</nav>
 
-    <!-- Search -->
-    <div class="topnav-search">
-      <input type="text" placeholder="Search your products…" id="storeSearch">
-      <button>🔍</button>
+<!-- ══ MAIN LAYOUT ══ -->
+<div class="layout">
+
+  <!-- ══ SIDEBAR ══
+       Key fix: store cat_id as-is (no | lower) in data-catid.
+       JS will normalise to lowercase for comparison.
+  -->
+  <aside class="sidebar">
+    <div class="sidebar-header">Shop by Category</div>
+
+    <div class="sidebar-item active" data-catid="ALL"
+         onclick="filterCategory('ALL', this)">
+      <div class="sidebar-item-left"><span class="sidebar-icon">🛍️</span> All Products</div>
+      <span class="sidebar-arrow">›</span>
     </div>
 
-    <!-- Actions -->
-    <div class="topnav-actions">
-      <span class="topnav-hotline">📞 Help: 16516</span>
-      {% if role == 'CUSTOMER' %}
-        <a href="/customer/dashboard" class="btn-signin">My Account</a>
-      {% elif role == 'ADMIN' %}
-        <a href="/admin/dashboard" class="btn-signin">Dashboard</a>
-      {% else %}
-        <a href="/auth/login" class="btn-signin">Sign in / Sign up</a>
-      {% endif %}
+    {# ── top-level categories first ── #}
+    {% for cat in categories if cat.parent_cat_id is none %}
+    {% set n = cat.cat_name | lower %}
+    <div class="sidebar-item" data-catid="{{ cat.cat_id }}"
+         onclick="filterCategory('{{ cat.cat_id }}', this)">
+      <div class="sidebar-item-left">
+        <span class="sidebar-icon">
+          {%- if   'dairy'     in n -%}🥛
+          {%- elif 'bak'       in n -%}🍞
+          {%- elif 'snack'     in n -%}🍬
+          {%- elif 'bever'     in n -%}🥤
+          {%- elif 'health'    in n -%}🧴
+          {%- elif 'electron'  in n -%}📱
+          {%- elif 'cloth'     in n -%}👕
+          {%- elif 'food'      in n or 'grocer' in n -%}🍎
+          {%- elif 'personal'  in n -%}🧼
+          {%- else -%}🛒
+          {%- endif -%}
+        </span>
+        {{ cat.cat_name }}
+      </div>
+      <span class="sidebar-arrow">›</span>
     </div>
-  </nav>
 
-  <!-- ══ MAIN LAYOUT ══ -->
-  <div class="layout">
+    {# sub-categories — compare using upper() on both sides so CAT-F1 == CAT-F1 #}
+    {% for sub in categories if sub.parent_cat_id and sub.parent_cat_id | upper == cat.cat_id | upper %}
+    <div class="sidebar-item sub" data-catid="{{ sub.cat_id }}"
+         onclick="filterCategory('{{ sub.cat_id }}', this)">
+      <div class="sidebar-item-left">
+        <span class="sidebar-icon" style="font-size:12px;opacity:.5">↳</span>
+        {{ sub.cat_name }}
+      </div>
+      <span class="sidebar-arrow">›</span>
+    </div>
+    {% endfor %}
 
-    <!-- LEFT SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-header">Shop by Category</div>
+    {% endfor %}
+  </aside>
 
-      <div class="sidebar-item active" data-category="all" onclick="filterCategory('all', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">🛍️</span> All Products</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="food" onclick="filterCategory('food', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">🍎</span> Food</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="dairy" onclick="filterCategory('dairy', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">🥛</span> Dairy Products</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="bakery" onclick="filterCategory('bakery', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">🍞</span> Bakery</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="snacks" onclick="filterCategory('snacks', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">🍬</span> Snacks</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="beverages" onclick="filterCategory('beverages', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">🥤</span> Beverages</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="health" onclick="filterCategory('health', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">🧴</span> Health & Beauty</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="electronics" onclick="filterCategory('electronics', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">📱</span> Electronics</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-      <div class="sidebar-item" data-category="clothing" onclick="filterCategory('clothing', this)">
-        <div class="sidebar-item-left"><span class="sidebar-icon">👕</span> Clothing</div>
-        <span class="sidebar-arrow">›</span>
-      </div>
-    </aside>
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="main">
 
-    <!-- MAIN CONTENT -->
-    <main class="main">
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+      <div>
+        <div class="hero-badge">Summer Offer 2025</div>
+        <h1 class="hero-heading">Fresh Groceries,<br><span>Up To 50% OFF</span></h1>
+        <p class="hero-sub">Shop from 8 branches across Bangladesh — or order online and get it delivered to your door.</p>
+        {% if logged_in %}
+          <a href="/customer/shop" class="hero-cta">Shop Now →</a>
+        {% else %}
+          <a href="/auth/login" class="hero-cta">Sign in to Shop →</a>
+        {% endif %}
+      </div>
+      <div class="hero-emoji">🛒</div>
+    </div>
 
-      <!-- Hero Banner -->
-      <div class="hero-banner">
-        <div>
-          <div class="hero-badge">Summer Offer 2025</div>
-          <h1 class="hero-heading">
-            Fresh Groceries,<br>
-            <span>Up To 50% OFF</span>
-          </h1>
-          <p class="hero-sub">
-            Shop from 8 branches across Bangladesh — or order online
-            and get it delivered to your door.
-          </p>
-          <a href="/auth/login" class="hero-cta">Shop Now →</a>
+    <!-- Category Tiles — top-level only, emoji instead of broken images -->
+    <p class="section-title">Shop by Category</p>
+    <div class="cat-tiles">
+      {% for cat in categories if cat.parent_cat_id is none %}
+      {% set n = cat.cat_name | lower %}
+      <div class="cat-tile" data-catid="{{ cat.cat_id }}"
+           onclick="filterCategory('{{ cat.cat_id }}', this)">
+        <div class="cat-tile-img">
+          {%- if   'dairy'     in n -%}🥛
+          {%- elif 'bak'       in n -%}🍞
+          {%- elif 'snack'     in n -%}🍬
+          {%- elif 'bever'     in n -%}🥤
+          {%- elif 'health'    in n -%}🧴
+          {%- elif 'electron'  in n -%}📱
+          {%- elif 'cloth'     in n -%}👕
+          {%- elif 'food'      in n or 'grocer' in n -%}🍎
+          {%- elif 'personal'  in n -%}🧼
+          {%- else -%}🛒
+          {%- endif -%}
         </div>
-        <div class="hero-emoji">🛒</div>
+        <div class="cat-tile-label">{{ cat.cat_name }}</div>
       </div>
+      {% endfor %}
+    </div>
 
-      <!-- Quick Category Tiles -->
-      <p class="section-title">Shop by Category</p>
-      <div class="cat-tiles">
-        <div class="cat-tile" data-category="dairy" onclick="filterCategory('dairy', this)">
-          <img src="https://loremflickr.com/200/100/dairy,milk?lock=101" alt="Dairy">
-          <div class="cat-tile-label">Dairy</div>
-        </div>
-        <div class="cat-tile" data-category="bakery" onclick="filterCategory('bakery', this)">
-          <img src="https://loremflickr.com/200/100/bread,bakery?lock=102" alt="Bakery">
-          <div class="cat-tile-label">Bakery</div>
-        </div>
-        <div class="cat-tile" data-category="snacks" onclick="filterCategory('snacks', this)">
-          <img src="https://loremflickr.com/200/100/snacks,chips?lock=103" alt="Snacks">
-          <div class="cat-tile-label">Snacks</div>
-        </div>
-        <div class="cat-tile" data-category="beverages" onclick="filterCategory('beverages', this)">
-          <img src="https://loremflickr.com/200/100/beverages,juice?lock=104" alt="Beverages">
-          <div class="cat-tile-label">Beverages</div>
-        </div>
-        <div class="cat-tile" data-category="health" onclick="filterCategory('health', this)">
-          <img src="https://loremflickr.com/200/100/cosmetics,skincare?lock=105" alt="Health">
-          <div class="cat-tile-label">Health</div>
-        </div>
-      </div>
+    <!-- Products -->
+    <div class="products-header">
+      <p class="section-title" id="productsHeading" style="margin-bottom:0">All Products</p>
+      <span class="view-all" onclick="filterCategory('ALL', document.querySelector('[data-catid=\'ALL\']'))">View All ›</span>
+    </div>
 
-      <!-- Popular Products -->
-      <div class="products-header">
-        <p class="section-title" id="productsHeading" style="margin-bottom:0">Popular Products</p>
-        <a href="#" class="view-all" onclick="filterCategory('all', document.querySelector('.sidebar-item[data-category=\'all\']')); return false;">View All ›</a>
-      </div>
-      <div class="products-grid" id="productGrid">
-        {% for p in products %}
-        <div class="product-card" data-category="{{ p.category | lower }}" data-name="{{ p.product_name | lower }}">
-          <img class="product-img" data-lock="{{ loop.index }}" alt="{{ p.product_name }}">
-          <div class="product-card-body">
-            <p class="product-name">{{ p.product_name }}</p>
-            <p class="product-brand">{{ p.brand or 'SuperShop' }}</p>
-            <div class="product-footer">
-              <span class="product-price">৳ {{ "%.0f"|format(p.unit_price) }}</span>
-              {% if logged_in %}
-                <button class="btn-add">+ Add</button>
-              {% else %}
-                <a href="/auth/login?role=customer"
-                   style="background:var(--green); color:#fff; padding:6px 14px; border-radius:8px; font-size:12px; font-weight:600">
-                  Login
-                </a>
-              {% endif %}
-            </div>
+    <div class="products-grid" id="productGrid">
+      {% for p in products %}
+      {# store cat_id exactly as DB returned it — JS lowercases everything for comparison #}
+      {% set n = p.product_name | lower %}
+      <div class="product-card"
+           data-catid="{{ p.cat_id if p.cat_id else '' }}"
+           data-name="{{ p.product_name | lower }}">
+        <div class="product-card-img">
+          {%- if   'milk'      in n -%}🥛
+          {%- elif 'yogurt'    in n -%}🍦
+          {%- elif 'butter'    in n -%}🧈
+          {%- elif 'bread'     in n -%}🍞
+          {%- elif 'biscuit'   in n or 'digestive' in n -%}🍪
+          {%- elif 'chip'      in n -%}🥔
+          {%- elif 'chanachur' in n or 'namkeen'   in n -%}🍿
+          {%- elif 'juice'     in n -%}🧃
+          {%- elif 'tea'       in n -%}🍵
+          {%- elif 'soft drink' in n or 'soda'     in n -%}🥤
+          {%- elif 'rice'      in n -%}🍚
+          {%- elif 'oil'       in n -%}🫙
+          {%- elif 'sugar'     in n -%}🍬
+          {%- elif 'soap'      in n -%}🧼
+          {%- elif 'shampoo'   in n -%}🧴
+          {%- elif 'toothpaste' in n -%}🪥
+          {%- elif 'charger'   in n -%}🔌
+          {%- elif 'earphone'  in n -%}🎧
+          {%- elif 't-shirt'   in n or 'shirt'     in n -%}👕
+          {%- elif 'jam'       in n -%}🫙
+          {%- else -%}🛍️
+          {%- endif -%}
+        </div>
+        <div class="product-card-body">
+          <p class="product-name" title="{{ p.product_name }}">{{ p.product_name }}</p>
+          <p class="product-brand">{{ p.brand or 'SuperShop' }}</p>
+          <div class="product-footer">
+            <span class="product-price">৳ {{ "%.0f"|format(p.unit_price) }}</span>
+            {% if logged_in %}
+              <button class="btn-add">+ Add</button>
+            {% else %}
+              <a href="/auth/login?role=customer" class="btn-login-buy">Login to Buy</a>
+            {% endif %}
           </div>
         </div>
-        {% endfor %}
-
-        <p class="no-results" id="noResults">No products found in this category.</p>
       </div>
+      {% endfor %}
 
-    </main>
+      <p class="no-results" id="noResults">No products found in this category.</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ FEATURE STRIP ══ -->
+<div class="feature-strip">
+  <div class="feature-item">
+    <div class="feature-icon">⚡</div>
+    <div><p class="feature-title">Same-Day Delivery</p><p class="feature-sub">Free shipping over ৳500</p></div>
   </div>
-
-  <!-- ══ FEATURE STRIP ══ -->
-  <div class="feature-strip">
-    <div class="feature-item">
-      <div class="feature-icon">⚡</div>
-      <div>
-        <p class="feature-title">Same-Day Delivery</p>
-        <p class="feature-sub">Free shipping over ৳500</p>
-      </div>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">✅</div>
-      <div>
-        <p class="feature-title">Authorized Products</p>
-        <p class="feature-sub">Within 30 days exchange</p>
-      </div>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">🎧</div>
-      <div>
-        <p class="feature-title">Customer Support</p>
-        <p class="feature-sub">9am to 10pm every day</p>
-      </div>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">💳</div>
-      <div>
-        <p class="feature-title">Flexible Payments</p>
-        <p class="feature-sub">bKash, Nagad, Card, Cash</p>
-      </div>
-    </div>
+  <div class="feature-item">
+    <div class="feature-icon">✅</div>
+    <div><p class="feature-title">Authorized Products</p><p class="feature-sub">Within 30 days exchange</p></div>
   </div>
+  <div class="feature-item">
+    <div class="feature-icon">🎧</div>
+    <div><p class="feature-title">Customer Support</p><p class="feature-sub">9am to 10pm every day</p></div>
+  </div>
+  <div class="feature-item">
+    <div class="feature-icon">💳</div>
+    <div><p class="feature-title">Flexible Payments</p><p class="feature-sub">bKash, Nagad, Card, Cash</p></div>
+  </div>
+</div>
 
-  <!-- ══ FOOTER ══ -->
-  <footer>
-    SuperShop Bangladesh &nbsp;·&nbsp; CSE-2201 &nbsp;·&nbsp;
-    University of Dhaka 2025 &nbsp;·&nbsp;
-    <span>Powered by FastAPI + PostgreSQL</span>
-  </footer>
+<!-- ══ FOOTER ══ -->
+<footer>
+  SuperShop Bangladesh &nbsp;·&nbsp; CSE-2201 &nbsp;·&nbsp;
+  University of Dhaka 2025 &nbsp;·&nbsp;
+  <span>Powered by FastAPI + PostgreSQL</span>
+</footer>
 
-  <script>
-    // Each sidebar / tile filter key maps to every possible raw value
-    // that might show up in data-category (cat_id, cat_name, or
-    // a relevant sub-category), all lowercased.
-    const categoryGroups = {
-      food:        ['cat-f1', 'food'],
-      dairy:       ['cat-d1', 'dairy'],
-      bakery:      ['cat-b1', 'bakery'],
-      snacks:      ['cat-s1', 'snacks'],
-      beverages:   ['cat-bv', 'beverages'],
-      health:      ['cat-h1', 'health', 'cat-p1', 'personal care', 'personal-care', 'personalcare'],
-      electronics: ['cat-e1', 'electronics', 'cat-m1', 'mobile access', 'mobile-access', 'mobileaccess'],
-      clothing:    ['cat-c1', 'clothing']
-    };
+<script>
+  // Normalise to lowercase before any comparison — DB stores CAT-B1 uppercase,
+  // JS lowercases everything so matching is always case-insensitive.
 
-    function normalize(str) {
-      return (str || '').toString().toLowerCase().trim();
-    }
+  function norm(s) { return (s || '').toLowerCase().trim(); }
 
-    function matchesCategory(cardCategory, filterKey) {
-      if (filterKey === 'all') return true;
-      const group = categoryGroups[filterKey];
-      if (!group) return false;
-      return group.includes(normalize(cardCategory));
-    }
+  // Build parent map from Jinja: { "cat-b1": "cat-f1", ... }
+  const parentMap = {};
+  {% for cat in categories if cat.parent_cat_id %}
+  parentMap[norm("{{ cat.cat_id }}")] = norm("{{ cat.parent_cat_id }}");
+  {% endfor %}
 
-    // ── Relevant product photos ──
-    // Map distinctive words in a product name to a good image-search keyword.
-    // Checked longest-key-first so more specific names win over generic ones.
-    const productImageKeywords = {
-      'full cream milk':   'milk',
-      'plain yogurt':      'yogurt',
-      'butter':            'butter',
-      'sliced bread':      'bread',
-      'digestive biscuits':'biscuits',
-      'potato chips':      'chips',
-      'chanachur':         'namkeen',
-      'mango juice':       'mango,juice',
-      'green tea':         'green,tea',
-      'soft drink':        'soda',
-      'basmati rice':      'rice',
-      'soybean oil':       'cooking,oil',
-      'sugar':             'sugar',
-      'antiseptic soap':   'soap',
-      'shampoo':           'shampoo',
-      'toothpaste':        'toothpaste',
-      'usb-c charger':     'phone,charger',
-      'charger':           'phone,charger',
-      'earphone':          'earphones',
-      'cotton t-shirt':    't-shirt',
-      't-shirt':           't-shirt',
-      'jam':               'jam'
-    };
+  // Return Set of all cat_ids that match the filter (self + children)
+  function matchingIds(filterRaw) {
+    const filter = norm(filterRaw);
+    if (filter === 'all') return null; // null = show everything
 
-    // Fallback keyword by category (cat_id or cat_name, lowercased)
-    const categoryImageKeywords = {
-      'cat-d1': 'dairy',          'dairy':         'dairy',
-      'cat-b1': 'bread',          'bakery':        'bread',
-      'cat-s1': 'snacks',         'snacks':        'snacks',
-      'cat-bv': 'drinks',         'beverages':     'drinks',
-      'cat-f1': 'groceries',      'food':          'groceries',
-      'cat-h1': 'cosmetics',      'health':        'cosmetics',
-      'cat-p1': 'cosmetics',      'personal care': 'cosmetics',
-      'cat-e1': 'electronics',    'electronics':   'electronics',
-      'cat-m1': 'gadgets',        'mobile access': 'gadgets',
-      'cat-c1': 'fashion',        'clothing':      'fashion'
-    };
-
-    function getImageKeyword(name, category) {
-      const sortedKeys = Object.keys(productImageKeywords).sort((a, b) => b.length - a.length);
-      for (const key of sortedKeys) {
-        if (name.includes(key)) return productImageKeywords[key];
-      }
-      const cat = (category || '').toLowerCase().trim();
-      return categoryImageKeywords[cat] || 'grocery';
-    }
-
-    function loadProductImages() {
-      document.querySelectorAll('.product-card .product-img').forEach(img => {
-        const card = img.closest('.product-card');
-        const keyword = getImageKeyword(card.dataset.name, card.dataset.category);
-        const lock = img.dataset.lock || '1';
-        img.src = `https://loremflickr.com/300/200/${keyword}?lock=${lock}`;
-      });
-    }
-    window.addEventListener('DOMContentLoaded', loadProductImages);
-
-
-    let currentSearch   = '';
-
-    // Apply both the active category filter and the search text together
-    function applyFilters() {
-      let visibleCount = 0;
-
-      document.querySelectorAll('.product-card').forEach(card => {
-        const matchesCat    = matchesCategory(card.dataset.category, currentCategory);
-        const matchesSearch = card.dataset.name.includes(currentSearch);
-        const show = matchesCat && matchesSearch;
-
-        card.style.display = show ? '' : 'none';
-        if (show) visibleCount++;
-      });
-
-      document.getElementById('noResults').style.display = (visibleCount === 0) ? 'block' : 'none';
-    }
-
-    // Called when a sidebar item or category tile is clicked
-    function filterCategory(category, element) {
-      currentCategory = category;
-
-      // update active highlight on sidebar + tiles
-      document.querySelectorAll('.sidebar-item, .cat-tile').forEach(el => el.classList.remove('active'));
-      if (element) element.classList.add('active');
-
-      // update heading text
-      const heading = document.getElementById('productsHeading');
-      if (category === 'all') {
-        heading.textContent = 'Popular Products';
-      } else {
-        heading.textContent = 'Showing: ' + category.charAt(0).toUpperCase() + category.slice(1);
-      }
-
-      applyFilters();
-
-      // scroll product grid into view (handy on mobile)
-      document.getElementById('productGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // Live search, works together with the active category
-    document.getElementById('storeSearch').addEventListener('input', function () {
-      currentSearch = this.value.toLowerCase();
-      applyFilters();
+    const ids = new Set([filter]);
+    // add any category whose parent is the filter
+    Object.entries(parentMap).forEach(([child, parent]) => {
+      if (parent === filter) ids.add(child);
     });
-  </script>
+    return ids;
+  }
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let currentFilter = 'all';
+  let currentSearch = '';
+
+  // ── Apply both filters ───────────────────────────────────────────────────
+  function applyFilters() {
+    const ids = matchingIds(currentFilter);
+    let visible = 0;
+
+    document.querySelectorAll('.product-card').forEach(card => {
+      const catOk    = ids === null || ids.has(norm(card.dataset.catid));
+      const searchOk = norm(card.dataset.name).includes(norm(currentSearch));
+      const show = catOk && searchOk;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  // ── Category click (sidebar item OR tile) ────────────────────────────────
+  function filterCategory(rawId, element) {
+    currentFilter = rawId;
+
+    // clear all active states
+    document.querySelectorAll('.sidebar-item, .cat-tile').forEach(el => el.classList.remove('active'));
+    if (element) element.classList.add('active');
+
+    // update heading
+    const heading = document.getElementById('productsHeading');
+    if (norm(rawId) === 'all') {
+      heading.textContent = 'All Products';
+    } else {
+      // grab label from the clicked element (tile label div or sidebar text)
+      const labelEl = element
+        ? (element.querySelector('.cat-tile-label') || element.querySelector('.sidebar-item-left'))
+        : null;
+      const label = labelEl ? labelEl.textContent.replace('↳','').trim() : rawId;
+      heading.textContent = 'Category: ' + label;
+    }
+
+    applyFilters();
+    document.getElementById('productGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Live search ──────────────────────────────────────────────────────────
+  document.getElementById('storeSearch').addEventListener('input', function () {
+    currentSearch = this.value;
+    applyFilters();
+  });
+</script>
 </body>
 </html>
