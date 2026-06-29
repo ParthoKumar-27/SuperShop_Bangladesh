@@ -673,6 +673,52 @@ def cashier_lookup(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  GET /employee/cashier/inventory  — live inventory snapshot (JSON)
+#  Called by the POS page after each sale to refresh stock numbers in the
+#  product search dropdown without forcing a hard page reload.
+# ══════════════════════════════════════════════════════════════════════════════
+
+@employee_router.get("/cashier/inventory")
+def cashier_inventory(session=Depends(require_cashier)):
+    branch_id = session.get("branch_id")
+    rows = query("""
+        SELECT bi.inv_id,
+               p.product_id,
+               p.product_name,
+               p.unit_price,
+               p.unit,
+               bi.quantity,
+               bi.reorder_level,
+               d.discount_id,
+               d.discount_value AS disc_value,
+               d.discount_type  AS disc_type
+        FROM   branch_inventory bi
+        JOIN   product p USING (product_id)
+        LEFT JOIN discount d
+               ON  (d.product_id = p.product_id OR d.cat_id = p.cat_id)
+               AND CURRENT_DATE BETWEEN d.start_date AND d.end_date
+        WHERE  bi.branch_id = %s
+          AND  p.is_active  = 'Y'
+        ORDER BY p.product_name
+    """, (branch_id,))
+    return JSONResponse([
+        {
+            "inv_id":      r["inv_id"],
+            "product_id":  r["product_id"],
+            "name":        r["product_name"],
+            "price":       float(r["unit_price"]),
+            "unit":        r["unit"],
+            "stock":       float(r["quantity"]),
+            "reorder":     float(r["reorder_level"]),
+            "discount_id": r["discount_id"] or "",
+            "disc_value":  float(r["disc_value"]) if r["disc_value"] is not None else 0,
+            "disc_type":   r["disc_type"] or "",
+        }
+        for r in rows
+    ])
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  POST /employee/cashier/sale/submit  — complete the sale (JSON response)
 # ══════════════════════════════════════════════════════════════════════════════
 

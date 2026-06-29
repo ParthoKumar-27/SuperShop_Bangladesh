@@ -808,7 +808,22 @@ document.getElementById('posForm').addEventListener('submit', async function(e) 
   }
 
   showReceipt(data);
+  refreshInventory();   // pull live stock numbers so the dropdown doesn't show stale qty
 });
+
+async function refreshInventory() {
+  try {
+    const res = await fetch('/employee/cashier/inventory');
+    if (!res.ok) return;
+    const fresh = await res.json();
+    // Mutate in place so existing references (cart, changeQty) stay valid
+    _inv.length = 0;
+    fresh.forEach(p => _inv.push(p));
+  } catch (e) {
+    // Non-fatal — the cashier can still complete the next sale, just with stale stock hints
+    console.warn('Inventory refresh failed:', e);
+  }
+}
 
 function showReceipt(d) {
   // Meta
@@ -844,19 +859,22 @@ function showReceipt(d) {
 function closeReceipt() {
   document.getElementById('receiptOverlay').classList.remove('open');
   document.body.style.overflow = '';
+  // Clear the POS form so the next sale starts fresh
+  _cart = [];
+  setWalkin();
+  renderCart();
+  const f = document.getElementById('posForm');
+  if (f) f.reset();
+  document.getElementById('hCartJson').value  = '[]';
+  document.getElementById('hPayMethod').value = 'CASH';
+  document.querySelectorAll('.pay-pill').forEach((p, i) => {
+    p.classList.toggle('active', i === 0);
+  });
+  _payMethod = 'CASH';
 }
 
 function startNewSale() {
-  closeReceipt();
-  _cart = [];
-  setWalkin();          // reset to walk-in mode
-  renderCart();
-  document.getElementById('posForm').reset();
-  document.getElementById('hCartJson').value  = '[]';
-  document.getElementById('hPayMethod').value = 'CASH';
-  document.querySelectorAll('.pay-pill').forEach((p,i) => {
-    p.classList.toggle('active', i === 0);
-  });
+  closeReceipt();   // already resets cart, customer, payment pill
 }
 </script>
 {% endblock %}
