@@ -45,7 +45,7 @@
           <th>Address</th>
           <th style="text-align:right;">Total</th>
           <th>Status</th>
-          <th>Update</th>
+          <th>Delivery</th>
         </tr>
       </thead>
       <tbody>
@@ -75,20 +75,33 @@
             {% endif %}
           </td>
           <td>
-            <form method="POST" action="/employee/branch/orders/update-status" style="display:flex; gap:6px;">
-              <input type="hidden" name="order_id" value="{{ o.order_id }}">
-              <select name="order_status" onchange="this.form.submit()"
-                      style="padding:5px 8px; border:1.5px solid var(--border); border-radius:7px;
-                             font-family:'DM Sans',sans-serif; font-size:11px; color:var(--dark);
-                             background:#fafafa; outline:none; cursor:pointer;">
-                <option value="PLACED" {{ 'selected' if o.order_status == 'PLACED' else '' }}>Placed</option>
-                <option value="CONFIRMED" {{ 'selected' if o.order_status == 'CONFIRMED' else '' }}>Confirmed</option>
-                <option value="PACKED" {{ 'selected' if o.order_status == 'PACKED' else '' }}>Packed</option>
-                <option value="OUT_FOR_DELIVERY" {{ 'selected' if o.order_status == 'OUT_FOR_DELIVERY' else '' }}>Out for Delivery</option>
-                <option value="DELIVERED" {{ 'selected' if o.order_status == 'DELIVERED' else '' }}>Delivered</option>
-                <option value="CANCELLED" {{ 'selected' if o.order_status == 'CANCELLED' else '' }}>Cancelled</option>
-              </select>
-            </form>
+            {% if o.delivery_id %}
+              <!-- Rider already assigned — status now driven by the rider -->
+              <span class="badge badge-blue" title="{{ o.rider_name }}">
+                <i class="fas fa-motorcycle"></i> {{ o.rider_name }}
+              </span>
+              <div style="font-size:10px;color:var(--mid);margin-top:3px;">
+                {{ o.rider_delivery_status | replace('_',' ') | title }}
+              </div>
+            {% elif o.order_status in ('PLACED','CONFIRMED','PACKED') %}
+              <button type="button" class="btn-advance" onclick="openAssign('{{ o.order_id }}')">
+                <i class="fas fa-motorcycle"></i> Assign Rider
+              </button>
+              <form method="POST" action="/employee/branch/orders/update-status" style="margin-top:6px;">
+                <input type="hidden" name="order_id" value="{{ o.order_id }}">
+                <select name="order_status" onchange="this.form.submit()"
+                        style="padding:4px 6px; border:1.5px solid var(--border); border-radius:6px;
+                               font-family:'DM Sans',sans-serif; font-size:10px; color:var(--dark);
+                               background:#fafafa; outline:none; cursor:pointer;">
+                  <option value="PLACED" {{ 'selected' if o.order_status == 'PLACED' else '' }}>Placed</option>
+                  <option value="CONFIRMED" {{ 'selected' if o.order_status == 'CONFIRMED' else '' }}>Confirmed</option>
+                  <option value="PACKED" {{ 'selected' if o.order_status == 'PACKED' else '' }}>Packed</option>
+                  <option value="CANCELLED" {{ 'selected' if o.order_status == 'CANCELLED' else '' }}>Cancelled</option>
+                </select>
+              </form>
+            {% else %}
+              <span style="font-size:11px;color:var(--mid);">—</span>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -96,6 +109,105 @@
     </table>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════
+     ASSIGN RIDER MODAL
+══════════════════════════════════════ -->
+<div class="modal-backdrop" id="assignModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-motorcycle" style="color:var(--green)"></i> Assign Rider</h3>
+      <button class="modal-close" onclick="closeAssign()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="/employee/branch/orders/assign-rider">
+        <input type="hidden" name="order_id" id="assignOrderId">
+
+        <div class="form-group">
+          <label class="form-label">Rider</label>
+          <select name="rider_id" class="form-control" required>
+            {% for r in riders %}
+            <option value="{{ r.emp_id }}">
+              {{ r.emp_name }} ({{ r.active_count }} active {{ 'delivery' if r.active_count == 1 else 'deliveries' }})
+            </option>
+            {% else %}
+            <option disabled>No active riders at this branch</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Distance (km)</label>
+          <input class="form-control" type="number" step="0.1" name="distance_km" value="5.0">
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Delivery Fee (৳)</label>
+          <input class="form-control" type="number" step="1" name="delivery_fee" value="50">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" onclick="closeAssign()">Cancel</button>
+          <button type="submit" class="btn-primary">Assign</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ MODAL / BUTTON STYLES ══════════════════════════ -->
+<style>
+  .btn-advance {
+    display:flex; align-items:center; gap:6px;
+    background:var(--green); color:#fff; border:none; border-radius:8px;
+    padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer;
+    font-family:"DM Sans",sans-serif; transition:.15s;
+  }
+  .btn-advance:hover { background:#033526; }
+
+  .modal-backdrop {
+    position:fixed; inset:0; background:rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center; z-index:200;
+  }
+  .modal-box {
+    background:var(--white); border-radius:16px; width:440px; max-width:92vw;
+    box-shadow:0 20px 60px rgba(0,0,0,.2); overflow:hidden;
+  }
+  .modal-header {
+    padding:18px 22px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .modal-header h3 { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .modal-close {
+    width:30px; height:30px; border:none; background:none; cursor:pointer;
+    color:var(--mid); border-radius:8px; font-size:14px; transition:.15s;
+  }
+  .modal-close:hover { background:#f1f5f9; color:var(--dark); }
+  .modal-body   { padding:22px; }
+  .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
+  .form-group   { display:flex; flex-direction:column; gap:5px; }
+  .form-label   { font-size:12px; font-weight:600; color:var(--dark); }
+  .form-control {
+    padding:9px 12px; border:1.5px solid var(--border); border-radius:9px;
+    font-family:"DM Sans",sans-serif; font-size:13px; color:var(--dark);
+    outline:none; transition:.15s; width:100%;
+  }
+  .form-control:focus { border-color:var(--green); }
+
+  .btn-primary {
+    background:var(--green); color:#fff; border:none; border-radius:9px;
+    padding:9px 22px; font-size:13px; font-weight:600; cursor:pointer;
+    font-family:"DM Sans",sans-serif; transition:.15s;
+  }
+  .btn-primary:hover { background:#033526; }
+  .btn-outline {
+    background:none; border:1.5px solid var(--border); border-radius:9px;
+    padding:9px 18px; font-size:13px; color:var(--dark); cursor:pointer;
+    font-family:"DM Sans",sans-serif; transition:.15s;
+  }
+  .btn-outline:hover { border-color:var(--green); color:var(--green); }
+</style>
 
 {% endif %}
 {% endblock %}
@@ -111,5 +223,16 @@
       });
     });
   }
+
+  function openAssign(orderId) {
+    document.getElementById('assignOrderId').value = orderId;
+    document.getElementById('assignModal').style.display = 'flex';
+  }
+  function closeAssign() {
+    document.getElementById('assignModal').style.display = 'none';
+  }
+  document.getElementById('assignModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeAssign();
+  });
 </script>
 {% endblock %}

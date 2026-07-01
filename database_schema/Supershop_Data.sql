@@ -1107,3 +1107,52 @@ INSERT INTO app_user VALUES ('U-000035', '01911-000015', '$2b$12$PHWcyxLINm22a4/
 --  Then replace the placeholder $2b$12$emphashreplaceXXX...
 --  values above with the real hashes.
 -- ============================================================
+INSERT INTO employee VALUES
+('E-R004', 'Shakil Ahmed', 'shakil.a@supershop.com.bd',
+'01711-200004', 'B-DH03', 'D-DL01',
+'DELIVERY_RIDER', 11000.00, '2023-07-01', 'M', 'Y');
+
+INSERT INTO employee VALUES
+('E-R005', 'Jahid Hasan', 'jahid.h@supershop.com.bd',
+'01812-200005', 'B-SY01', 'D-DL01',
+'DELIVERY_RIDER', 11000.00, '2023-08-10', 'M', 'Y');
+
+INSERT INTO app_user VALUES
+('U-000037','01711-200004',
+'$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm',
+'EMPLOYEE','E-R004','Y',CURRENT_TIMESTAMP);
+
+INSERT INTO app_user VALUES
+('U-000038','01812-200005',
+'$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm',
+'EMPLOYEE','E-R005','Y',CURRENT_TIMESTAMP);
+
+
+-- O-00005 belongs to B-DH03
+INSERT INTO delivery VALUES
+('DEL-005','O-00005','E-R004',
+'2025-04-30 09:00:00','2025-04-30 10:30:00',
+'2025-04-30 13:10:00',
+'DELIVERED',13.20,80.00,3.5,'Slightly late');
+
+-- O-00007 belongs to B-DH02
+INSERT INTO delivery VALUES
+('DEL-007','O-00007','E-R002',
+'2025-05-06 08:00:00','2025-05-06 08:45:00',
+'2025-05-06 11:50:00',
+'DELIVERED',5.30,60.00,5.0,'Perfect service');
+
+-- O-00008 belongs to B-SY01
+INSERT INTO delivery VALUES
+('DEL-008','O-00008','E-R005',
+'2025-05-08 10:00:00','2025-05-08 11:00:00',
+NULL,
+'ON_THE_WAY',15.60,80.00,NULL,'In transit');
+
+DELETE FROM delivery
+WHERE delivery_id = 'DEL-005';
+
+DELETE FROM delivery
+WHERE delivery_id = 'DEL-008';
+DELETE FROM delivery
+WHERE delivery_id = 'DEL-007';

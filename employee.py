@@ -1,5 +1,8 @@
+from urllib import request
+
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.templating import Jinja2Templates
+from httpx import request
 from auth import require_employee
 from datetime import date as _date
 import json
@@ -364,7 +367,7 @@ def branch_orders(request: Request, session=Depends(require_branch_manager)):
         return templates.TemplateResponse(request, "employee/branch_manager/orders.html", {
             "user_name": session.get("user_name"), "role": "EMPLOYEE",
             "position": "BRANCH_MANAGER", "no_branch": True, "orders": [],
-            "branch_name": "", "branch_address": "",
+            "riders": [], "branch_name": "", "branch_address": "",
         })
 
     orders = query("""
@@ -372,19 +375,38 @@ def branch_orders(request: Request, session=Depends(require_branch_manager)):
                o.delivery_charge,
                TO_CHAR(o.order_date, 'DD Mon YYYY HH24:MI')        AS order_date,
                TO_CHAR(o.expected_delivery, 'DD Mon YYYY HH24:MI') AS expected_delivery,
-               s.total_amt
+               s.total_amt,
+               d.delivery_id, d.rider_id, d.delivery_status AS rider_delivery_status,
+               e.emp_name AS rider_name
         FROM   online_order o
         JOIN   customer c USING (cust_id)
-        LEFT JOIN sale s ON o.sale_id = s.sale_id
+        LEFT JOIN sale s     ON o.sale_id  = s.sale_id
+        LEFT JOIN delivery d ON o.order_id = d.order_id
+        LEFT JOIN employee e ON d.rider_id = e.emp_id
         WHERE  o.branch_id = %s
         ORDER  BY o.order_date DESC
     """, (branch_id,))
 
+    # Active riders at this branch, sorted by current workload (least busy first)
+    riders = query("""
+        SELECT e.emp_id, e.emp_name,
+               (SELECT COUNT(*) FROM delivery dd
+                WHERE dd.rider_id = e.emp_id
+                  AND dd.delivery_status NOT IN ('DELIVERED', 'FAILED')) AS active_count
+        FROM   employee e
+        WHERE  e.branch_id = %s AND e.position = 'DELIVERY_RIDER' AND e.is_active = 'Y'
+        ORDER  BY active_count ASC, e.emp_name
+    """, (branch_id,))
+
     return templates.TemplateResponse(request, "employee/branch_manager/orders.html", {
         "user_name": session.get("user_name"), "role": "EMPLOYEE",
-        "position": "BRANCH_MANAGER", "no_branch": False, "orders": orders,
-        **_get_branch_info(branch_id),   # ← add this line
+        "position": "BRANCH_MANAGER", "no_branch": False,
+        "orders": orders, "riders": riders,
+        **_get_branch_info(branch_id),
     })
+
+
+
 
 
 @employee_router.post("/branch/orders/update-status")
@@ -416,6 +438,95 @@ def update_order_status(
         f"/employee/branch/orders?success=Order+{order_id}+updated",
         status_code=302
     )
+
+@employee_router.post("/branch/orders/assign-rider")
+def assign_rider(
+    request:      Request,
+    order_id:     str   = Form(...),
+    rider_id:     str   = Form(...),
+    distance_km:  float = Form(5.0),
+    delivery_fee: float = Form(50.0),
+    session=Depends(require_branch_manager),
+):
+    branch_id = session.get("branch_id")
+
+    # Order must belong to this branch
+    order = query(
+        "SELECT order_id FROM online_order WHERE order_id = %s AND branch_id = %s",
+        (order_id, branch_id)
+    )
+    if not order:
+        return RedirectResponse(
+            "/employee/branch/orders?error=Order+not+found+for+your+branch",
+            status_code=302
+        )
+
+    # Prevent double-assignment (delivery.order_id is UNIQUE anyway, but fail cleanly)
+    existing = query("SELECT 1 FROM delivery WHERE order_id = %s", (order_id,))
+    if existing:
+        return RedirectResponse(
+            "/employee/branch/orders?error=This+order+already+has+a+rider+assigned",
+            status_code=302
+        )
+
+    # Rider must be an active DELIVERY_RIDER at this branch
+    rider_ok = query("""
+        SELECT 1 FROM employee
+        WHERE emp_id = %s AND branch_id = %s
+          AND position = 'DELIVERY_RIDER' AND is_active = 'Y'
+    """, (rider_id, branch_id))
+    if not rider_ok:
+        return RedirectResponse(
+            "/employee/branch/orders?error=Invalid+rider+selected",
+            status_code=302
+        )
+
+    # Generate next delivery_id (numeric-only MAX, format DEL-00001)
+    max_row = query("""
+        SELECT MAX(CAST(SUBSTRING(delivery_id FROM 5) AS INTEGER)) AS mx
+        FROM   delivery
+        WHERE  delivery_id ~ '^DEL-[0-9]+$'
+    """, ())
+    next_n = (max_row[0]["mx"] or 0) + 1
+    delivery_id = f"DEL-{next_n:04d}"
+
+    execute("""
+        INSERT INTO delivery
+            (delivery_id, order_id, rider_id, distance_km, delivery_fee, delivery_status)
+        VALUES (%s, %s, %s, %s, %s, 'ASSIGNED')
+    """, (delivery_id, order_id, rider_id, distance_km, delivery_fee))
+
+    # Bump the order to PACKED if it's still sitting at PLACED/CONFIRMED
+    execute("""
+        UPDATE online_order
+        SET    order_status = 'PACKED'
+        WHERE  order_id = %s AND order_status IN ('PLACED', 'CONFIRMED')
+    """, (order_id,))
+
+    # Notify the rider
+    max_n = query("""
+        SELECT MAX(CAST(SUBSTRING(notif_id FROM 3) AS INTEGER)) AS mx
+        FROM   notification WHERE notif_id ~ '^N-[0-9]+$'
+    """, ())
+    notif_id = f"N-{(max_n[0]['mx'] or 0) + 1:06d}"
+    execute("""
+        INSERT INTO notification
+            (notif_id, recipient_type, recipient_id, branch_id,
+             notif_type, title, message, link_url, ref_table, ref_id)
+        VALUES (%s, 'EMPLOYEE', %s, %s, 'ORDER_PLACED', %s, %s, %s, 'delivery', %s)
+    """, (
+        notif_id, rider_id, branch_id,
+        "New delivery assigned",
+        f"You've been assigned to deliver order {order_id}.",
+        "/employee/delivery_rider/dashboard",
+        delivery_id,
+    ))
+
+    return RedirectResponse(
+        f"/employee/branch/orders?success=Rider+assigned+to+{order_id}",
+        status_code=302
+    )
+
 
 #employee
 # ── REPLACE the existing employees_page GET route in employee.py with this ──
@@ -1438,7 +1549,8 @@ _DELIVERY_STATUS_BADGE = {
 @employee_router.get("/delivery_rider/dashboard", response_class=HTMLResponse)
 def rider_deliveries(request: Request, session=Depends(require_rider)):
     rider_id = session.get("user_id")   # emp_id stored in session
-
+    success  = request.query_params.get("success")
+    error    = request.query_params.get("error")
     # ── All deliveries assigned to this rider ───────────────────────────────
     deliveries = query("""
         SELECT
@@ -1504,6 +1616,8 @@ def rider_deliveries(request: Request, session=Depends(require_rider)):
         "deliveries":   deliveries,
         "stats":        stats,
         "status_badge": _DELIVERY_STATUS_BADGE,
+        "success":      success,
+        "error":        error,
         **_get_branch_info(session.get("branch_id"))
     })
 
@@ -1523,34 +1637,31 @@ def rider_update_status(
     VALID_STATUSES = {"PICKED_UP", "ON_THE_WAY", "DELIVERED", "FAILED"}
     if new_status not in VALID_STATUSES:
         return RedirectResponse(
-            "/employee/deliveries?error=Invalid+status+transition",
+            "/employee/delivery_rider/dashboard?error=Invalid+status+transition",
             status_code=302
         )
 
-    # Verify this delivery belongs to this rider
     existing = query(
         "SELECT delivery_status FROM delivery WHERE delivery_id = %s AND rider_id = %s",
         (delivery_id, rider_id)
     )
     if not existing:
         return RedirectResponse(
-            "/employee/deliveries?error=Delivery+not+found+or+not+assigned+to+you",
+            "/employee/delivery_rider/dashboard?error=Delivery+not+found+or+not+assigned+to+you",
             status_code=302
         )
 
     current = existing[0]["delivery_status"]
-    # Guard against going backwards or re-finalising
     TERMINAL = {"DELIVERED", "FAILED"}
     if current in TERMINAL:
         return RedirectResponse(
-            "/employee/deliveries?error=Delivery+is+already+finalised",
+            "/employee/delivery_rider/dashboard?error=Delivery+is+already+finalised",
             status_code=302
         )
 
-    # Timestamp columns to fill in
     ts_col = {
         "PICKED_UP":  "picked_up_at  = CURRENT_TIMESTAMP,",
-        "ON_THE_WAY": "",                            # no dedicated column in schema
+        "ON_THE_WAY": "",
         "DELIVERED":  "delivered_at  = CURRENT_TIMESTAMP,",
         "FAILED":     "",
     }.get(new_status, "")
@@ -1563,7 +1674,15 @@ def rider_update_status(
         WHERE  delivery_id     = %s
     """, (new_status, note.strip(), delivery_id))
 
-    # When delivered, also update the linked online_order status
+    if new_status == "PICKED_UP":
+        execute("""
+            UPDATE online_order oo
+            SET    order_status = 'OUT_FOR_DELIVERY'
+            FROM   delivery d
+            WHERE  d.delivery_id = %s
+              AND  d.order_id    = oo.order_id
+        """, (delivery_id,))
+
     if new_status == "DELIVERED":
         execute("""
             UPDATE online_order oo
@@ -1583,9 +1702,10 @@ def rider_update_status(
         """, (delivery_id,))
 
     return RedirectResponse(
-        f"/employee/deliveries?success=Delivery+{delivery_id}+updated+to+{new_status.replace('_','+')}",
+        f"/employee/delivery_rider/dashboard?success=Delivery+{delivery_id}+updated+to+{new_status.replace('_','+')}",
         status_code=302
     )
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ADD STAFF — POST /employee/branch/staff/add
