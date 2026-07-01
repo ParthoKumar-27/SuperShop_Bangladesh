@@ -142,6 +142,22 @@
 
   /* Stock badge row spacing */
   .badge i { margin-right: 3px; font-size: 10px; }
+
+  /* Per-row action buttons (Edit / Delete) */
+  .row-actions { display: flex; gap: 6px; }
+  .row-action-btn {
+    width: 30px; height: 30px;
+    border-radius: 7px; border: none;
+    cursor: pointer; color: white;
+    font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .row-action-btn:hover { transform: translateY(-1px); }
+  .row-action-edit   { background: #2563eb; }
+  .row-action-edit:hover   { background: #1d4ed8; }
+  .row-action-delete { background: #dc2626; }
+  .row-action-delete:hover { background: #b91c1c; }
 </style>
 
 <div class="page-heading">Branch Inventory</div>
@@ -176,12 +192,6 @@
   <button class="inv-action-btn" style="background:var(--green);color:white;" onclick="openDM('dm-add')">
     <i class="fas fa-plus"></i> Add
   </button>
-  <button class="inv-action-btn" style="background:#2563eb;color:white;" onclick="openDM('dm-edit')">
-    <i class="fas fa-edit"></i> Edit
-  </button>
-  <button class="inv-action-btn" style="background:#dc2626;color:white;" onclick="openDM('dm-delete')">
-    <i class="fas fa-trash-alt"></i> Delete
-  </button>
 </div>
 
 <!-- ── Inventory table ── -->
@@ -205,11 +215,18 @@
           <th>Shelf</th>
           <th>Last Restocked</th>
           <th>Status</th>
+          <th style="text-align:center;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for i in inventory %}
-        <tr data-status="{{ i.stock_status }}">
+        <tr data-status="{{ i.stock_status }}"
+            data-inv-id="{{ i.inv_id }}"
+            data-product="{{ i.product_name }}"
+            data-qty="{{ i.quantity }}"
+            data-reorder="{{ i.reorder_level }}"
+            data-shelf="{{ i.shelf_location or '' }}"
+            data-restocked="{{ (i.last_restocked_raw or '')[:10] }}">
           <td><strong style="color:var(--green);font-family:monospace;font-size:11px;">{{ i.inv_id }}</strong></td>
           <td><strong>{{ i.product_name }}</strong></td>
           <td>{{ i.quantity }}</td>
@@ -222,6 +239,20 @@
             {% else %}
             <span class="badge badge-green"><i class="fas fa-check-circle"></i> In Stock</span>
             {% endif %}
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <div class="row-actions">
+              <button type="button" class="row-action-btn row-action-edit"
+                      title="Edit"
+                      onclick="openEditForRow(this.closest('tr'))">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button type="button" class="row-action-btn row-action-delete"
+                      title="Delete"
+                      onclick="openDeleteForRow(this.closest('tr'))">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -278,13 +309,13 @@
           <!-- Quantity -->
           <div class="dm-group" style="margin-bottom:0;">
             <label class="dm-label">Initial Quantity <span style="color:#dc2626;">*</span></label>
-            <input class="dm-input" type="number" step="0.01" min="0" name="quantity" placeholder="0" required />
+            <input class="dm-input" type="number" step="1" min="0" name="quantity" placeholder="0" required />
           </div>
 
           <!-- Reorder Level -->
           <div class="dm-group" style="margin-bottom:0;">
             <label class="dm-label">Reorder Level <span style="color:#dc2626;">*</span></label>
-            <input class="dm-input" type="number" step="0.01" min="0" name="reorder_level" placeholder="10" required />
+            <input class="dm-input" type="number" step="1" min="0" name="reorder_level" placeholder="10" required />
           </div>
         </div>
 
@@ -364,11 +395,11 @@
           <div class="dm-row">
             <div class="dm-group" style="margin-bottom:0;">
               <label class="dm-label">Quantity <span style="color:#dc2626;">*</span></label>
-              <input class="dm-input" type="number" step="0.01" min="0" name="quantity" id="editQty" required />
+              <input class="dm-input" type="number" step="1" min="0" name="quantity" id="editQty" required />
             </div>
             <div class="dm-group" style="margin-bottom:0;">
               <label class="dm-label">Reorder Level <span style="color:#dc2626;">*</span></label>
-              <input class="dm-input" type="number" step="0.01" min="0" name="reorder_level" id="editReorder" required />
+              <input class="dm-input" type="number" step="1" min="0" name="reorder_level" id="editReorder" required />
             </div>
           </div>
 
@@ -588,6 +619,24 @@
     btn.disabled       = !match;
     btn.style.opacity  = match ? '1' : '.4';
     btn.style.cursor   = match ? 'pointer' : 'not-allowed';
+  }
+
+  // ── Per-row actions: open Edit/Delete modals prefilled from the row ──────
+  function openEditForRow(tr) {
+    if (!tr) return;
+    const sel = document.getElementById('editSelect');
+    // Sync the hidden dropdown to this row's inv_id, then reuse prefillEdit()
+    sel.value = tr.dataset.invId || '';
+    prefillEdit(sel);
+    openDM('dm-edit');
+  }
+
+  function openDeleteForRow(tr) {
+    if (!tr) return;
+    const sel = document.getElementById('deleteSelect');
+    sel.value = tr.dataset.invId || '';
+    showDeletePreview(sel);
+    openDM('dm-delete');
   }
 </script>
 {% endblock %}

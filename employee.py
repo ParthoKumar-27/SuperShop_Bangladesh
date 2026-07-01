@@ -8,7 +8,7 @@ from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from database import query, execute
 from auth import _hash, _verify
-
+from notifications import check_low_stock
 employee_router = APIRouter(prefix="/employee", tags=["Employee"])
 templates = Jinja2Templates(directory="templates")
 
@@ -254,6 +254,105 @@ def branch_sales(request: Request, session=Depends(require_branch_manager)):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  BRANCH PRODUCTS
+#  Read-only catalog of every product stocked in this manager's branch,
+#  enriched with active discount info and current stock status.
+#  Search by name/brand/category, filter by stock state.
+# ══════════════════════════════════════════════════════════════════════════════
+
+@employee_router.get("/branch/products", response_class=HTMLResponse)
+def branch_products(request: Request,
+                    session=Depends(require_branch_manager),
+                    cat_id:  str = Query("",  alias="cat_id")):
+    """Branch manager's product catalog — mirrors the admin products page.
+
+    Lists every product currently stocked at this branch (joined via
+    `branch_inventory`). Columns: ID, Product, Category, Supplier, Price,
+    Unit, Status.  Only the category dropdown filters the list.
+    """
+    branch_id = session.get("branch_id")
+
+    base_ctx = {
+        "user_name":    session.get("user_name"),
+        "role":         "EMPLOYEE",
+        "position":     "BRANCH_MANAGER",
+        "selected_cat": cat_id,
+    }
+
+    if not branch_id:
+        return templates.TemplateResponse(
+            request, "employee/branch_manager/products.html",
+            {**base_ctx, "no_branch": True, "products": [], "categories": [],
+             "total_all": 0,
+             **_get_branch_info(None)}
+        )
+
+    # ── WHERE clause assembled from optional filters ─────────────────────
+    # This is the **global product catalog** (everything the admin has
+    # issued). Filtering is by category only; branch scoping is NOT
+    # applied — the table mirrors the admin products page.
+    where  = ["1=1"]
+    params = []
+
+    if cat_id == "__NONE__":
+        where.append("p.cat_id IS NULL")
+    elif cat_id:
+        where.append("p.cat_id = %s")
+        params.append(cat_id)
+
+    where_sql = " AND ".join(where)
+
+    products = query(f"""
+        SELECT p.product_id,
+               p.product_name,
+               p.brand,
+               p.cat_id,
+               p.supplier_id,
+               p.unit_price,
+               p.unit,
+               p.is_active,
+               c.cat_name,
+               s.supplier_name
+        FROM   product p
+        LEFT JOIN category c ON p.cat_id      = c.cat_id
+        LEFT JOIN supplier s ON p.supplier_id = s.supplier_id
+        WHERE  {where_sql}
+        ORDER  BY p.product_name
+    """, params)
+
+    # ── All categories that exist in the catalog ─────────────────────────
+    categories = query("""
+        SELECT cat_id, cat_name
+        FROM   category
+        WHERE  cat_name IS NOT NULL
+        ORDER  BY cat_name
+    """)
+
+    # ── Count per category for dropdown badges + "All" total ────────────
+    cat_counts_rows = query("""
+        SELECT COALESCE(cat_id, '') AS cat_id,
+               COUNT(*)             AS n
+        FROM   product
+        GROUP BY COALESCE(cat_id, '')
+    """)
+    cat_counts = {row["cat_id"]: row["n"] for row in cat_counts_rows}
+    total_all  = sum(cat_counts.values())
+
+    return templates.TemplateResponse(
+        request, "employee/branch_manager/products.html",
+        {
+            **base_ctx,
+            "no_branch":  False,
+            "products":   products,
+            "categories": categories,
+            "cat_counts": cat_counts,
+            "total_all":  total_all,
+            **_get_branch_info(branch_id),
+        }
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  BRANCH ONLINE ORDERS
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -475,6 +574,9 @@ def add_inventory(
         last_restocked or str(_date.today()),   # default to today if blank
     ))
 
+    # Notify (or auto-clear) low-stock alert based on the new quantity/reorder_level
+    check_low_stock(inv_id, branch_id)
+
     return RedirectResponse(
         f"/employee/branch/inventory?success=Item+{inv_id}+added+to+inventory",
         status_code=302
@@ -528,6 +630,10 @@ def edit_inventory(
         last_restocked,
         inv_id,
     ))
+
+    
+    # Notify (or auto-clear) low-stock alert based on the new quantity/reorder_level
+    check_low_stock(inv_id, branch_id)
 
     return RedirectResponse(
         f"/employee/branch/inventory?success=Inventory+{inv_id}+updated",
@@ -867,6 +973,9 @@ async def submit_sale(
             SET    quantity = quantity - %s
             WHERE  inv_id   = %s
         """, (item["qty"], item["inv_id"]))
+
+        # Notify the branch manager if this just dropped to/under reorder level
+        check_low_stock(item["inv_id"], branch_id)
 
     # ── 7. Record payment (numeric-only MAX) ─────────────────────────────────
     max_pay = query("""
@@ -1571,3 +1680,25 @@ def add_staff(
         f"/employee/branch/staff?success=Staff+member+{emp_id}+added+successfully.+Awaiting+admin+activation.",
         status_code=302,
     )
+
+@employee_router.get("/notifications")
+def list_notifications(session=Depends(require_employee)):
+    rows = query("""
+        SELECT notif_id, notif_type, title, message, link_url, is_read,
+               TO_CHAR(created_at, 'DD Mon, HH12:MI AM') AS created_at
+        FROM   notification
+        WHERE  recipient_type = 'EMPLOYEE' AND recipient_id = %s
+        ORDER  BY created_at DESC
+        LIMIT  20
+    """, (session["user_id"],))
+    unread = sum(1 for r in rows if r["is_read"] == "N")
+    return JSONResponse({"notifications": rows, "unread_count": unread})
+
+
+@employee_router.post("/notifications/{notif_id}/read")
+def mark_read(notif_id: str, session=Depends(require_employee)):
+    execute("""
+        UPDATE notification SET is_read='Y', read_at=CURRENT_TIMESTAMP
+        WHERE  notif_id = %s AND recipient_type='EMPLOYEE' AND recipient_id = %s
+    """, (notif_id, session["user_id"]))
+    return JSONResponse({"ok": True})

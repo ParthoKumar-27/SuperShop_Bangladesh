@@ -15,7 +15,7 @@ from auth import (
     require_customer,
     require_login,
 )
-
+from notifications import notify_all_branch_managers, notify_branch_manager
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="templates")
 
@@ -925,6 +925,14 @@ def add_product(
         unit_price,
         unit.strip(),
     ))
+
+    notify_all_branch_managers(
+        "NEW_PRODUCT",
+        "New product added",
+        f"{product_name} has been added by admin.",
+        link_url="/employee/branch/products",
+        ref_table="product", ref_id=product_id,
+)
 
     return RedirectResponse("/admin/dashboard/products?success=Product+created", status_code=302)
 

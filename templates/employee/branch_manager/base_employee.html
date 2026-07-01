@@ -442,7 +442,8 @@
         box-shadow:
           0 6px 16px rgba(0, 0, 0, 0.18),
           inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        transition:
+          transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
           box-shadow 0.35s ease;
       }
       .header-branch-icon::after {
@@ -450,11 +451,7 @@
         position: absolute;
         inset: -3px;
         border-radius: 15px;
-        background: linear-gradient(
-          135deg,
-          var(--orange) 0%,
-          transparent 60%
-        );
+        background: linear-gradient(135deg, var(--orange) 0%, transparent 60%);
         opacity: 0.35;
         z-index: -1;
         filter: blur(8px);
@@ -558,7 +555,9 @@
         gap: 8px;
         font-weight: 600;
         letter-spacing: 0.02em;
-        transition: background 0.25s ease, border-color 0.25s ease;
+        transition:
+          background 0.25s ease,
+          border-color 0.25s ease;
       }
       .stats-header-date::before {
         content: "\f073";
@@ -624,7 +623,12 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #ffb347 0%, var(--orange) 55%, #d96500 100%);
+        background: linear-gradient(
+          135deg,
+          #ffb347 0%,
+          var(--orange) 55%,
+          #d96500 100%
+        );
         color: #fff;
         display: flex;
         align-items: center;
@@ -764,11 +768,7 @@
         border-radius: 50%;
         border: 1px solid rgba(0, 0, 0, 0.08);
 
-        background: linear-gradient(
-          145deg,
-          rgb(255, 146, 4),
-          rgb(255, 0, 0)
-        );
+        background: linear-gradient(145deg, rgb(255, 146, 4), rgb(255, 0, 0));
 
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
@@ -1086,12 +1086,11 @@
         content: "";
         position: absolute;
         inset: 0;
-        background-image:
-          radial-gradient(
-            circle at 1px 1px,
-            rgba(255, 255, 255, 0.06) 1px,
-            transparent 0
-          );
+        background-image: radial-gradient(
+          circle at 1px 1px,
+          rgba(255, 255, 255, 0.06) 1px,
+          transparent 0
+        );
         background-size: 22px 22px;
         opacity: 0.5;
         mask-image: linear-gradient(
@@ -1434,6 +1433,13 @@
         <span class="nav-text">Branch Sales</span>
       </a>
       <a
+        href="/employee/branch/products"
+        class="nav-item {{ 'active' if path == '/employee/branch/products' else '' }}"
+      >
+        <i class="fas fa-boxes-stacked"></i>
+        <span class="nav-text">Products</span>
+      </a>
+      <a
         href="/employee/branch/inventory"
         class="nav-item {{ 'active' if path == '/employee/branch/inventory' else '' }}"
       >
@@ -1502,11 +1508,7 @@
       </div>
     </aside>
 
-    <button
-      id="sidebarToggle"
-      onclick="toggleSidebar()"
-      title="Toggle sidebar"
-    >
+    <button id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">
       <i class="fas fa-chevron-left" id="toggleIcon"></i>
     </button>
 
@@ -1540,11 +1542,11 @@
         <div class="header-dropdown">
           <div
             class="stats-header-bell"
-            onclick="toggleDropdown('notificationMenu')"
+            onclick="toggleDropdown('notifList')"
           >
             <i class="fas fa-bell"></i>
           </div>
-          <div class="dropdown-menu" id="notificationMenu">
+          <div class="dropdown-menu" id="notifList">
             <div class="dropdown-title">Notifications</div>
             <div class="dropdown-empty">No notifications</div>
           </div>
@@ -1615,6 +1617,80 @@
           .getElementById("toggleIcon")
           .classList.replace("fa-chevron-left", "fa-chevron-right");
       }
+    </script>
+    <script>
+      async function loadNotifications() {
+        try {
+          const res = await fetch("/employee/notifications");
+          const data = await res.json();
+          renderNotifications(data.notifications, data.unread_count);
+        } catch (e) {
+          console.warn("Could not load notifications:", e);
+        }
+      }
+
+      function renderNotifications(items, unreadCount) {
+        const list = document.getElementById("notifList");
+        const bell = document.querySelector(".stats-header-bell");
+
+        // Badge on the bell icon
+        let badge = bell.querySelector(".notif-count");
+        if (unreadCount > 0) {
+          if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "notif-count";
+            bell.appendChild(badge);
+          }
+          badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+        } else if (badge) {
+          badge.remove();
+        }
+
+        // Dropdown contents
+        if (!items.length) {
+          list.innerHTML = `
+        <div class="dropdown-title">Notifications</div>
+        <div class="dropdown-empty">No notifications</div>`;
+          return;
+        }
+
+        list.innerHTML = `
+      <div class="dropdown-title">Notifications</div>
+      ${items
+        .map(
+          (n) => `
+        <a href="${n.link_url || "#"}"
+           class="dropdown-item"
+           style="${n.is_read === "N" ? "background:#f0fdf4;" : ""}"
+           onclick="markNotifRead('${n.notif_id}')">
+          <i class="fas fa-circle" style="font-size:6px;color:${n.is_read === "N" ? "var(--orange)" : "#d1d5db"};"></i>
+          <div>
+            <div style="font-weight:600;">${n.title}</div>
+            <div style="font-size:11px;color:var(--mid);">${n.message}</div>
+            <div style="font-size:10px;color:#b0b8c1;margin-top:2px;">${n.created_at}</div>
+          </div>
+        </a>
+      `,
+        )
+        .join("")}
+    `;
+      }
+
+      async function markNotifRead(notifId) {
+        try {
+          await fetch(`/employee/notifications/${notifId}/read`, {
+            method: "POST",
+          });
+        } catch (e) {
+          /* non-fatal */
+        }
+      }
+
+      // Load once on page render, and refresh every time the bell is opened
+      loadNotifications();
+      document
+        .querySelector(".stats-header-bell")
+        .addEventListener("click", loadNotifications);
     </script>
     {% block scripts %}{% endblock %}
   </body>

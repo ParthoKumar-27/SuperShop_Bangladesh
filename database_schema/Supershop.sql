@@ -527,3 +527,34 @@ CREATE TABLE admin_account (
 --    ORDER BY p.product_name;
 -- ============================================================
 
+-- ============================================================
+--  TABLE 20: NOTIFICATION
+--  Generic, polymorphic — works for EMPLOYEE, ADMIN, CUSTOMER.
+--  recipient_id maps to emp_id / admin_id / cust_id depending
+--  on recipient_type (same pattern as app_user.ref_id).
+-- ============================================================
+CREATE TABLE notification (
+    notif_id        VARCHAR(10)     NOT NULL,
+    recipient_type  VARCHAR(10)     NOT NULL,   -- 'EMPLOYEE' | 'ADMIN' | 'CUSTOMER'
+    recipient_id    VARCHAR(12)     NOT NULL,   -- emp_id / admin_id / cust_id
+    branch_id       CHAR(6),                     -- optional, lets you filter/broadcast by branch
+    notif_type      VARCHAR(30)     NOT NULL,   -- 'LOW_STOCK', 'NEW_PRODUCT', 'ORDER_PLACED', ...
+    title           VARCHAR(100)    NOT NULL,
+    message         VARCHAR(300)    NOT NULL,
+    link_url        VARCHAR(200),                -- where the click should land
+    ref_table       VARCHAR(30),                 -- e.g. 'branch_inventory', 'product'
+    ref_id          VARCHAR(20),                 -- inv_id / product_id this notif is about
+    is_read         CHAR(1)         DEFAULT 'N',
+    created_at      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    read_at         TIMESTAMP,
+
+    CONSTRAINT notif_pk         PRIMARY KEY (notif_id),
+    CONSTRAINT check_notif_id   CHECK (notif_id LIKE 'N-%'),
+    CONSTRAINT notif_recip_type CHECK (recipient_type IN ('EMPLOYEE','ADMIN','CUSTOMER')),
+    CONSTRAINT notif_is_read    CHECK (is_read IN ('Y','N')),
+    CONSTRAINT notif_branch_fk  FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
+                                ON DELETE CASCADE
+);
+
+CREATE INDEX idx_notif_recipient ON notification (recipient_type, recipient_id, is_read);
+CREATE INDEX idx_notif_ref       ON notification (ref_table, ref_id, notif_type);
