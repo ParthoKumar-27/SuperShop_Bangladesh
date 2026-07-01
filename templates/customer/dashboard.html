@@ -59,10 +59,13 @@
                       ✕
                     </button>
                   </form>
-                  <a href="/customer/invoice/{{ o.sale_id }}"
-                     class="bg-[#044635] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#033828] transition">
+                  
+                  <!-- Updated Invoice Link to Button Modal Trigger -->
+                  <button type="button"
+                          onclick="openInvoice('{{ o.sale_id }}')"
+                          class="bg-[#044635] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#033828] transition">
                     Invoice
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -73,4 +76,73 @@
 
     </div>
 </section>
+
+<!-- Invoice Modal -->
+<div id="invoiceModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h3 class="font-bold text-[#044635] text-lg">Invoice</h3>
+      <button onclick="closeInvoice()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+    </div>
+    <div id="invoiceBody" class="p-5 text-sm text-gray-700">
+      <p class="text-gray-400">Loading…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+async function openInvoice(saleId) {
+  const modal = document.getElementById('invoiceModal');
+  const body  = document.getElementById('invoiceBody');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  body.innerHTML = '<p class="text-gray-400">Loading…</p>';
+  try {
+    const res = await fetch(`/customer/invoice/${saleId}/json`);
+    if (!res.ok) throw new Error('Not found');
+    const inv = await res.json();
+    let itemsHtml = inv.items.map(i => `
+      <tr class="border-b border-gray-50">
+        <td class="py-1.5">${i.product_name}</td>
+        <td class="py-1.5 text-center">${i.quantity}</td>
+        <td class="py-1.5 text-right">৳${i.unit_price.toFixed(2)}</td>
+        <td class="py-1.5 text-right font-medium">৳${i.line_total.toFixed(2)}</td>
+      </tr>`).join('');
+    body.innerHTML = `
+      <p class="font-semibold text-gray-800">${inv.branch_name}</p>
+      <p class="text-xs text-gray-400 mb-3">${inv.branch_address || ''} · ${inv.branch_phone || ''}</p>
+      <p class="text-xs text-gray-400 mb-4">${inv.sale_id} · ${inv.sale_date}</p>
+      <table class="w-full text-xs mb-4">
+        <thead>
+          <tr class="text-gray-400 border-b border-gray-100">
+            <th class="text-left py-1.5 font-medium">Item</th>
+            <th class="text-center py-1.5 font-medium">Qty</th>
+            <th class="text-right py-1.5 font-medium">Price</th>
+            <th class="text-right py-1.5 font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      <div class="border-t border-gray-100 pt-3 space-y-1 text-sm">
+        <div class="flex justify-between"><span>Subtotal</span><span>৳${inv.subtotal.toFixed(2)}</span></div>
+        <div class="flex justify-between"><span>Discount</span><span>-৳${inv.discount_amt.toFixed(2)}</span></div>
+        <div class="flex justify-between font-bold text-[#F17B0D] text-base pt-1">
+          <span>Total</span><span>৳${inv.total_amt.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 pt-1">
+          <span>Payment status</span><span>${inv.payment_status}</span>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    body.innerHTML = '<p class="text-red-500">Could not load invoice.</p>';
+  }
+}
+
+function closeInvoice() {
+  const modal = document.getElementById('invoiceModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+</script>
 {% endblock %}

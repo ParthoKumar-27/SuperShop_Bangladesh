@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Form, Depends, Query
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.templating import Jinja2Templates
 from urllib.parse import quote
@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-
+from datetime import date
 
 customer_router = APIRouter(prefix="/customer", tags=["Customer"])
 templates = Jinja2Templates(directory="templates")
@@ -115,49 +115,13 @@ def _customer_context(request: Request, session) -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER SHOP, CART & CHECKOUT
 # ══════════════════════════════════════════════════════════════════════════════
-
-
-@customer_router.get("/invoice/{sale_id}", response_class=HTMLResponse)
-def view_invoice(sale_id: str, request: Request, session=Depends(require_customer)):
-    cust_id = session.get("user_id")
-
-    # Verify that this sale record actually belongs to the requesting customer
-    sale_data = query("""
-        SELECT s.sale_id, TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
-               s.subtotal, s.discount_amt, s.tax_amt, s.total_amt, s.payment_status,
-               b.branch_name, b.address AS branch_address, b.phone AS branch_phone
-        FROM sale s
-        JOIN branch b ON s.branch_id = b.branch_id
-        WHERE s.sale_id = %s AND s.cust_id = %s
-    """, (sale_id, cust_id))
-
-    if not sale_data:
-        raise HTTPException(status_code=404, detail="Invoice record not found")
-
-    # Fetch corresponding individual checkout line items
-    invoice_items = query("""
-        SELECT p.product_name, si.quantity, si.unit_price, si.line_total
-        FROM sale_item si
-        JOIN product p ON si.product_id = p.product_id
-        WHERE si.sale_id = %s
-    """, (sale_id,))
-
-    return templates.TemplateResponse(
-        request,
-        "customer/invoice.html",
-        {
-            "sale": sale_data[0],
-            "items": invoice_items,
-            "user_name": session.get("user_name")
-        }
-    )
-
-
 @customer_router.post("/checkout")
 def place_order(
     request: Request,
     branch_id: str = Form(default=None),
     payment_method: str = Form(...),
+    expected_delivery: str = Form(...),  # Captured from user form
+    delivery_address: str = Form(...),   # Captured from user form
     session=Depends(require_customer)
 ):
     cart = request.session.get("cart", {})
@@ -166,14 +130,12 @@ def place_order(
 
     cust_id = session.get("user_id")
 
-    # Fallback to session branch if form did not submit one
     if not branch_id:
         branch_id = request.session.get("selected_branch")
         
     if not branch_id:
         raise HTTPException(status_code=400, detail="No branch selected for checkout")
 
-    # 1. Get current prices and categories for items in cart, then apply active discounts
     by_product, by_cat = _get_active_discounts()
 
     products = query("""
@@ -206,7 +168,6 @@ def place_order(
     total_amt = subtotal - discount_amt + tax_amt
     payment_status = "PENDING" if payment_method == "CASH" else "PAID"
 
-    # 2. Find an employee at the chosen branch to attribute the sale to
     emp_row = query("""
         SELECT emp_id FROM employee
         WHERE branch_id = %s AND is_active = 'Y'
@@ -218,11 +179,9 @@ def place_order(
         raise HTTPException(status_code=500, detail="No employee available to process this order")
     emp_id = emp_row[0]["emp_id"]
 
-    # 3. Generate IDs
     sale_id = _next_id("S-", "sale", "sale_id", 8)
     order_id = _next_id("O-", "online_order", "order_id", 8)
 
-    # 4. Insert sale
     execute("""
         INSERT INTO sale
             (sale_id, branch_id, cust_id, emp_id, order_type,
@@ -230,21 +189,19 @@ def place_order(
         VALUES (%s, %s, %s, %s, 'ONLINE', %s, %s, %s, %s, %s)
     """, (sale_id, branch_id, cust_id, emp_id, subtotal, discount_amt, tax_amt, total_amt, payment_status))
 
-    # 5. Insert sale items
     for pid, qty, unit_price, line_total in items:
         execute("""
             INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
             VALUES (%s, %s, %s, %s, %s)
         """, (sale_id, pid, qty, unit_price, line_total))
 
-    # 6. Insert online_order
+    # Saved with structural form values instead of placeholder text
     execute("""
         INSERT INTO online_order
-            (order_id, cust_id, branch_id, sale_id, order_status, delivery_address)
-        VALUES (%s, %s, %s, %s, 'PLACED', %s)
-    """, (order_id, cust_id, branch_id, sale_id, f"Self pickup - branch {branch_id}"))
+            (order_id, cust_id, branch_id, sale_id, order_status, delivery_address, expected_delivery)
+        VALUES (%s, %s, %s, %s, 'PLACED', %s, %s)
+    """, (order_id, cust_id, branch_id, sale_id, delivery_address.strip(), expected_delivery.strip()))
 
-    # 7. Record payment (only for instant methods; CASH is collected on delivery)
     if payment_method != "CASH":
         payment_id = _next_id("PAY-", "payment", "payment_id", 8)
         execute("""
@@ -252,105 +209,100 @@ def place_order(
             VALUES (%s, %s, %s, %s, 'SUCCESS')
         """, (payment_id, sale_id, total_amt, payment_method))
 
-    # 8. Clear cart
-    request.session["cart"] = {}
+    # Award loyalty points: 1 point per 10 BDT spent
+    points_earned = int(total_amt // 10)
+    if points_earned > 0:
+        execute("""
+            UPDATE customer
+            SET loyalty_points = COALESCE(loyalty_points, 0) + %s
+            WHERE cust_id = %s
+        """, (points_earned, cust_id))
 
-    # 9. Sync loyalty_points / membership into the session so the sidebar on
-    # the next page shows the freshly-updated values (triggers/badges, etc.
-    # mutate customer.loyalty_points inside the DB transaction above).
+    request.session["cart"] = {}
     _refresh_customer_session(request, session)
 
     return RedirectResponse("/customer/dashboard?msg=order_placed", status_code=302)
 
-# @customer_router.post("/checkout")
-# def place_order(
-#     request: Request,
-#     branch_id: str = Form(default=None),
-#     payment_method: str = Form(...),
-#     session=Depends(require_customer)
-# ):
-#     cart = request.session.get("cart", {})
-#     if not cart:
-#         return RedirectResponse("/customer/shop", status_code=302)
 
-#     cust_id = session.get("user_id")
+@customer_router.get("/invoice/{sale_id}", response_class=HTMLResponse)
+def view_invoice(sale_id: str, request: Request, session=Depends(require_customer)):
+    cust_id = session.get("user_id")
 
-#     # 1. Get current prices for items in cart
-#     products = query("""
-#         SELECT product_id, unit_price
-#         FROM product
-#         WHERE product_id = ANY(%s) AND is_active = 'Y'
-#     """, (list(cart.keys()),))
-#     price_map = {p["product_id"]: float(p["unit_price"]) for p in products}
+    sale_data = query("""
+        SELECT s.sale_id, TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
+               s.subtotal, s.discount_amt, s.tax_amt, s.total_amt, s.payment_status,
+               b.branch_name, b.address AS branch_address, b.phone AS branch_phone
+        FROM sale s
+        JOIN branch b ON s.branch_id = b.branch_id
+        WHERE s.sale_id = %s AND s.cust_id = %s
+    """, (sale_id, cust_id))
 
-#     items = []
-#     subtotal = 0.0
-#     for pid, qty in cart.items():
-#         if pid not in price_map:
-#             continue
-#         line_total = price_map[pid] * qty
-#         subtotal += line_total
-#         items.append((pid, qty, price_map[pid], line_total))
+    if not sale_data:
+        raise HTTPException(status_code=404, detail="Invoice record not found")
 
-#     if not items:
-#         return RedirectResponse("/customer/shop", status_code=302)
+    invoice_items = query("""
+        SELECT p.product_name, si.quantity, si.unit_price, si.line_total
+        FROM sale_item si
+        JOIN product p ON si.product_id = p.product_id
+        WHERE si.sale_id = %s
+    """, (sale_id,))
 
-#     discount_amt = 0.0
-#     tax_amt = 0.0
-#     total_amt = subtotal - discount_amt + tax_amt
-#     payment_status = "PENDING" if payment_method == "CASH" else "PAID"
+    return templates.TemplateResponse(
+        request,
+        "customer/invoice.html",
+        {
+            "sale": sale_data[0],
+            "items": invoice_items,
+            "user_name": session.get("user_name")
+        }
+    )
 
-#     # 2. Find an employee at the chosen branch to attribute the sale to
-#     emp_row = query("""
-#         SELECT emp_id FROM employee
-#         WHERE branch_id = %s AND is_active = 'Y'
-#         ORDER BY emp_id LIMIT 1
-#     """, (branch_id,))
-#     if not emp_row:
-#         emp_row = query("SELECT emp_id FROM employee WHERE is_active = 'Y' ORDER BY emp_id LIMIT 1")
-#     if not emp_row:
-#         raise HTTPException(status_code=500, detail="No employee available to process this order")
-#     emp_id = emp_row[0]["emp_id"]
 
-#     # 3. Generate IDs
-#     sale_id = _next_id("S-", "sale", "sale_id", 8)
-#     order_id = _next_id("O-", "online_order", "order_id", 8)
+@customer_router.get("/invoice/{sale_id}/json")
+def view_invoice_json(sale_id: str, session=Depends(require_customer)):
+    cust_id = session.get("user_id")
+    sale_data = query("""
+        SELECT s.sale_id, TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
+               s.subtotal, s.discount_amt, s.tax_amt, s.total_amt, s.payment_status,
+               b.branch_name, b.address AS branch_address, b.phone AS branch_phone
+        FROM sale s
+        JOIN branch b ON s.branch_id = b.branch_id
+        WHERE s.sale_id = %s AND s.cust_id = %s
+    """, (sale_id, cust_id))
 
-#     # 4. Insert sale
-#     execute("""
-#         INSERT INTO sale
-#             (sale_id, branch_id, cust_id, emp_id, order_type,
-#              subtotal, discount_amt, tax_amt, total_amt, payment_status)
-#         VALUES (%s, %s, %s, %s, 'ONLINE', %s, %s, %s, %s, %s)
-#     """, (sale_id, branch_id, cust_id, emp_id, subtotal, discount_amt, tax_amt, total_amt, payment_status))
+    if not sale_data:
+        raise HTTPException(status_code=404, detail="Invoice record not found")
 
-#     # 5. Insert sale items
-#     for pid, qty, unit_price, line_total in items:
-#         execute("""
-#             INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
-#             VALUES (%s, %s, %s, %s, %s)
-#         """, (sale_id, pid, qty, unit_price, line_total))
+    invoice_items = query("""
+        SELECT p.product_name, si.quantity, si.unit_price, si.line_total
+        FROM sale_item si
+        JOIN product p ON si.product_id = p.product_id
+        WHERE si.sale_id = %s
+    """, (sale_id,))
 
-#     # 6. Insert online_order (delivery_address is NOT NULL, so use a placeholder
-#     #    since this UI is "pickup" style and doesn't collect an address)
-#     execute("""
-#         INSERT INTO online_order
-#             (order_id, cust_id, branch_id, sale_id, order_status, delivery_address)
-#         VALUES (%s, %s, %s, %s, 'PLACED', %s)
-#     """, (order_id, cust_id, branch_id, sale_id, f"Self pickup - branch {branch_id}"))
+    sale = sale_data[0]
+    return JSONResponse({
+        "sale_id": sale["sale_id"],
+        "sale_date": sale["sale_date"],
+        "branch_name": sale["branch_name"],
+        "branch_address": sale["branch_address"],
+        "branch_phone": sale["branch_phone"],
+        "payment_status": sale["payment_status"],
+        "subtotal": float(sale["subtotal"] or 0),
+        "discount_amt": float(sale["discount_amt"] or 0),
+        "tax_amt": float(sale["tax_amt"] or 0),
+        "total_amt": float(sale["total_amt"] or 0),
+        "items": [
+            {
+                "product_name": i["product_name"],
+                "quantity": float(i["quantity"]),
+                "unit_price": float(i["unit_price"]),
+                "line_total": float(i["line_total"]),
+            }
+            for i in invoice_items
+        ],
+    })
 
-#     # 7. Record payment (only for instant methods; CASH is collected on delivery)
-#     if payment_method != "CASH":
-#         payment_id = _next_id("PAY-", "payment", "payment_id", 8)
-#         execute("""
-#             INSERT INTO payment (payment_id, sale_id, amount, method, status)
-#             VALUES (%s, %s, %s, %s, 'SUCCESS')
-#         """, (payment_id, sale_id, total_amt, payment_method))
-
-#     # 8. Clear cart
-#     request.session["cart"] = {}
-
-#     return RedirectResponse("/customer/dashboard?msg=order_placed", status_code=302)
 
 @customer_router.post("/select-branch")
 def select_branch(
@@ -540,6 +492,7 @@ def checkout_page(request: Request, session=Depends(require_customer)):
         "branches": branches,
         "selected_branch_id": selected_branch_id,
         "selected_branch": selected_branch,
+        "today": date.today().isoformat(),  # HTML5 min date controller
         **_customer_context(request, session),
     })
 
