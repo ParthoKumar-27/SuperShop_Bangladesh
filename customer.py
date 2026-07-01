@@ -3,6 +3,8 @@ from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.templating import Jinja2Templates
 from urllib.parse import quote
+
+from httpcore import request
 from database import query, execute
 from auth import require_customer
 from fastapi import FastAPI, Request, Form, HTTPException, Depends
@@ -310,6 +312,10 @@ def select_branch(
     branch_id: str = Form(...),
     session=Depends(require_customer)
 ):
+    cart = request.session.get("cart", {})
+    if cart:
+        return RedirectResponse("/customer/shop?msg=branch_locked", status_code=302)
+
     request.session["selected_branch"] = branch_id
     return RedirectResponse("/customer/shop", status_code=302)
 
@@ -360,6 +366,7 @@ def customer_shop(request: Request, session=Depends(require_customer)):
         "products": products,
         "branches": branches,
         "selected_branch": selected_branch,
+        "cart_locked": len(request.session.get("cart", {})) > 0,
         **_customer_context(request, session),
     })
 
