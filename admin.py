@@ -934,7 +934,10 @@ def add_product(
         ref_table="product", ref_id=product_id,
 )
 
-    return RedirectResponse("/admin/dashboard/products?success=Product+created", status_code=302)
+    return RedirectResponse(
+        f"/admin/dashboard/products?success=Product+%22{product_name}%22+added+successfully",
+        status_code=302,
+    )
 
 
 @admin_router.post("/dashboard/products/modify")
@@ -948,6 +951,14 @@ def modify_product(
     is_active:   str   = Form(...),
     session=Depends(require_admin),
 ):
+    product_name_row = query(
+        "SELECT product_name FROM product WHERE product_id = %s",
+        (product_id,),
+    )
+    product_name = (
+        product_name_row[0]["product_name"] if product_name_row else product_id
+    )
+
     execute("""
         UPDATE product
         SET cat_id      = %s,
@@ -965,4 +976,7 @@ def modify_product(
         product_id,
     ))
 
-    return RedirectResponse("/admin/dashboard/products?success=Product+updated", status_code=302)
+    return RedirectResponse(
+        f"/admin/dashboard/products?success=Product+%22{product_name}%22+updated+successfully",
+        status_code=302,
+    )

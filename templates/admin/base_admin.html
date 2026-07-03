@@ -18,14 +18,27 @@
     <style>
       :root {
         --green: #044635;
+        --green-light: #06604a;
+        --green-dark: #03332a;
         --orange: #f17b0d;
+        --orange-light: #ff9d3d;
+        --orange-dark: #c2600a;
         --dark: #464646;
         --mid: #646464;
         --cream: #fffcf1;
         --white: #ffffff;
         --border: #e5e7eb;
         --shadow: 0 4px 24px rgba(4, 70, 53, 0.1);
+        --shadow-lg: 0 14px 40px rgba(4, 70, 53, 0.16);
         --radius: 14px;
+
+        /* Gradient tokens (reused across the layout) */
+        --grad-green: linear-gradient(135deg, #06604a 0%, #044635 55%, #03332a 100%);
+        --grad-green-soft: linear-gradient(135deg, #0a7a5e 0%, #06604a 100%);
+        --grad-orange: linear-gradient(135deg, #ff9d3d 0%, #f17b0d 55%, #c2600a 100%);
+        --grad-mixed: linear-gradient(135deg, #f17b0d 0%, #d46014 50%, #044635 100%);
+        --grad-cream: linear-gradient(135deg, #fffcf1 0%, #fff5e0 100%);
+        --grad-card: linear-gradient(180deg, #ffffff 0%, #fafaf7 100%);
       }
       .header-dropdown {
         position: relative;
@@ -36,24 +49,35 @@
         top: 48px;
         right: 0;
         width: 260px;
-        background: white;
+        background: linear-gradient(180deg, #ffffff 0%, #fcfcf9 100%);
         border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-        border: 1px solid var(--border);
+        box-shadow:
+          0 16px 40px rgba(4, 70, 53, 0.22),
+          0 4px 12px rgba(0, 0, 0, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(4, 70, 53, 0.08);
         overflow: hidden;
         display: none;
         z-index: 999;
+        transform-origin: top right;
+        transform: scale(0.95) translateY(-6px);
+        opacity: 0;
+        transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
       }
 
       .dropdown-menu.show {
         display: block;
+        transform: scale(1) translateY(0);
+        opacity: 1;
       }
 
       .dropdown-title {
         padding: 14px 16px;
         font-size: 13px;
         font-weight: 700;
-        border-bottom: 1px solid var(--border);
+        background: linear-gradient(135deg, var(--green) 0%, #03332a 100%);
+        color: #fff;
+        border-bottom: 1px solid rgba(4, 70, 53, 0.3);
       }
 
       .dropdown-item {
@@ -64,11 +88,13 @@
         color: var(--dark);
         text-decoration: none;
         font-size: 13px;
-        transition: background 0.15s;
+        transition: background 0.18s ease, transform 0.18s ease, color 0.18s ease;
       }
 
       .dropdown-item:hover {
-        background: #f9fafb;
+        background: linear-gradient(135deg, var(--orange) 0%, #d96b06 100%);
+        color: #fff;
+        transform: translateX(2px);
       }
 
       .notification-item {
@@ -90,6 +116,13 @@
 
       .logout-item {
         color: #dc2626;
+        border-top: 1px solid var(--border);
+        margin-top: 4px;
+      }
+      .logout-item:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+        color: #fff !important;
+        transform: translateX(2px);
       }
 
       .notif-count {
@@ -153,7 +186,10 @@
       .sidebar {
         width: 240px;
         flex-shrink: 0;
-        background: var(--white);
+        background:
+          radial-gradient(120% 60% at 0% 0%, rgba(241, 123, 13, 0.06) 0%, rgba(241, 123, 13, 0) 60%),
+          radial-gradient(120% 80% at 100% 100%, rgba(4, 70, 53, 0.07) 0%, rgba(4, 70, 53, 0) 65%),
+          linear-gradient(180deg, #ffffff 0%, #fbfaf5 100%);
         border-right: 1px solid var(--border);
         display: flex;
         flex-direction: column;
@@ -165,7 +201,10 @@
         bottom: 10px;
         z-index: 50;
         border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(1, 26, 20, 0.707);
+        box-shadow:
+          0 12px 36px rgba(1, 26, 20, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        transition: width 0.25s ease, box-shadow 0.25s ease;
       }
       .sidebar::-webkit-scrollbar {
         width: 4px;
@@ -187,7 +226,7 @@
       .sidebar-logo-icon {
         width: 34px;
         height: 34px;
-        background: var(--green);
+        background: var(--grad-green);
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -196,14 +235,34 @@
         font-weight: 700;
         font-size: 16px;
         flex-shrink: 0;
+        box-shadow:
+          0 4px 10px rgba(4, 70, 53, 0.28),
+          inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+      }
+      .sidebar-logo:hover .sidebar-logo-icon {
+        transform: rotate(-8deg) scale(1.06);
+        box-shadow:
+          0 6px 14px rgba(4, 70, 53, 0.36),
+          inset 0 1px 0 rgba(255, 255, 255, 0.25);
       }
       .sidebar-logo-text {
         font-size: 17px;
         font-weight: 700;
         line-height: 1;
+        background: linear-gradient(135deg, var(--green) 0%, #03332a 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+        letter-spacing: -0.3px;
       }
       .sidebar-logo-text span {
-        color: var(--orange);
+        background: linear-gradient(135deg, var(--orange) 0%, #d96b06 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
       }
 
       /* Nav section label */
@@ -228,16 +287,41 @@
         font-weight: 500;
         color: var(--mid);
         cursor: pointer;
-        transition: all 0.15s;
+        transition: all 0.2s ease;
         position: relative;
+        text-decoration: none;
+        overflow: hidden;
+      }
+      .nav-item::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 3px;
+        height: 0;
+        background: var(--grad-orange);
+        border-radius: 0 3px 3px 0;
+        transform: translateY(-50%);
+        transition: height 0.25s ease;
       }
       .nav-item:hover {
-        background: rgba(4, 70, 53, 0.05);
+        background: linear-gradient(90deg, rgba(4, 70, 53, 0.06) 0%, rgba(241, 123, 13, 0.03) 100%);
         color: var(--green);
+        transform: translateX(2px);
+      }
+      .nav-item:hover::before {
+        height: 60%;
       }
       .nav-item.active {
-        background: var(--orange);
+        background: var(--grad-orange);
         color: #fff;
+        box-shadow:
+          0 6px 14px rgba(241, 123, 13, 0.32),
+          inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      }
+      .nav-item.active::before {
+        height: 70%;
+        background: rgba(255, 255, 255, 0.85);
       }
       .nav-item.active i {
         color: #fff;
@@ -246,7 +330,9 @@
         width: 16px;
         text-align: center;
         font-size: 13px;
+        transition: transform 0.25s ease;
       }
+      .nav-item:hover i { transform: scale(1.12) rotate(-4deg); }
       .nav-item .nav-badge {
         margin-left: auto;
         background: var(--orange);
@@ -405,6 +491,13 @@
         padding: 8px 14px;
         max-width: 280px;
         flex: 1;
+        border: 1.5px solid transparent;
+        transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      }
+      .stats-header-search:focus-within {
+        background: rgba(255, 255, 255, 0.22);
+        border-color: rgba(255, 157, 61, 0.7);
+        box-shadow: 0 0 0 4px rgba(241, 123, 13, 0.18);
       }
       .stats-header-search input {
         background: none;
@@ -425,14 +518,24 @@
       .stats-header-date {
         margin-left: auto;
         font-size: 13px;
-        color: rgba(255, 255, 255, 0.65);
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 6px 12px;
+        border-radius: 999px;
+        color: rgba(255, 255, 255, 0.85);
         white-space: nowrap;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: background 0.2s ease, border-color 0.2s ease;
+      }
+      .stats-header-date:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
       }
       .stats-header-user {
         width: 34px;
         height: 34px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.15);
+        background: linear-gradient(135deg, #ff9d3d 0%, #f17b0d 100%);
         color: #fff;
         display: flex;
         align-items: center;
@@ -440,6 +543,16 @@
         font-size: 13px;
         font-weight: 700;
         cursor: pointer;
+        box-shadow:
+          0 4px 10px rgba(241, 123, 13, 0.28),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .stats-header-user:hover {
+        transform: scale(1.08) rotate(-4deg);
+        box-shadow:
+          0 6px 14px rgba(241, 123, 13, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
       }
       .stats-header-bell {
         width: 34px;
@@ -453,6 +566,11 @@
         font-size: 13px;
         cursor: pointer;
         position: relative;
+        transition: background 0.2s ease, transform 0.25s ease;
+      }
+      .stats-header-bell:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: rotate(10deg) scale(1.06);
       }
       .stats-header-bell::after {
         content: "";
@@ -760,20 +878,32 @@
   z-index: 100;
   width: 24px;
   height: 48px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-left: none;
-  border-radius: 0 8px 8px 0;
+  background: linear-gradient(135deg, var(--orange) 0%, #d96b06 100%);
+  border: none;
+  border-radius: 0 10px 10px 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--mid);
+  color: #fff;
   font-size: 11px;
-  box-shadow: 3px 0 8px rgba(4,70,53,.08);
-  transition: left 0.25s ease, background 0.15s;
+  box-shadow:
+    4px 0 14px rgba(241, 123, 13, 0.28),
+    inset 1px 0 0 rgba(255, 255, 255, 0.2);
+  transition:
+    left 0.25s ease,
+    background 0.2s ease,
+    transform 0.18s ease,
+    box-shadow 0.2s ease;
 }
-#sidebarToggle:hover { background: var(--cream); color: var(--green); }
+#sidebarToggle:hover {
+  background: linear-gradient(135deg, #ff9d3d 0%, var(--orange) 100%);
+  color: #fff;
+  box-shadow:
+    6px 0 18px rgba(241, 123, 13, 0.45),
+    inset 1px 0 0 rgba(255, 255, 255, 0.3);
+  width: 28px;
+}
 
 /* ── Collapsed sidebar state ── */
 body.sidebar-collapsed .sidebar {
