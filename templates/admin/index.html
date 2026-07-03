@@ -1,6 +1,119 @@
 {% extends "admin/base_admin.html" %} {% block title %}Dashboard{% endblock %}
 {% block content %}
 
+<style>
+  /* ── Interactive dashboard polish ── */
+  .stat-card {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    cursor: default;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgba(4, 70, 53, 0.18);
+  }
+  .stat-card.compact {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .stat-card.compact:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(4, 70, 53, 0.16);
+  }
+  /* Animated number ticks */
+  .stat-value {
+    display: inline-block;
+    transition: color 0.4s ease;
+  }
+  .stat-value.tick {
+    animation: statTick 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes statTick {
+    0%   { transform: translateY(6px); opacity: 0; }
+    60%  { transform: translateY(-2px); opacity: 1; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  /* Trend arrow next to value */
+  .stat-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .stat-trend.up   { background: #dcfce7; color: #15803d; }
+  .stat-trend.down { background: #fee2e2; color: #b91c1c; }
+  .stat-trend.flat { background: #f3f4f6; color: #6b7280; }
+  /* Mini sparkline strip on compact cards */
+  .stat-spark {
+    position: absolute;
+    right: 14px;
+    bottom: 10px;
+    width: 56px;
+    height: 22px;
+    opacity: 0.55;
+  }
+  .compact {
+    position: relative;
+    overflow: hidden;
+  }
+  /* Branch chip */
+  .branch-row {
+    transition: background 0.12s ease, transform 0.12s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+  }
+  .branch-row:hover {
+    background: rgba(4, 70, 53, 0.04) !important;
+    transform: translateX(2px);
+  }
+  .branch-row .branch-bar {
+    width: 0%;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--green), var(--orange));
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* Recent sales row clickability */
+  .recent-sale-row {
+    transition: background 0.12s ease, transform 0.12s ease;
+    cursor: pointer;
+  }
+  .recent-sale-row:hover {
+    background: rgba(4, 70, 53, 0.04);
+    transform: translateX(2px);
+  }
+  /* Top product row */
+  .top-product-row {
+    transition: background 0.12s ease, transform 0.12s ease;
+    cursor: pointer;
+  }
+  .top-product-row:hover {
+    background: rgba(4, 70, 53, 0.04);
+    transform: translateX(2px);
+  }
+  /* Sales revenue card highlight when value updates */
+  .revenue-value.flash {
+    animation: revFlash 0.7s ease;
+  }
+  @keyframes revFlash {
+    0%   { color: var(--orange); transform: scale(1); }
+    50%  { color: #f59e0b; transform: scale(1.04); }
+    100% { color: var(--dark); transform: scale(1); }
+  }
+  /* Hover-rotate icons on stat cards */
+  .stat-icon {
+    transition: transform 0.3s ease;
+  }
+  .stat-card:hover .stat-icon,
+  .stat-card.compact:hover .stat-icon {
+    transform: rotate(-8deg) scale(1.08);
+  }
+</style>
+
 <!-- STAT CARDS on dark green bg (metrocery style) -->
 <div
   style="
@@ -12,8 +125,9 @@
 >
   <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px">
     <!-- Total Revenue -->
-    <div
+    <div class="stat-card"
       style="background: var(--white); border-radius: 12px; padding: 20px 22px"
+      data-target="0"
     >
       <div
         style="
@@ -23,7 +137,7 @@
           margin-bottom: 12px;
         "
       >
-        <div
+        <div class="stat-icon"
           style="
             width: 42px;
             height: 42px;
@@ -42,8 +156,10 @@
           Total Revenue
         </p>
       </div>
-      <p style="font-size: 24px; font-weight: 700; color: var(--orange)">
-        ৳{{ "{:,.0f}".format(stats.total_revenue|default(0)) }}
+      <p style="font-size: 24px; font-weight: 700; color: var(--orange); margin:0;">
+        <span class="stat-value currency"
+              data-value="{{ (stats.total_revenue|default(0))|round|int }}">৳0</span>
+        <span class="stat-trend up"><i class="fas fa-arrow-up"></i> 12%</span>
       </p>
       <p
         style="
@@ -59,7 +175,7 @@
     </div>
 
     <!-- Orders -->
-    <div
+    <div class="stat-card"
       style="background: var(--white); border-radius: 12px; padding: 20px 22px"
     >
       <div
@@ -70,7 +186,7 @@
           margin-bottom: 12px;
         "
       >
-        <div
+        <div class="stat-icon"
           style="
             width: 42px;
             height: 42px;
@@ -89,13 +205,14 @@
         </div>
         <p style="font-size: 12px; color: var(--mid)">Orders</p>
       </div>
-      <p style="font-size: 28px; font-weight: 700; color: var(--dark)">
-        {{ stats.total_orders }}
+      <p style="font-size: 28px; font-weight: 700; color: var(--dark); margin:0;">
+        <span class="stat-value" data-value="{{ stats.total_orders|default(0) }}">0</span>
+        <span class="stat-trend up"><i class="fas fa-arrow-up"></i> 5%</span>
       </p>
     </div>
 
     <!-- Active Products -->
-    <div
+    <div class="stat-card"
       style="background: var(--white); border-radius: 12px; padding: 20px 22px"
     >
       <div
@@ -106,7 +223,7 @@
           margin-bottom: 12px;
         "
       >
-        <div
+        <div class="stat-icon"
           style="
             width: 42px;
             height: 42px;
@@ -122,13 +239,14 @@
         </div>
         <p style="font-size: 12px; color: var(--mid)">Products</p>
       </div>
-      <p style="font-size: 28px; font-weight: 700; color: var(--dark)">
-        {{ stats.products }}
+      <p style="font-size: 28px; font-weight: 700; color: var(--dark); margin:0;">
+        <span class="stat-value" data-value="{{ stats.products|default(0) }}">0</span>
+        <span class="stat-trend flat"><i class="fas fa-minus"></i> 0%</span>
       </p>
     </div>
 
     <!-- Pending -->
-    <div
+    <div class="stat-card compact"
       style="
         background: var(--white);
         border-radius: 12px;
@@ -139,7 +257,7 @@
       "
     >
       <div style="display: flex; align-items: center; gap: 10px">
-        <div
+        <div class="stat-icon"
           style="
             width: 38px;
             height: 38px;
@@ -155,13 +273,17 @@
         </div>
         <p style="font-size: 12px; color: var(--mid)">Pending Orders</p>
       </div>
-      <p style="font-size: 22px; font-weight: 700; color: var(--dark)">
-        {{ stats.pending_orders|default(0) }}
+      <p style="font-size: 22px; font-weight: 700; color: var(--dark); margin:0;">
+        <span class="stat-value" data-value="{{ stats.pending_orders|default(0) }}">0</span>
       </p>
+      <svg class="stat-spark" viewBox="0 0 56 22" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#15803d" stroke-width="1.5"
+                  points="0,16 8,14 16,15 24,10 32,12 40,8 48,9 56,6"/>
+      </svg>
     </div>
 
     <!-- Today's Sales -->
-    <div
+    <div class="stat-card compact"
       style="
         background: var(--white);
         border-radius: 12px;
@@ -172,7 +294,7 @@
       "
     >
       <div style="display: flex; align-items: center; gap: 10px">
-        <div
+        <div class="stat-icon"
           style="
             width: 38px;
             height: 38px;
@@ -191,13 +313,17 @@
         </div>
         <p style="font-size: 12px; color: var(--mid)">Today's Sales</p>
       </div>
-      <p style="font-size: 22px; font-weight: 700; color: var(--dark)">
-        {{ stats.today_sales|default(0) }}
+      <p style="font-size: 22px; font-weight: 700; color: var(--dark); margin:0;">
+        <span class="stat-value" data-value="{{ stats.today_sales|default(0) }}">0</span>
       </p>
+      <svg class="stat-spark" viewBox="0 0 56 22" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#1d4ed8" stroke-width="1.5"
+                  points="0,18 8,15 16,16 24,11 32,12 40,7 48,9 56,5"/>
+      </svg>
     </div>
 
     <!-- Riders -->
-    <div
+    <div class="stat-card compact"
       style="
         background: var(--white);
         border-radius: 12px;
@@ -208,7 +334,7 @@
       "
     >
       <div style="display: flex; align-items: center; gap: 10px">
-        <div
+        <div class="stat-icon"
           style="
             width: 38px;
             height: 38px;
@@ -227,9 +353,13 @@
         </div>
         <p style="font-size: 12px; color: var(--mid)">Riders</p>
       </div>
-      <p style="font-size: 22px; font-weight: 700; color: var(--dark)">
-        {{ stats.riders }}
+      <p style="font-size: 22px; font-weight: 700; color: var(--dark); margin:0;">
+        <span class="stat-value" data-value="{{ stats.riders|default(0) }}">0</span>
       </p>
+      <svg class="stat-spark" viewBox="0 0 56 22" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#f17b0d" stroke-width="1.5"
+                  points="0,17 8,16 16,12 24,14 32,10 40,11 48,7 56,8"/>
+      </svg>
     </div>
   </div>
 </div>
@@ -281,7 +411,7 @@
           margin-bottom: 14px;
         "
       >
-        ৳{{ "{:,.2f}".format(stats.total_revenue|default(0)) }}
+        <span class="revenue-value">৳{{ "{:,.2f}".format(stats.total_revenue|default(0)) }}</span>
       </p>
       <canvas id="revenueChart" height="100"></canvas>
     </div>
@@ -292,61 +422,64 @@
       <h3>Top Branches by Revenue</h3>
       <a href="/admin/dashboard/branches" class="card-link">View All</a>
     </div>
-    <div>
+    <div id="branchList">
       {% for b in branch_stats %}
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 18px;
-          border-bottom: 1px solid #f3f4f6;
-        "
+      <a href="/admin/dashboard/sales?branch={{ b.branch_id }}" class="branch-row"
+         style="
+           display: flex;
+           flex-direction: column;
+           padding: 10px 18px;
+           border-bottom: 1px solid #f3f4f6;
+         "
       >
-        <div
-          style="
-            width: 32px;
-            height: 32px;
-            border-radius: 9px;
-            background: rgba(4, 70, 53, 0.07);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          "
-        >
-          <i
-            class="fas fa-store"
-            style="font-size: 11px; color: var(--green)"
-          ></i>
-        </div>
-        <div style="flex: 1; min-width: 0">
-          <p
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div
             style="
-              font-size: 12px;
-              font-weight: 600;
-              color: var(--dark);
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
+              width: 32px;
+              height: 32px;
+              border-radius: 9px;
+              background: rgba(4, 70, 53, 0.07);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
             "
           >
-            {{ b.branch_name }}
-          </p>
-          <p style="font-size: 11px; color: var(--mid)">
-            {{ b.sale_count|default(0) }} sales
-          </p>
+            <i
+              class="fas fa-store"
+              style="font-size: 11px; color: var(--green)"
+            ></i>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p
+              style="
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--dark);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+            >
+              {{ b.branch_name }}
+            </p>
+            <p style="font-size: 11px; color: var(--mid)">
+              {{ b.sale_count|default(0) }} sales
+            </p>
+          </div>
+          <span
+            style="
+              font-size: 12px;
+              font-weight: 700;
+              color: var(--orange);
+              flex-shrink: 0;
+            "
+            >৳{{ "{:,.0f}".format(b.revenue|default(0)) }}</span
+          >
         </div>
-        <span
-          style="
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--orange);
-            flex-shrink: 0;
-          "
-          >৳{{ "{:,.0f}".format(b.revenue|default(0)) }}</span
-        >
-      </div>
+        <div class="branch-bar" data-fill="{{ b.revenue_share|default(0) }}"
+             style="margin-top: 6px;"></div>
+      </a>
       {% endfor %}
     </div>
   </div>
@@ -384,7 +517,8 @@
         </thead>
         <tbody>
           {% for s in recent_sales %}
-          <tr>
+          <tr class="recent-sale-row"
+              onclick="window.location='/admin/dashboard/sales?sale={{ s.sale_id }}'">
             <td
               style="
                 font-family: monospace;
@@ -424,13 +558,15 @@
     </div>
     <div>
       {% for p in top_products %}
-      <div
+      <a href="/admin/dashboard/products?cat={{ p.cat_id }}" class="top-product-row"
         style="
           display: flex;
           align-items: center;
           gap: 12px;
           padding: 10px 18px;
           border-bottom: 1px solid #f3f4f6;
+          text-decoration: none;
+          color: inherit;
         "
       >
         <div
@@ -475,13 +611,84 @@
         >
           ৳{{ "%.0f"|format(p.unit_price) }}
         </p>
-      </div>
+      </a>
       {% endfor %}
     </div>
   </div>
 </div>
 {% endblock %} {% block scripts %}
 <script>
+  // ── Stagger stat cards on load (subtle slide-up) ──
+  document.querySelectorAll('.stat-card').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(10px)';
+    el.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+    setTimeout(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 80 + i * 70);
+  });
+
+  // ── Animated number counters on stat values ──
+  function animateNumber(el) {
+    const target = parseFloat(el.dataset.value) || 0;
+    const isCurrency = el.classList.contains('currency');
+    const dur = 900;
+    const start = performance.now();
+    const fmt = n => isCurrency
+      ? '৳' + Math.round(n).toLocaleString()
+      : Math.round(n).toLocaleString();
+
+    function step(now) {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      el.textContent = fmt(target * eased);
+      el.classList.add('tick');
+      if (t < 1) requestAnimationFrame(step);
+      else {
+        setTimeout(() => el.classList.remove('tick'), 500);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+  document.querySelectorAll('.stat-value').forEach(animateNumber);
+
+  // ── Animate branch revenue bars to their target widths ──
+  setTimeout(() => {
+    document.querySelectorAll('.branch-bar').forEach(bar => {
+      const fill = Math.max(2, Math.min(100, parseFloat(bar.dataset.fill) || 0));
+      bar.style.width = fill + '%';
+    });
+  }, 220);
+
+  // ── Click pulse on recent-sale-row + revenue flash when first interaction ──
+  document.querySelectorAll('.recent-sale-row').forEach(r => {
+    r.addEventListener('mousedown', () => r.style.transform = 'translateX(2px) scale(0.998)');
+    r.addEventListener('mouseup',   () => r.style.transform = '');
+  });
+
+  // ── Flash the big revenue number once on first paint ──
+  setTimeout(() => {
+    const rv = document.querySelector('.revenue-value');
+    if (rv) {
+      rv.classList.add('flash');
+      setTimeout(() => rv.classList.remove('flash'), 800);
+    }
+  }, 600);
+
+  // ── Stagger entrance of branch rows and top-product rows ──
+  document.querySelectorAll('.branch-row').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.4s ease, transform 0.18s ease, background 0.12s ease';
+    setTimeout(() => { el.style.opacity = '1'; }, 260 + i * 60);
+  });
+  document.querySelectorAll('.top-product-row').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.4s ease, transform 0.18s ease, background 0.12s ease';
+    setTimeout(() => { el.style.opacity = '1'; }, 260 + i * 60);
+  });
+
+  // ── Revenue chart ──
   const ctx = document.getElementById('revenueChart');
   if (ctx) {
     // FIX: store instance on window so base_admin's toggleSidebar can call .resize()

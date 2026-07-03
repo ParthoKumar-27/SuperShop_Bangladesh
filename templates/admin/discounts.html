@@ -303,6 +303,203 @@
   .disc-action-btn:hover {
     transform: translateY(-1px);
   }
+
+  /* Per-row action buttons */
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+  .row-action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background 0.12s,
+      transform 0.1s;
+  }
+  .row-action-btn:hover {
+    transform: translateY(-1px);
+  }
+  .row-action-edit {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+  .row-action-edit:hover {
+    background: #bfdbfe;
+    color: #1e40af;
+  }
+  .row-action-delete {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  .row-action-delete:hover {
+    background: #fecaca;
+    color: #b91c1c;
+  }
+
+  /* ── Bottom-right toast (pgAdmin-style, interactive gradient) ── */
+  .toast-wrap {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+  }
+  .toast {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 320px;
+    max-width: 400px;
+    padding: 14px 14px 16px 16px;
+    border-radius: 12px;
+    font-family: "DM Sans", sans-serif;
+    color: var(--white);
+    background: linear-gradient(135deg, #06604a 0%, #044635 55%, #03332a 100%);
+    box-shadow:
+      0 14px 36px rgba(4, 70, 53, 0.28),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+    pointer-events: auto;
+    overflow: hidden;
+    animation: toastIn 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  /* Subtle radial highlight inside the toast */
+  .toast::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%),
+      radial-gradient(80% 60% at 100% 100%, rgba(241, 123, 13, 0.22) 0%, rgba(241, 123, 13, 0) 60%);
+    pointer-events: none;
+  }
+  .toast.toast-error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 55%, #991b1b 100%);
+    box-shadow:
+      0 14px 36px rgba(220, 38, 38, 0.3),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+  .toast.toast-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%);
+    box-shadow:
+      0 14px 36px rgba(37, 99, 235, 0.3),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+  .toast-icon {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: var(--white);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  }
+  .toast-body {
+    flex: 1;
+    min-width: 0;
+    padding-top: 1px;
+    position: relative;
+    z-index: 1;
+  }
+  .toast-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.82;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toast-title i {
+    font-size: 9px;
+    opacity: 0.7;
+  }
+  .toast-msg {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+  .toast-close {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    border: none;
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--white);
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    margin-left: 4px;
+  }
+  .toast-close:hover {
+    background: rgba(255, 255, 255, 0.28);
+    transform: scale(1.08);
+  }
+  .toast.hide {
+    animation: toastOut 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+  }
+  @keyframes toastIn {
+    from {
+      transform: translateX(120%) translateY(8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0) translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes toastOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(120%);
+      opacity: 0;
+    }
+  }
+  /* Slim progress bar at the bottom */
+  .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.4));
+    border-radius: 0 0 12px 12px;
+    animation: toastProgress 4s linear forwards;
+  }
+  @keyframes toastProgress {
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
+  }
 </style>
 
 <div class="page-heading">Discount Management</div>
@@ -335,27 +532,13 @@
     <option value="EXPIRED">Expired</option>
   </select>
 
-  <!-- 3 buttons flush right of the search -->
+  <!-- Add button flush right of the search -->
   <button
     class="disc-action-btn"
     style="background: var(--green); color: white"
     onclick="openDM('dm-add')"
   >
     <i class="fas fa-plus"></i> Add
-  </button>
-  <button
-    class="disc-action-btn"
-    style="background: #2563eb; color: white"
-    onclick="openDM('dm-modify')"
-  >
-    <i class="fas fa-edit"></i> Modify
-  </button>
-  <button
-    class="disc-action-btn"
-    style="background: #dc2626; color: white"
-    onclick="openDM('dm-delete')"
-  >
-    <i class="fas fa-trash-alt"></i> Delete
   </button>
 </div>
 
@@ -406,11 +589,22 @@
           <th>Start</th>
           <th>End</th>
           <th>Status</th>
+          <th style="text-align: center">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for d in discounts %}
-        <tr data-type="{{ d.discount_type }}" data-status="{{ d.status }}">
+        <tr
+          data-type="{{ d.discount_type }}"
+          data-status="{{ d.status }}"
+          data-id="{{ d.discount_id }}"
+          data-name="{{ d.discount_name }}"
+          data-value="{{ d.discount_value }}"
+          data-start="{{ d.start_date_raw }}"
+          data-end="{{ d.end_date_raw }}"
+          data-pid="{{ d.product_id or '' }}"
+          data-cid="{{ d.cat_id or '' }}"
+        >
           <td>
             <strong
               style="
@@ -449,6 +643,26 @@
             {% else %}
             <span class="badge badge-red">Expired</span>
             {% endif %}
+          </td>
+          <td style="text-align: center; white-space: nowrap">
+            <div class="row-actions">
+              <button
+                type="button"
+                class="row-action-btn row-action-edit"
+                title="Modify"
+                onclick="openModifyForRow(this.closest('tr'))"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              <button
+                type="button"
+                class="row-action-btn row-action-delete"
+                title="Delete"
+                onclick="openDeleteForRow(this.closest('tr'))"
+              >
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -902,6 +1116,9 @@
   </div>
 </div>
 
+<!-- Toast container (bottom-right) -->
+<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+
 {% endblock %} {% block scripts %}
 <script>
   // ── Shared helpers ────────────────────────────────────────────────────────
@@ -1137,13 +1354,117 @@
     btn.style.cursor = match ? "pointer" : "not-allowed";
   }
 
+  // ── Per-row actions: open Modify/Delete modals prefilled from the row ──────
+  function openModifyForRow(tr) {
+    if (!tr) return;
+    const sel = document.getElementById("modifySelect");
+    sel.value = tr.dataset.id || "";
+    prefillModify(sel);
+    openDM("dm-modify");
+  }
+
+  function openDeleteForRow(tr) {
+    if (!tr) return;
+    const sel = document.getElementById("deleteSelect");
+    sel.value = tr.dataset.id || "";
+    showDeletePreview(sel);
+    openDM("dm-delete");
+  }
+
   // ══════════════════════════════
-  //  INIT — set min dates on page load
+  //  INIT — set min dates on page load + toast on ?success/?error
   // ══════════════════════════════
   document.addEventListener("DOMContentLoaded", () => {
     // Add modal: start cannot be before today
     document.getElementById("addStartDate").min = _today;
     document.getElementById("addEndDate").min = _today;
+
+    // ── Toast (pgAdmin-style bottom-right notification) ────────────────────
+    // kind: 'success' | 'error' | 'info'
+    function showToast(message, kind) {
+      const wrap = document.getElementById("toastWrap");
+      if (!wrap || !message) return;
+      kind = kind || "success";
+
+      const config = {
+        success: {
+          cls:   "",
+          icon:  "fa-circle-check",
+          title: "Success",
+        },
+        error: {
+          cls:   " toast-error",
+          icon:  "fa-circle-xmark",
+          title: "Error",
+        },
+        info: {
+          cls:   " toast-info",
+          icon:  "fa-circle-info",
+          title: "Info",
+        },
+      }[kind];
+
+      const el = document.createElement("div");
+      el.className = "toast" + config.cls;
+      el.innerHTML = `
+        <div class="toast-icon"><i class="fas ${config.icon}"></i></div>
+        <div class="toast-body">
+          <div class="toast-title">
+            <i class="fas fa-circle"></i>
+            <span>${config.title}</span>
+          </div>
+          <div class="toast-msg"></div>
+        </div>
+        <button type="button" class="toast-close" title="Dismiss" aria-label="Dismiss">
+          <i class="fas fa-xmark"></i>
+        </button>
+        <span class="toast-progress"></span>
+      `;
+      el.querySelector(".toast-msg").textContent = message;
+      wrap.appendChild(el);
+
+      const dismiss = () => {
+        if (el.dataset.dismissed === "1") return;
+        el.dataset.dismissed = "1";
+        el.classList.add("hide");
+        el.addEventListener("animationend", () => el.remove(), { once: true });
+      };
+
+      // Auto-dismiss after 4s (matches progress bar)
+      const timer = setTimeout(dismiss, 4000);
+
+      // Explicit close button
+      el.querySelector(".toast-close").addEventListener("click", (e) => {
+        e.stopPropagation();
+        clearTimeout(timer);
+        dismiss();
+      });
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const successMsg = params.get("success");
+    const errorMsg = params.get("error");
+    const infoMsg = params.get("info");
+    if (successMsg) {
+      showToast(successMsg, "success");
+      params.delete("success");
+    }
+    if (errorMsg) {
+      showToast(errorMsg, "error");
+      params.delete("error");
+    }
+    if (infoMsg) {
+      showToast(infoMsg, "info");
+      params.delete("info");
+    }
+    // Strip query so refresh doesn't replay the toast
+    if (successMsg || errorMsg || infoMsg) {
+      const next =
+        window.location.pathname +
+        (params.toString() ? "?" + params.toString() : "") +
+        window.location.hash;
+      window.history.replaceState({}, "", next);
+    }
   });
 </script>
 {% endblock %}
