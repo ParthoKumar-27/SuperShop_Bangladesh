@@ -1,0 +1,694 @@
+{% extends "admin/base_admin.html" %} {% block title %}Activity Logs{% endblock %}
+
+
+{% set _actions_list = [] %}
+{% if logs %}
+  {% for _l in logs %}
+    {% if _l.action and _l.action not in _actions_list %}{% set _ = _actions_list.append(_l.action) %}{% endif %}
+  {% endfor %}
+{% endif %}
+{% set _tables_list = [] %}
+{% if logs %}
+  {% for _l in logs %}
+    {% if _l.table_name and _l.table_name not in _tables_list %}{% set _ = _tables_list.append(_l.table_name) %}{% endif %}
+  {% endfor %}
+{% endif %}
+
+
+{% block content %}
+
+<style>
+  /* ── Stat row (mirrors admin dashboard tile language) ── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 4px 14px rgba(16, 24, 40, 0.06);
+  }
+  .stat-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .stat-icon.green  { background: rgba(4,70,53,0.10);  color: var(--green); }
+  .stat-icon.blue   { background: rgba(37,99,235,0.10); color: #2563eb; }
+  .stat-icon.red    { background: rgba(220,38,38,0.10); color: #dc2626; }
+  .stat-icon.orange { background: rgba(241,123,13,0.12); color: var(--orange); }
+  .stat-icon.gray   { background: rgba(100,116,139,0.12); color: #475569; }
+  .stat-icon.purple { background: rgba(124,58,237,0.10); color: #7c3aed; }
+  .stat-body { display: flex; flex-direction: column; min-width: 0; }
+  .stat-label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--mid); margin-bottom: 2px;
+  }
+  .stat-value {
+    font-size: 22px; font-weight: 800;
+    color: var(--dark); line-height: 1.1;
+  }
+  .stat-sub { font-size: 11px; color: var(--mid); margin-top: 2px; }
+
+  /* ── Logs table specifics ── */
+  #logsTable th, #logsTable td { vertical-align: middle; }
+  #logsTable td { padding: 10px 14px; }
+  #logsTable tbody tr {
+    transition: background 0.12s;
+  }
+  #logsTable tbody tr:hover { background: rgba(4,70,53,0.04); }
+
+  .actor-cell { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+  .actor-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    background: var(--green);
+  }
+  .actor-avatar.rider    { background: #7c3aed; }
+  .actor-avatar.cashier  { background: #2563eb; }
+  .actor-avatar.system   { background: #475569; }
+  .actor-name { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .actor-role {
+    display: inline-block;
+    margin-top: 1px;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(4,70,53,0.08);
+    color: var(--green);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .actor-role.EMPLOYEE { background: rgba(37,99,235,0.10); color: #2563eb; }
+  .actor-role.CUSTOMER { background: rgba(241,123,13,0.12); color: var(--orange); }
+  .actor-role.SYSTEM   { background: rgba(100,116,139,0.14); color: #475569; }
+
+  .table-target {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px; border-radius: 7px;
+    background: rgba(100,116,139,0.10);
+    font-family: "JetBrains Mono", "Consolas", monospace;
+    font-size: 11.5px; font-weight: 600;
+    color: var(--dark);
+  }
+  .table-target .arrow { color: var(--mid); font-weight: 400; }
+  .table-target .rid   { color: var(--green); }
+
+  .desc-cell {
+    max-width: 340px;
+    color: var(--dark); font-size: 12.5px; line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .time-cell {
+    font-family: "JetBrains Mono", "Consolas", monospace;
+    font-size: 11.5px; color: var(--dark); font-weight: 600;
+    white-space: nowrap;
+  }
+  .time-sub { font-size: 10px; color: var(--mid); font-weight: 500; }
+
+  /* ── row expansion for old/new JSON ── */
+  tr.log-row {
+    cursor: pointer;
+  }
+  tr.log-row.expanded td {
+    background: rgba(4,70,53,0.04);
+  }
+  tr.log-detail-row { display: none; background: #fafbf9; }
+  tr.log-detail-row.open { display: table-row; }
+  .log-detail-cell {
+    padding: 0 !important;
+    border-top: 1px solid var(--border) !important;
+  }
+  .log-detail-wrap {
+    padding: 14px 22px 18px 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    background: linear-gradient(180deg, #fafbf9 0%, #f6f8f5 100%);
+  }
+  .log-col {}
+  .log-col h4 {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--mid);
+    margin: 0 0 8px 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .log-col h4.old { color: #b91c1c; }
+  .log-col h4.new { color: #047857; }
+  .log-json {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 9px;
+    padding: 12px 14px;
+    font-family: "JetBrains Mono", "Consolas", monospace;
+    font-size: 11.5px; line-height: 1.5;
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .log-json .key   { color: #93c5fd; }
+  .log-json .str   { color: #fde68a; }
+  .log-json .num   { color: #fca5a5; }
+  .log-json .bool  { color: #c4b5fd; }
+  .log-json .null  { color: #94a3b8; }
+  .log-empty {
+    background: rgba(100,116,139,0.08);
+    color: var(--mid);
+    border-radius: 9px;
+    padding: 14px;
+    font-size: 12px;
+    text-align: center;
+    font-style: italic;
+  }
+
+  /* helper for badges */
+  .badge-sm {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 7px;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-sm i { font-size: 9px; }
+
+  /* ── Empty state ── */
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--mid);
+  }
+  .empty-state i {
+    font-size: 38px;
+    color: rgba(100,116,139,0.30);
+    margin-bottom: 10px;
+  }
+  .empty-state p { margin: 4px 0; font-size: 13px; }
+
+  /* ── Action chip colors ── */
+  .badge-green  { background: rgba(4,70,53,0.10);    color: var(--green); }
+  .badge-red    { background: rgba(220,38,38,0.10);  color: #dc2626; }
+  .badge-blue   { background: rgba(37,99,235,0.10);  color: #2563eb; }
+  .badge-orange { background: rgba(241,123,13,0.12); color: var(--orange); }
+  .badge-yellow { background: rgba(202,138,4,0.12);  color: #b45309; }
+  .badge-gray   { background: rgba(100,116,139,0.12); color: #475569; }
+</style>
+
+
+<!-- ══════════════════════════════════════
+     TOAST SYSTEM (dark-green gradient, mirrors discounts.html)
+══════════════════════════════════════ -->
+<style>
+  .toast-wrap {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+  }
+  .toast {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 320px;
+    max-width: 400px;
+    padding: 14px 14px 16px 16px;
+    border-radius: 12px;
+    font-family: "DM Sans", sans-serif;
+    color: var(--white);
+    background: linear-gradient(135deg, #06604a 0%, #044635 55%, #03332a 100%);
+    box-shadow:
+      0 14px 36px rgba(4, 70, 53, 0.28),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+    pointer-events: auto;
+    overflow: hidden;
+    animation: toastIn 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .toast::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(80% 60% at 100% 100%, rgba(241,123,13,0.22) 0%, rgba(241,123,13,0) 60%);
+    pointer-events: none;
+  }
+  .toast.toast-error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 55%, #991b1b 100%);
+    box-shadow: 0 14px 36px rgba(220, 38, 38, 0.3), 0 2px 6px rgba(0,0,0,0.12);
+  }
+  .toast.toast-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%);
+    box-shadow: 0 14px 36px rgba(37, 99, 235, 0.3), 0 2px 6px rgba(0,0,0,0.12);
+  }
+  .toast-icon {
+    flex-shrink: 0;
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: var(--white);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+  }
+  .toast-body { flex: 1; min-width: 0; padding-top: 1px; position: relative; z-index: 1; }
+  .toast-title {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    opacity: 0.82; margin-bottom: 3px;
+  }
+  .toast-msg { font-size: 13.5px; font-weight: 500; line-height: 1.4; word-wrap: break-word; }
+  .toast-close {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 7px; border: none;
+    background: rgba(255,255,255,0.14);
+    color: var(--white); cursor: pointer;
+    font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    margin-left: 4px;
+  }
+  .toast-close:hover { background: rgba(255,255,255,0.28); transform: scale(1.08); }
+  .toast.hide { animation: toastOut 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+  @keyframes toastIn {
+    from { transform: translateX(120%) translateY(8px); opacity: 0; }
+    to   { transform: translateX(0) translateY(0);     opacity: 1; }
+  }
+  @keyframes toastOut {
+    from { transform: translateX(0); opacity: 1; }
+    to   { transform: translateX(120%); opacity: 0; }
+  }
+  .toast-progress {
+    position: absolute; bottom: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.85), rgba(255,255,255,0.4));
+    border-radius: 0 0 12px 12px;
+    animation: toastProgress 4s linear forwards;
+  }
+  @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+</style>
+
+
+<div class="page-heading">Activity Logs</div>
+<p class="page-subheading">
+  Audit trail of recent admin and employee actions across the system.
+  <span style="color: var(--mid); font-weight: 500;">
+    Showing the latest 200 entries.
+  </span>
+</p>
+
+
+<!-- ══════════════════════════════════════
+     STAT ROW — quick counts
+══════════════════════════════════════ -->
+{% set _total = logs|length %}
+{% set _counts = namespace(create=0, update=0, delete=0, other=0) %}
+{% set _actors = [] %}
+{% for _l in logs %}
+  {% if _l.action == 'CREATE' %}{% set _counts.create = _counts.create + 1 %}
+  {% elif _l.action == 'UPDATE' %}{% set _counts.update = _counts.update + 1 %}
+  {% elif _l.action == 'DELETE' %}{% set _counts.delete = _counts.delete + 1 %}
+  {% else %}{% set _counts.other = _counts.other + 1 %}{% endif %}
+  {% if _l.actor_name and _l.actor_name not in _actors %}{% set _ = _actors.append(_l.actor_name) %}{% endif %}
+{% endfor %}
+{% set _creates = _counts.create %}
+{% set _updates = _counts.update %}
+{% set _deletes = _counts.delete %}
+
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-icon gray"><i class="fas fa-list"></i></div>
+    <div class="stat-body">
+      <span class="stat-label">Total Entries</span>
+      <span class="stat-value">{{ _total }}</span>
+      <span class="stat-sub">most recent 200</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-plus-circle"></i></div>
+    <div class="stat-body">
+      <span class="stat-label">Creates</span>
+      <span class="stat-value">{{ _creates }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-pen"></i></div>
+    <div class="stat-body">
+      <span class="stat-label">Updates</span>
+      <span class="stat-value">{{ _updates }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-trash-alt"></i></div>
+    <div class="stat-body">
+      <span class="stat-label">Deletes</span>
+      <span class="stat-value">{{ _deletes }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-user-shield"></i></div>
+    <div class="stat-body">
+      <span class="stat-label">Unique Actors</span>
+      <span class="stat-value">{{ _actors|length }}</span>
+      <span class="stat-sub">distinct names</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     FILTER BAR
+══════════════════════════════════════ -->
+<div class="filter-bar" style="margin-bottom: 20px; flex-wrap: wrap;">
+  <div class="filter-input-wrap" style="flex: 1; min-width: 220px;">
+    <i class="fas fa-search"></i>
+    <input
+      type="text"
+      class="filter-input"
+      id="logSearch"
+      placeholder="Search by actor, description, table, or record id…"
+    />
+  </div>
+
+  <select class="filter-input" id="actionFilter">
+    <option value="">All Actions</option>
+    {% for a in _actions_list %}
+      <option value="{{ a }}">{{ a }}</option>
+    {% endfor %}
+  </select>
+
+  <select class="filter-input" id="actorTypeFilter">
+    <option value="">All Actor Types</option>
+    <option value="ADMIN">Admin</option>
+    <option value="EMPLOYEE">Employee</option>
+    <option value="CUSTOMER">Customer</option>
+    <option value="SYSTEM">System</option>
+  </select>
+
+  <select class="filter-input" id="tableFilter">
+    <option value="">All Tables</option>
+    {% for t in _tables_list %}
+      <option value="{{ t }}">{{ t }}</option>
+    {% endfor %}
+  </select>
+
+  <button
+    class="filter-input"
+    id="logClearBtn"
+    style="cursor:pointer; min-width: 90px;"
+    type="button"
+  >
+    <i class="fas fa-times"></i>&nbsp; Clear
+  </button>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     LOGS TABLE
+══════════════════════════════════════ -->
+<div class="card">
+  <div class="card-header">
+    <h3 style="color: var(--green); font-weight: 800; display: flex; align-items: center; gap: 10px;">
+      <span style="width: 10px; height: 10px; background: var(--orange); border-radius: 50%; display: inline-block;"></span>
+      Action History
+    </h3>
+    <span style="font-size: 12px; color: var(--mid);">
+      <span id="logVisibleCount">{{ _total }}</span> of {{ _total }} entries
+    </span>
+  </div>
+
+  <div style="overflow-x: auto; border-radius: 12px;">
+    <table class="data-table" id="logsTable">
+      <thead>
+        <tr>
+          <th style="width: 60px;">ID</th>
+          <th style="min-width: 170px;">Actor</th>
+          <th style="width: 130px;">Action</th>
+          <th style="min-width: 180px;">Target</th>
+          <th>Description</th>
+          <th style="width: 140px;">When</th>
+        </tr>
+      </thead>
+      <tbody id="logsTbody">
+        {% for log in logs %}
+          {% set _initials = (log.actor_name[:2] if log.actor_name else '??')|upper %}
+          {% set _actor_type = (log.actor_type or 'SYSTEM')|upper %}
+          {% set _avatar_class = 'system' %}
+          {% if _actor_type == 'EMPLOYEE' %}{% if 'rider' in (log.actor_name|lower if log.actor_name else '') %}{% set _avatar_class = 'rider' %}{% else %}{% set _avatar_class = 'cashier' %}{% endif %}{% endif %}
+          {% set _action_norm = (log.action or '')|upper %}
+          {% set _badge_class = 'badge-gray' %}
+          {% if _action_norm == 'CREATE' or _action_norm == 'INSERT' %}{% set _badge_class = 'badge-green' %}
+          {% elif _action_norm == 'UPDATE' or _action_norm == 'MODIFY' %}{% set _badge_class = 'badge-blue' %}
+          {% elif _action_norm == 'DELETE' or _action_norm == 'REMOVE' %}{% set _badge_class = 'badge-red' %}
+          {% elif _action_norm == 'LOGIN' or _action_norm == 'LOGOUT' %}{% set _badge_class = 'badge-orange' %}
+          {% elif _action_norm == 'ASSIGN' or _action_norm == 'REASSIGN' %}{% set _badge_class = 'badge-yellow' %}
+          {% endif %}
+          {% set _action_icon = 'circle' %}
+          {% if _action_norm in ['CREATE','INSERT'] %}{% set _action_icon = 'plus' %}
+          {% elif _action_norm in ['UPDATE','MODIFY'] %}{% set _action_icon = 'pen' %}
+          {% elif _action_norm in ['DELETE','REMOVE'] %}{% set _action_icon = 'trash' %}
+          {% elif _action_norm in ['LOGIN'] %}{% set _action_icon = 'sign-in-alt' %}
+          {% elif _action_norm in ['LOGOUT'] %}{% set _action_icon = 'sign-out-alt' %}
+          {% elif _action_norm in ['ASSIGN','REASSIGN'] %}{% set _action_icon = 'user-tag' %}
+          {% endif %}
+
+          <tr class="log-row"
+              data-search="{{ (
+                  (log.actor_name or '') ~ ' ' ~
+                  (log.description or '') ~ ' ' ~
+                  (log.table_name or '') ~ ' ' ~
+                  (log.record_id|string if log.record_id else '')
+                )|lower }}"
+              data-action="{{ _action_norm|lower }}"
+              data-actor-type="{{ _actor_type|lower }}"
+              data-table="{{ (log.table_name or '')|lower }}"
+              data-log-id="{{ log.log_id }}"
+              onclick="toggleLogDetail(this, {{ log.log_id }})"
+          >
+            <td style="font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11.5px; color: var(--mid);">
+              #{{ log.log_id }}
+            </td>
+
+            <td>
+              <div class="actor-cell">
+                <div class="actor-avatar {{ _avatar_class }}">{{ _initials }}</div>
+                <div>
+                  <div class="actor-name">{{ log.actor_name or 'Unknown' }}</div>
+                  <span class="actor-role {{ _actor_type }}">{{ _actor_type }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <span class="badge-sm {{ _badge_class }}">
+                <i class="fas fa-{{ _action_icon }}"></i>
+                {{ log.action or '—' }}
+              </span>
+            </td>
+
+            <td>
+              {% if log.table_name %}
+                <span class="table-target">
+                  {{ log.table_name }}
+                  {% if log.record_id is not none %}
+                    <span class="arrow">›</span>
+                    <span class="rid">#{{ log.record_id }}</span>
+                  {% endif %}
+                </span>
+              {% else %}
+                <span style="color: var(--mid); font-size: 12px;">—</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <div class="desc-cell">{{ log.description or '' }}</div>
+            </td>
+
+            <td>
+              <div class="time-cell">{{ log.created_at or '' }}</div>
+            </td>
+          </tr>
+
+          <!-- Detail row (hidden by default) -->
+          <tr class="log-detail-row" id="log-detail-{{ log.log_id }}">
+            <td colspan="6" class="log-detail-cell">
+              <div class="log-detail-wrap">
+                <div class="log-col">
+                  <h4 class="old"><i class="fas fa-minus-circle"></i> Previous Values</h4>
+                  {% if log.log_old_values and log.log_old_values|string|length > 2 %}
+                    <pre class="log-json"><code>{{ log.log_old_values|tojson(indent=2) }}</code></pre>
+                  {% else %}
+                    <div class="log-empty">No previous values recorded.</div>
+                  {% endif %}
+                </div>
+                <div class="log-col">
+                  <h4 class="new"><i class="fas fa-plus-circle"></i> New Values</h4>
+                  {% if log.log_new_values and log.log_new_values|string|length > 2 %}
+                    <pre class="log-json"><code>{{ log.log_new_values|tojson(indent=2) }}</code></pre>
+                  {% else %}
+                    <div class="log-empty">No new values recorded.</div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+
+        {% if not logs or logs|length == 0 %}
+          <tr><td colspan="6">
+            <div class="empty-state">
+              <i class="fas fa-clipboard"></i>
+              <p style="font-weight: 600; color: var(--dark);">No activity recorded yet</p>
+              <p>Logs will appear here as admins and employees perform actions.</p>
+            </div>
+          </td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     TOAST CONTAINER + showToast + URL bootstrap
+══════════════════════════════════════ -->
+<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  /* ── Toast helper ── */
+  const TOAST_ICONS = {
+    success: { icon: 'check-circle',    title: 'Success' },
+    error:   { icon: 'exclamation-circle', title: 'Error' },
+    info:    { icon: 'info-circle',     title: 'Info' },
+  };
+  function showToast(msg, kind = 'success', ttl = 4000) {
+    const wrap = document.getElementById('toastWrap');
+    if (!wrap) return;
+    const cfg = TOAST_ICONS[kind] || TOAST_ICONS.success;
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + kind;
+    el.innerHTML =
+      '<div class="toast-icon"><i class="fas ' + cfg.icon + '"></i></div>' +
+      '<div class="toast-body">' +
+        '<div class="toast-title">' + cfg.title + '</div>' +
+        '<div class="toast-msg"></div>' +
+      '</div>' +
+      '<button type="button" class="toast-close" title="Dismiss" aria-label="Dismiss">' +
+        '<i class="fas fa-times"></i>' +
+      '</button>' +
+      '<span class="toast-progress"></span>';
+    el.querySelector('.toast-msg').textContent = msg;
+    wrap.appendChild(el);
+    const close = () => {
+      if (!el.isConnected) return;
+      el.classList.add('hide');
+      setTimeout(() => el.remove(), 320);
+    };
+    el.querySelector('.toast-close').addEventListener('click', close);
+    if (ttl > 0) setTimeout(close, ttl);
+  }
+
+  /* ── URL → toast bootstrap (mirrors discounts.html) ── */
+  (function () {
+    const p = new URLSearchParams(location.search);
+    if (p.has('success')) showToast(p.get('success'), 'success');
+    else if (p.has('error'))   showToast(p.get('error'),   'error');
+    else if (p.has('info'))    showToast(p.get('info'),    'info');
+    if (p.has('success') || p.has('error') || p.has('info')) {
+      const url = location.pathname;
+      history.replaceState({}, '', url);
+    }
+  })();
+</script>
+
+
+<script>
+  /* ── Filter logic: client-side row filtering ── */
+  (function () {
+    const search  = document.getElementById('logSearch');
+    const action  = document.getElementById('actionFilter');
+    const aType   = document.getElementById('actorTypeFilter');
+    const table   = document.getElementById('tableFilter');
+    const clear   = document.getElementById('logClearBtn');
+    const countEl = document.getElementById('logVisibleCount');
+    const tbody   = document.getElementById('logsTbody');
+    if (!tbody) return;
+
+    const visiblePairs = []; // pairs of [row, detailRow]
+    Array.from(tbody.querySelectorAll('tr.log-row')).forEach(r => {
+      const id = r.getAttribute('data-log-id');
+      const detail = document.getElementById('log-detail-' + id);
+      visiblePairs.push([r, detail]);
+    });
+
+    function applyFilters() {
+      const q       = (search.value || '').trim().toLowerCase();
+      const actionV = (action.value || '').trim().toLowerCase();
+      const typeV   = (aType.value   || '').trim().toLowerCase();
+      const tableV  = (table.value   || '').trim().toLowerCase();
+      let shown = 0;
+      visiblePairs.forEach(([r, detail]) => {
+        const hay  = r.getAttribute('data-search') || '';
+        const a    = r.getAttribute('data-action')  || '';
+        const t    = r.getAttribute('data-actor-type') || '';
+        const tbl  = r.getAttribute('data-table')   || '';
+        const okQ  = !q      || hay.indexOf(q) !== -1;
+        const okA  = !actionV || a === actionV;
+        const okT  = !typeV   || t === typeV;
+        const okTb = !tableV  || tbl === tableV;
+        const ok   = okQ && okA && okT && okTb;
+        r.style.display = ok ? '' : 'none';
+        if (detail) detail.style.display = 'none';
+        if (ok) shown++;
+      });
+      if (countEl) countEl.textContent = shown;
+    }
+
+    if (search) search.addEventListener('input', applyFilters);
+    if (action) action.addEventListener('change', applyFilters);
+    if (aType)  aType.addEventListener('change', applyFilters);
+    if (table)  table.addEventListener('change', applyFilters);
+    if (clear)  clear.addEventListener('click', () => {
+      search.value = ''; action.value = ''; aType.value = ''; table.value = '';
+      applyFilters();
+    });
+  })();
+</script>
+
+
+<script>
+  /* ── Expandable rows for old/new values diff ── */
+  function toggleLogDetail(row, logId) {
+    // Don't toggle when clicking on interactive elements (none here, just safety)
+    const detail = document.getElementById('log-detail-' + logId);
+    if (!detail) return;
+    const isOpen = detail.classList.contains('open');
+    document.querySelectorAll('tr.log-detail-row.open').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('tr.log-row.expanded').forEach(r => r.classList.remove('expanded'));
+    if (!isOpen) {
+      detail.classList.add('open');
+      row.classList.add('expanded');
+    }
+  }
+</script>
+
+
+{% endblock %}

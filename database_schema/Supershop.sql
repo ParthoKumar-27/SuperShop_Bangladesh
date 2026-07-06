@@ -558,3 +558,34 @@ CREATE TABLE notification (
 
 CREATE INDEX idx_notif_recipient ON notification (recipient_type, recipient_id, is_read);
 CREATE INDEX idx_notif_ref       ON notification (ref_table, ref_id, notif_type);
+
+
+-- ============================================================
+--  TABLE 21: ACTION_LOG
+--  Records every CREATE/UPDATE/DELETE done by an admin or
+--  employee through the app. old_values/new_values store a
+--  JSON snapshot so you can see exactly what changed.
+-- ============================================================
+CREATE TABLE action_log (
+    log_id          VARCHAR(10)     NOT NULL,
+    actor_type      VARCHAR(10)     NOT NULL,   -- 'ADMIN' | 'EMPLOYEE' | 'SYSTEM'
+    actor_id        VARCHAR(12)     NOT NULL,   -- admin_id / emp_id
+    actor_name      VARCHAR(60)     NOT NULL,   -- snapshot, survives account deletion
+    action          VARCHAR(10)     NOT NULL,   -- 'CREATE' | 'UPDATE' | 'DELETE'
+    table_name      VARCHAR(30)     NOT NULL,   -- 'product', 'employee', ...
+    record_id       VARCHAR(20)     NOT NULL,   -- product_id / emp_id / discount_id ...
+    description     VARCHAR(300)    NOT NULL,   -- human-readable summary
+    old_values      JSONB,
+    new_values      JSONB,
+    ip_address      VARCHAR(45),
+    created_at      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT log_pk           PRIMARY KEY (log_id),
+    CONSTRAINT check_log_id     CHECK (log_id LIKE 'LOG-%'),
+    CONSTRAINT log_actor_type   CHECK (actor_type IN ('ADMIN','EMPLOYEE','SYSTEM')),
+    CONSTRAINT log_action_type  CHECK (action IN ('CREATE','UPDATE','DELETE'))
+);
+
+-- CREATE INDEX idx_log_table_record ON action_log (table_name, record_id);
+-- CREATE INDEX idx_log_actor        ON action_log (actor_type, actor_id);
+-- CREATE INDEX idx_log_created      ON action_log (created_at DESC);

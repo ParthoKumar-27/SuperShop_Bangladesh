@@ -280,17 +280,19 @@
         display: flex;
         align-items: center;
         gap: 11px;
-        padding: 10px 14px 10px 20px;
+        padding: 11px 14px 11px 18px;
         margin: 0 10px;
         border-radius: 10px;
-        font-size: 13.5px;
-        font-weight: 500;
+        font-size: 14px;
+        font-weight: 550;
         color: var(--mid);
         cursor: pointer;
         transition: all 0.2s ease;
         position: relative;
         text-decoration: none;
         overflow: hidden;
+        min-height: 42px;
+        line-height: 1.2;
       }
       .nav-item::before {
         content: "";
@@ -327,10 +329,11 @@
         color: #fff;
       }
       .nav-item i {
-        width: 16px;
+        width: 18px;
         text-align: center;
-        font-size: 13px;
+        font-size: 14px;
         transition: transform 0.25s ease;
+        flex-shrink: 0;
       }
       .nav-item:hover i { transform: scale(1.12) rotate(-4deg); }
       .nav-item .nav-badge {
@@ -1072,9 +1075,17 @@ body.sidebar-collapsed .sidebar-user .user-avatar {
     <span class="nav-text">Suppliers</span>
 </a>
 
-      <!-- <div class="nav-label">System</div>
+      <div class="nav-label">System</div>
 
-      <a href="/docs" target="_blank" class="nav-item">
+      <a
+        href="/admin/dashboard/logs"
+        class="nav-item {{ 'active' if path == '/admin/dashboard/logs' else '' }}"
+      >
+        <i class="fas fa-clipboard-list"></i>
+        <span class="nav-text">Activity Logs</span>
+      </a>
+
+      <!-- <a href="/docs" target="_blank" class="nav-item">
         <i class="fas fa-code"></i> <span class="nav-text">API Docs</span>
         <i
           class="fas fa-external-link-alt"
@@ -1233,6 +1244,35 @@ body.sidebar-collapsed .sidebar-user .user-avatar {
           const hdr = sub.previousElementSibling;
           if (hdr) hdr.classList.add("open");
         }
+      });
+
+      /* ── Persist sidebar scroll position across page navigations ── */
+      document.addEventListener("DOMContentLoaded", function () {
+        const KEY = "sidebarScrollTop";
+        const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
+        if (!sidebar) return;
+
+        // Restore on load (after layout settles)
+        const restore = () => {
+          const saved = parseInt(sessionStorage.getItem(KEY) || "0", 10);
+          if (saved > 0) sidebar.scrollTop = saved;
+        };
+        // Use rAF so layout has settled, then re-apply on full load as a safety net
+        requestAnimationFrame(restore);
+        window.addEventListener("load", restore);
+
+        // Save scroll position before leaving
+        const persist = () => sessionStorage.setItem(KEY, String(sidebar.scrollTop || 0));
+        sidebar.addEventListener("scroll", persist, { passive: true });
+        window.addEventListener("beforeunload", persist);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") persist();
+        });
+
+        // Also save when a nav-item is clicked (immediate navigation case)
+        document.querySelectorAll(".nav-item").forEach((el) => {
+          el.addEventListener("click", persist, { capture: true });
+        });
       });
     </script>
     <script>

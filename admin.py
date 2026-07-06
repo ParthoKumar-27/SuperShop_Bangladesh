@@ -1,9 +1,11 @@
 import os
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI,APIRouter, Request, Form, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from action_logger import log_action
 from auth import _hash, _verify
 from branch_routes import branch_router
 from database import query, execute
@@ -16,8 +18,23 @@ from auth import (
     require_login,
 )
 from notifications import notify_all_branch_managers, notify_branch_manager
+
+# Bangladesh is UTC+6 — apply it consistently so log timestamps match local time
+BD_TZ = timezone(timedelta(hours=6))
+def _to_bd(dt):
+    """Convert an aware or naive datetime/date to BD-local and return formatted 'DD Mon YYYY HH24:MI'."""
+    if dt is None:
+        return None
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(BD_TZ).strftime("%d %b %Y %H:%M")
+    # Fallback: it's a date or something else — leave it untouched
+    return str(dt)
+
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="templates")
+templates.env.filters["bdtime"] = _to_bd
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ADMIN DASHBOARD  (protected — ADMIN only)
@@ -290,6 +307,7 @@ def edit_employee(
     old_pos    = current[0]["position"]
     old_branch = current[0]["branch_id"]
 
+
     # ── Decide branch_id for the UPDATE based on the new position ────────────
     # Rule 1: promoting TO branch_manager → employee.branch_id must be cleared,
     #         manager assignment is handled on the Manage Branches page.
@@ -346,6 +364,14 @@ def edit_employee(
         execute("""
             DELETE FROM branch_manager WHERE emp_id = %s
         """, (emp_id,))
+
+    log_action(
+    session, "UPDATE", "employee", emp_id,
+    f"Updated employee {emp_id} ({emp_name})",
+    old_values={"position": old_pos, "branch_id": old_branch},
+    new_values={"position": position, "branch_id": branch_val},
+    request=request,
+)
 
     if promote_to_bm:
         return RedirectResponse(
@@ -533,7 +559,16 @@ def delete_discount(
     if discount_id.strip() != confirm_id.strip():
         return RedirectResponse("/admin/dashboard/discounts?error=ID+mismatch", status_code=302)
 
+    # execute("DELETE FROM discount WHERE discount_id = %s", (discount_id,))
+
+    old_row = query("SELECT * FROM discount WHERE discount_id = %s", (discount_id,))
     execute("DELETE FROM discount WHERE discount_id = %s", (discount_id,))
+    log_action(
+        session, "DELETE", "discount", discount_id,
+        f"Deleted discount {discount_id}",
+        old_values=old_row[0] if old_row else None,
+        request=request,
+    )
 
     return RedirectResponse("/admin/dashboard/discounts?success=Discount+deleted", status_code=302)
 
@@ -926,6 +961,13 @@ def add_product(
         unit.strip(),
     ))
 
+    log_action(
+    session, "CREATE", "product", product_id,
+    f'Created product "{product_name}"',
+    new_values={"cat_id": cat_id, "supplier_id": supplier_id, "unit_price": unit_price},
+    request=request,
+)
+    
     notify_all_branch_managers(
         "NEW_PRODUCT",
         "New product added",
@@ -958,7 +1000,7 @@ def modify_product(
     product_name = (
         product_name_row[0]["product_name"] if product_name_row else product_id
     )
-
+    old_row = query("SELECT cat_id, supplier_id, unit_price, unit, is_active FROM product WHERE product_id = %s", (product_id,))
     execute("""
         UPDATE product
         SET cat_id      = %s,
@@ -976,7 +1018,31 @@ def modify_product(
         product_id,
     ))
 
+    log_action(
+    session, "UPDATE", "product", product_id,
+    f'Updated product "{product_name}"',
+    old_values=old_row[0] if old_row else None,
+    new_values={"cat_id": cat_id, "supplier_id": supplier_id, "unit_price": unit_price, "unit": unit, "is_active": is_active},
+    request=request,
+)
     return RedirectResponse(
         f"/admin/dashboard/products?success=Product+%22{product_name}%22+updated+successfully",
         status_code=302,
     )
+
+@admin_router.get("/dashboard/logs", response_class=HTMLResponse)
+def action_logs_page(request: Request, session=Depends(require_admin)):
+    logs = query("""
+        SELECT log_id, actor_type, actor_name, action,
+               table_name, record_id, description,
+               old_values, new_values, created_at
+        FROM action_log
+        ORDER BY created_at DESC
+        LIMIT 200
+    """)
+    # Format each row's created_at into BD-local time for display
+    for row in logs:
+        row["created_at"] = _to_bd(row.get("created_at"))
+    return templates.TemplateResponse(request, "admin/logs.html", {
+        "logs": logs, "user_name": session.get("user_name"), "role": "ADMIN",
+    })

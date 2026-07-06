@@ -16,6 +16,8 @@ from urllib.parse import quote
 from database import query, execute
 from auth import require_admin
 from auth import _hash, _verify
+from action_logger import log_action
+
 branch_router = APIRouter(prefix="/admin/branches", tags=["Branch Management"])
 
 BACK = "/admin/dashboard/branches/manage"
@@ -65,6 +67,12 @@ def add_city(
         "INSERT INTO city (city_id, city_name, division) VALUES (%s, %s, %s)",
         (city_id, city_name.strip(), division.strip())
     )
+    log_action(
+    session, "CREATE", "city", city_id,
+    f"Created city '{city_name.strip()}' ({city_id})",
+    new_values={"city_name": city_name.strip(), "division": division.strip()},
+    request=request,
+)
     return redir(f"City '{city_name}' ({city_id}) added successfully.")
 
 
@@ -108,6 +116,12 @@ def delete_city(
         )
 
     execute("DELETE FROM city WHERE city_id = %s", (city_record["city_id"],))
+    log_action(
+    session, "DELETE", "city", city_record["city_id"],
+    f"Deleted city '{city_record['city_name']}'",
+    old_values=city_record,
+    request=request,
+)
     return redir(f"City '{city_record['city_name']}' deleted.")
 
 
@@ -160,6 +174,12 @@ def add_branch(
             open_time, close_time, is_active
         )
     )
+    log_action(
+    session, "CREATE", "branch", branch_id,
+    f"Created branch '{branch_name}' ({branch_id})",
+    new_values={"city_id": real_city_id, "address": address.strip(), "phone": phone.strip() or None},
+    request=request,
+)
     return redir(f"Branch '{branch_name}' ({branch_id}) created successfully.")
 
 
@@ -237,6 +257,12 @@ def assign_manager(
         "UPDATE employee SET branch_id = %s WHERE emp_id = %s",
         (branch_id, emp_id)
     )
+    log_action(
+    session, "CREATE", "branch_manager", branch_id,
+    f"Assigned {emp[0]['emp_name']} ({emp_id}) as manager of branch '{branch_id}'",
+    new_values={"branch_id": branch_id, "emp_id": emp_id},
+    request=request,
+)
 
     return redir(f"{emp[0]['emp_name']} assigned as manager of branch '{branch_id}'.")
 
@@ -283,6 +309,7 @@ def reassign_manager(
             ok=False
         )
 
+    old_mgr = query("SELECT emp_id FROM branch_manager WHERE branch_id = %s", (branch_id,))
     # Upsert: delete old row + insert new (handles both "already has manager" and "no manager")
     execute("DELETE FROM branch_manager WHERE branch_id = %s", (branch_id,))
     execute(
@@ -293,6 +320,13 @@ def reassign_manager(
         "UPDATE employee SET branch_id = %s WHERE emp_id = %s",
         (branch_id, new_emp_id)
     )
+    log_action(
+    session, "UPDATE", "branch_manager", branch_id,
+    f"Reassigned branch '{branch_id}' manager to {emp[0]['emp_name']} ({new_emp_id})",
+    old_values={"emp_id": old_mgr[0]["emp_id"]} if old_mgr else None,
+    new_values={"emp_id": new_emp_id},
+    request=request,
+)
 
     return redir(f"{emp[0]['emp_name']} is now the manager of branch '{branch_id}'.")
 
@@ -330,6 +364,12 @@ def remove_manager(
 
     # Nullify their home branch — they are unassigned until given a new branch
     execute("UPDATE employee SET branch_id = NULL WHERE emp_id = %s", (emp_id,))
+    log_action(
+    session, "DELETE", "branch_manager", branch_id,
+    f"Removed {emp_name} as manager of '{branch_name}'",
+    old_values={"emp_id": emp_id, "branch_id": branch_id},
+    request=request,
+)
 
     return redir(
         f"{emp_name} removed as manager of '{branch_name}'. "
@@ -430,6 +470,12 @@ def create_manager(
         VALUES (%s, %s, %s, 'EMPLOYEE', %s, 'Y', CURRENT_TIMESTAMP)
     """, (user_id, phone, pw_hash, emp_id))
 
+    log_action(
+    session, "CREATE", "employee", emp_id,
+    f"Created branch manager account for '{emp_name.strip()}' ({emp_id})",
+    new_values={"phone": phone, "email": email, "salary": salary, "position": "BRANCH_MANAGER"},
+    request=request,
+)
     return redir(
         f"Manager account created for '{emp_name.strip()}' (ID: {emp_id}). "
         f"Now use 'Assign Manager' to link them to a branch."
@@ -460,6 +506,7 @@ def edit_branch_save(
     existing = query("SELECT 1 FROM branch WHERE branch_id = %s", (branch_id,))
     if not existing:
         return redir("Branch not found.", ok=False)
+    old_row = existing[0]
 
     # Phone uniqueness — exclude the branch being edited
     phone = phone.strip()
@@ -492,6 +539,13 @@ def edit_branch_save(
         )
     )
 
+    log_action(
+    session, "UPDATE", "branch", branch_id,
+    f"Updated branch '{branch_name}' ({branch_id})",
+    old_values=old_row,
+    new_values={"branch_name": branch_name.strip(), "phone": phone or None, "open_time": open_time, "close_time": close_time, "is_active": is_active},
+    request=request,
+)
     from urllib.parse import quote
     return RedirectResponse(
         f"/admin/dashboard/branches/manage?success={quote(f'Branch {branch_id} updated successfully.')}",
