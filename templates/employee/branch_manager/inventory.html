@@ -158,6 +158,120 @@
   .row-action-edit:hover   { background: #1d4ed8; }
   .row-action-delete { background: #dc2626; }
   .row-action-delete:hover { background: #b91c1c; }
+
+  /* utility */
+  .d-none { display: none !important; }
+
+  /* ══════════════════════════════════════
+     TOAST SYSTEM (mirrors admin/discounts.html)
+  ══════════════════════════════════════ */
+  .toast-wrap {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+  }
+  .toast {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 320px;
+    max-width: 400px;
+    padding: 14px 14px 16px 16px;
+    border-radius: 12px;
+    font-family: "DM Sans", sans-serif;
+    color: var(--white);
+    background: linear-gradient(135deg, #06604a 0%, #044635 55%, #03332a 100%);
+    box-shadow:
+      0 14px 36px rgba(4, 70, 53, 0.28),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+    pointer-events: auto;
+    overflow: hidden;
+    animation: toastIn 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .toast::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%),
+      radial-gradient(80% 60% at 100% 100%, rgba(241, 123, 13, 0.22) 0%, rgba(241, 123, 13, 0) 60%);
+    pointer-events: none;
+  }
+  .toast.toast-error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 55%, #991b1b 100%);
+    box-shadow:
+      0 14px 36px rgba(220, 38, 38, 0.3),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+  .toast.toast-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%);
+    box-shadow:
+      0 14px 36px rgba(37, 99, 235, 0.3),
+      0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+  .toast-icon {
+    flex-shrink: 0;
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: var(--white);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  }
+  .toast-body {
+    flex: 1; min-width: 0;
+    padding-top: 1px;
+    position: relative; z-index: 1;
+  }
+  .toast-title {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    opacity: 0.82; margin-bottom: 3px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .toast-title i { font-size: 9px; opacity: 0.7; }
+  .toast-msg {
+    font-size: 13.5px; font-weight: 500;
+    line-height: 1.4; word-wrap: break-word;
+  }
+  .toast-close {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 7px; border: none;
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--white); cursor: pointer;
+    font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    margin-left: 4px;
+  }
+  .toast-close:hover { background: rgba(255, 255, 255, 0.28); transform: scale(1.08); }
+  .toast.hide { animation: toastOut 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+  @keyframes toastIn {
+    from { transform: translateX(120%) translateY(8px); opacity: 0; }
+    to   { transform: translateX(0) translateY(0);     opacity: 1; }
+  }
+  @keyframes toastOut {
+    from { transform: translateX(0); opacity: 1; }
+    to   { transform: translateX(120%); opacity: 0; }
+  }
+  .toast-progress {
+    position: absolute; bottom: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.85), rgba(255,255,255,0.4));
+    border-radius: 0 0 12px 12px;
+    animation: toastProgress 4s linear forwards;
+  }
+  @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
 </style>
 
 <div class="page-heading">Branch Inventory</div>
@@ -165,8 +279,9 @@
 
 {% set msg_ok  = request.query_params.get('success') %}
 {% set msg_err = request.query_params.get('error') %}
-{% if msg_ok  %}<div style="padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;">✓ {{ msg_ok }}</div>{% endif %}
-{% if msg_err %}<div style="padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;">✕ {{ msg_err }}</div>{% endif %}
+<!-- (Inline banners replaced by the toast system at the bottom of the page) -->
+{% if msg_ok  %}<span class="d-none" data-flash-success>{{ msg_ok }}</span>{% endif %}
+{% if msg_err %}<span class="d-none" data-flash-error>{{ msg_err }}</span>{% endif %}
 
 {% if no_branch %}
 <div class="card" style="padding:40px; text-align:center;">
@@ -638,5 +753,66 @@
     showDeletePreview(sel);
     openDM('dm-delete');
   }
+
+  /* ══════════════════════════════════════
+     TOAST SYSTEM (mirrors admin/discounts.html)
+  ══════════════════════════════════════ */
+  // Container (lives just before </body>, fixed bottom-right)
+  document.body.insertAdjacentHTML(
+    'beforeend',
+    '<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>'
+  );
+
+  const TOAST_ICONS = {
+    success: { icon: 'check-circle',       title: 'Success' },
+    error:   { icon: 'exclamation-circle', title: 'Error'   },
+    info:    { icon: 'info-circle',        title: 'Info'    },
+  };
+
+  function showToast(msg, kind = 'success', ttl = 4000) {
+    const wrap = document.getElementById('toastWrap');
+    if (!wrap) return;
+    const cfg  = TOAST_ICONS[kind] || TOAST_ICONS.success;
+    const el   = document.createElement('div');
+    el.className = 'toast toast-' + kind;
+    el.innerHTML =
+      '<div class="toast-icon"><i class="fas fa-' + cfg.icon + '"></i></div>' +
+      '<div class="toast-body">' +
+        '<div class="toast-title">' + cfg.title + '</div>' +
+        '<div class="toast-msg"></div>' +
+      '</div>' +
+      '<button type="button" class="toast-close" title="Dismiss" aria-label="Dismiss">' +
+        '<i class="fas fa-times"></i>' +
+      '</button>' +
+      '<span class="toast-progress"></span>';
+    el.querySelector('.toast-msg').textContent = msg;
+    wrap.appendChild(el);
+    const close = () => {
+      if (!el.isConnected) return;
+      el.classList.add('hide');
+      setTimeout(() => el.remove(), 320);
+    };
+    el.querySelector('.toast-close').addEventListener('click', close);
+    if (ttl > 0) setTimeout(close, ttl);
+  }
+
+  // URL → toast bootstrap (also reads the hidden data-flash-* spans)
+  (function () {
+    const p = new URLSearchParams(location.search);
+    let shown = false;
+    if (p.has('success')) { showToast(p.get('success'), 'success'); shown = true; }
+    else if (p.has('error'))   { showToast(p.get('error'),   'error');   shown = true; }
+    else if (p.has('info'))    { showToast(p.get('info'),    'info');    shown = true; }
+    // Fallback: read the hidden data-flash-* anchors (in case URL params were already stripped)
+    if (!shown) {
+      const okEl  = document.querySelector('[data-flash-success]');
+      const errEl = document.querySelector('[data-flash-error]');
+      if (okEl)  showToast(okEl.textContent.trim(),  'success');
+      if (errEl) showToast(errEl.textContent.trim(), 'error');
+    }
+    if (shown) {
+      history.replaceState({}, '', location.pathname);
+    }
+  })();
 </script>
 {% endblock %}

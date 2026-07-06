@@ -1720,15 +1720,17 @@ def rider_update_status(
 
 @employee_router.post("/branch/staff/add")
 def add_staff(
-    request:   Request,
-    emp_name:  str           = Form(...),
-    gender:    str           = Form(...),
-    position:  str           = Form(...),
-    dept_id:   str           = Form(""),
-    email:     str           = Form(""),
-    phone:     str           = Form(...),
-    salary:    float         = Form(...),
-    hire_date: str           = Form(...),
+    request:           Request,
+    emp_name:          str   = Form(...),
+    gender:            str   = Form(...),
+    position:          str   = Form(...),
+    dept_id:           str   = Form(""),
+    email:             str   = Form(""),
+    phone:             str   = Form(...),
+    salary:            float = Form(...),
+    hire_date:         str   = Form(...),
+    password:          str   = Form(...),
+    confirm_password:  str   = Form(...),
     session=Depends(require_branch_manager),
 ):
     branch_id = session.get("branch_id")
@@ -1741,29 +1743,46 @@ def add_staff(
             status_code=302,
         )
 
-    # ── Guard: phone must be unique across employees ──────────────────────────
-    phone_check = query(
-        "SELECT 1 FROM employee WHERE phone = %s",
-        (phone.strip(),)
-    )
-    if phone_check:
+    # ── Guard: password validation (matches create_manager) ───────────────────
+    if len(password) < 6:
+        return RedirectResponse(
+            "/employee/branch/staff?error=Password+must+be+at+least+6+characters",
+            status_code=302,
+        )
+    if password != confirm_password:
+        return RedirectResponse(
+            "/employee/branch/staff?error=Passwords+do+not+match",
+            status_code=302,
+        )
+
+    # ── Guard: phone must be unique across employees AND app_user (EMPLOYEE) ──
+    phone_clean = phone.strip()
+    if query("SELECT 1 FROM employee WHERE phone = %s", (phone_clean,)):
         return RedirectResponse(
             "/employee/branch/staff?error=That+phone+number+is+already+registered",
             status_code=302,
         )
+    if query("SELECT 1 FROM app_user WHERE phone = %s AND role = 'EMPLOYEE'", (phone_clean,)):
+        return RedirectResponse(
+            "/employee/branch/staff?error=That+phone+already+has+an+employee+login",
+            status_code=302,
+        )
 
     # ── Guard: email uniqueness (only if provided) ────────────────────────────
-    clean_email = email.strip() or None
+    clean_email = email.strip().lower() or None
     if clean_email:
-        email_check = query(
-            "SELECT 1 FROM employee WHERE email = %s",
-            (clean_email,)
-        )
-        if email_check:
+        if query("SELECT 1 FROM employee WHERE email = %s", (clean_email,)):
             return RedirectResponse(
                 "/employee/branch/staff?error=That+email+is+already+in+use",
                 status_code=302,
             )
+
+    # ── Guard: minimum salary (matches create_manager) ────────────────────────
+    if salary < 10000:
+        return RedirectResponse(
+            "/employee/branch/staff?error=Salary+must+be+at+least+৳10,000",
+            status_code=302,
+        )
 
     # ── Auto-generate emp_id (numeric-only MAX to avoid format collisions) ────
     max_row = query("""
@@ -1773,6 +1792,17 @@ def add_staff(
     """, ())
     next_n = (max_row[0]["mx"] or 0) + 1
     emp_id = f"E-{next_n:05d}"
+
+    # ── Auto-generate user_id (matches create_manager) ────────────────────────
+    user_rows = query("""
+        SELECT user_id FROM app_user ORDER BY user_id DESC LIMIT 1
+    """, ())
+    if not user_rows:
+        user_id = "U-000001"
+    else:
+        last = user_rows[0]["user_id"]
+        user_id = f"U-{int(last.split('-')[1]) + 1:06d}"
+    pw_hash = _hash(password)
 
     # ── Insert employee (is_active = 'N' — admin activates later) ────────────
     execute("""
@@ -1787,7 +1817,7 @@ def add_staff(
         emp_id,
         emp_name.strip(),
         clean_email,
-        phone.strip(),
+        phone_clean,
         branch_id,
         dept_id.strip() or None,
         position,
@@ -1796,8 +1826,15 @@ def add_staff(
         gender,
     ))
 
+    # ── Create the matching app_user EMPLOYEE row (temp password) ─────────────
+    execute("""
+        INSERT INTO app_user
+            (user_id, phone, password_hash, role, ref_id, is_active, created_at)
+        VALUES (%s, %s, %s, 'EMPLOYEE', %s, 'Y', CURRENT_TIMESTAMP)
+    """, (user_id, phone_clean, pw_hash, emp_id))
+
     return RedirectResponse(
-        f"/employee/branch/staff?success=Staff+member+{emp_id}+added+successfully.+Awaiting+admin+activation.",
+        f"/employee/branch/staff?success=Staff+member+{emp_id}+added.+Temporary+password+set+for+login.",
         status_code=302,
     )
 
