@@ -46,6 +46,8 @@
 --                    delivery_fee, rating, note
 -- ============================================================
 -- Table drops;
+DROP FROM notification;
+DROP FROM action_log;
 DROP TABLE admin_account;
 DROP TABLE app_user;
 DROP TABLE delivery;
@@ -67,6 +69,8 @@ DROP TABLE branch;
 DROP TABLE city;
 
 -- Data delete
+DELETE FROM notification;
+DELETE FROM action_log;
 DELETE FROM admin_account;
 DELETE FROM app_user;
 DELETE FROM delivery;
@@ -221,7 +225,8 @@ INSERT INTO employee VALUES ('E-00017', 'Farzana Yasmin',  'farzana.y@supershop.
 INSERT INTO employee VALUES ('E-R001',  'Arif Hossain',    'arif.h@supershop.com.bd',    '01812-200001', 'B-DH01', 'D-DL01', 'DELIVERY_RIDER', 11000.00, '2023-03-01', 'M', 'Y');
 INSERT INTO employee VALUES ('E-R002',  'Sumon Mia',       'sumon.m@supershop.com.bd',   '01911-200002', 'B-DH02', 'D-DL01', 'DELIVERY_RIDER', 11000.00, '2023-03-15', 'M', 'Y');
 INSERT INTO employee VALUES ('E-R003',  'Rajib Das',       'rajib.d@supershop.com.bd',   '01611-200003', 'B-CT01', 'D-DL01', 'DELIVERY_RIDER', 10500.00, '2023-05-20', 'M', 'Y');
-
+INSERT INTO employee VALUES ('E-R004', 	'Shakil Ahmed',    'shakil.a@supershop.com.bd',  '01711-200004', 'B-DH03', 'D-DL01', 'DELIVERY_RIDER', 11000.00, '2023-07-01', 'M', 'Y');
+INSERT INTO employee VALUES ('E-R005', 	'Jahid Hasan', 	   'jahid.h@supershop.com.bd',   '01812-200005', 'B-SY01', 'D-DL01', 'DELIVERY_RIDER', 11000.00, '2023-08-10', 'M', 'Y');
 
 -- ============================================================
 --  7. BRANCH_MANAGER  (8 rows)  — FIX 3
@@ -995,11 +1000,10 @@ INSERT INTO delivery VALUES ('DEL-001', 'O-00001', 'E-R001', '2025-04-26 08:00:0
 INSERT INTO delivery VALUES ('DEL-002', 'O-00002', 'E-R002', '2025-04-27 09:00:00', '2025-04-27 10:00:00', '2025-04-27 13:30:00', 'DELIVERED',    6.80, 60.00, 4.5, NULL);
 INSERT INTO delivery VALUES ('DEL-003', 'O-00003', 'E-R003', '2025-04-28 10:00:00', '2025-04-28 11:30:00', '2025-04-28 14:50:00', 'DELIVERED',   11.50, 80.00, 4.0, 'Traffic delay');
 INSERT INTO delivery VALUES ('DEL-004', 'O-00004', 'E-R001', '2025-04-29 07:30:00', '2025-04-29 08:00:00', '2025-04-29 10:30:00', 'DELIVERED',    3.50, 60.00, 5.0, 'On time');
-INSERT INTO delivery VALUES ('DEL-005', 'O-00005', 'E-R002', '2025-04-30 09:00:00', '2025-04-30 10:30:00', '2025-04-30 13:10:00', 'DELIVERED',   13.20, 80.00, 3.5, 'Slightly late');
+INSERT INTO delivery VALUES ('DEL-005','O-00005','E-R004', '2025-04-30 09:00:00','2025-04-30 10:30:00', '2025-04-30 13:10:00', 'DELIVERED',13.20,80.00,3.5,'Slightly late');
 INSERT INTO delivery VALUES ('DEL-006', 'O-00006', 'E-R003', '2025-05-04 09:00:00', '2025-05-04 10:00:00', '2025-05-04 14:20:00', 'DELIVERED',   12.00, 80.00, 4.0, NULL);
-INSERT INTO delivery VALUES ('DEL-007', 'O-00007', 'E-R001', '2025-05-06 08:00:00', '2025-05-06 08:45:00', '2025-05-06 11:50:00', 'DELIVERED',    5.30, 60.00, 5.0, 'Perfect service');
-INSERT INTO delivery VALUES ('DEL-008', 'O-00008', 'E-R002', '2025-05-08 10:00:00', '2025-05-08 11:00:00',  NULL,                  'ON_THE_WAY',  15.60, 80.00, NULL, 'In transit');
-
+INSERT INTO delivery VALUES ('DEL-007','O-00007','E-R002', '2025-05-06 08:00:00','2025-05-06 08:45:00', '2025-05-06 11:50:00', 'DELIVERED',5.30,60.00,5.0,'Perfect service');
+INSERT INTO delivery VALUES ('DEL-008','O-00008','E-R005', '2025-05-08 10:00:00','2025-05-08 11:00:00', NULL, 'ON_THE_WAY',15.60,80.00,NULL,'In transit');
 
 -- ============================================================
 --  END OF DATA — SuperShop Bangladesh
@@ -1068,7 +1072,8 @@ INSERT INTO app_user VALUES ('U-000017', '01711-100017', '$2b$12$6X5S.jTi1rkVeaB
 INSERT INTO app_user VALUES ('U-000018', '01812-200001', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R001',  'Y', CURRENT_TIMESTAMP);
 INSERT INTO app_user VALUES ('U-000019', '01911-200002', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R002',  'Y', CURRENT_TIMESTAMP);
 INSERT INTO app_user VALUES ('U-000020', '01611-200003', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R003',  'Y', CURRENT_TIMESTAMP);
-
+INSERT INTO app_user VALUES ('U-000037', '01711-200004', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R004', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000038','01812-200005', '$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm', 'EMPLOYEE', 'E-R005', 'Y', CURRENT_TIMESTAMP);
 
 -- ============================================================
 --  SEED: app_user for CUSTOMERS  (15 rows)
@@ -1107,52 +1112,3 @@ INSERT INTO app_user VALUES ('U-000035', '01911-000015', '$2b$12$PHWcyxLINm22a4/
 --  Then replace the placeholder $2b$12$emphashreplaceXXX...
 --  values above with the real hashes.
 -- ============================================================
-INSERT INTO employee VALUES
-('E-R004', 'Shakil Ahmed', 'shakil.a@supershop.com.bd',
-'01711-200004', 'B-DH03', 'D-DL01',
-'DELIVERY_RIDER', 11000.00, '2023-07-01', 'M', 'Y');
-
-INSERT INTO employee VALUES
-('E-R005', 'Jahid Hasan', 'jahid.h@supershop.com.bd',
-'01812-200005', 'B-SY01', 'D-DL01',
-'DELIVERY_RIDER', 11000.00, '2023-08-10', 'M', 'Y');
-
-INSERT INTO app_user VALUES
-('U-000037','01711-200004',
-'$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm',
-'EMPLOYEE','E-R004','Y',CURRENT_TIMESTAMP);
-
-INSERT INTO app_user VALUES
-('U-000038','01812-200005',
-'$2b$12$6X5S.jTi1rkVeaBmpqK27OKBJZsWPEPMnr/rHolF9O7XzmhjFSXtm',
-'EMPLOYEE','E-R005','Y',CURRENT_TIMESTAMP);
-
-
--- O-00005 belongs to B-DH03
-INSERT INTO delivery VALUES
-('DEL-005','O-00005','E-R004',
-'2025-04-30 09:00:00','2025-04-30 10:30:00',
-'2025-04-30 13:10:00',
-'DELIVERED',13.20,80.00,3.5,'Slightly late');
-
--- O-00007 belongs to B-DH02
-INSERT INTO delivery VALUES
-('DEL-007','O-00007','E-R002',
-'2025-05-06 08:00:00','2025-05-06 08:45:00',
-'2025-05-06 11:50:00',
-'DELIVERED',5.30,60.00,5.0,'Perfect service');
-
--- O-00008 belongs to B-SY01
-INSERT INTO delivery VALUES
-('DEL-008','O-00008','E-R005',
-'2025-05-08 10:00:00','2025-05-08 11:00:00',
-NULL,
-'ON_THE_WAY',15.60,80.00,NULL,'In transit');
-
-DELETE FROM delivery
-WHERE delivery_id = 'DEL-005';
-
-DELETE FROM delivery
-WHERE delivery_id = 'DEL-008';
-DELETE FROM delivery
-WHERE delivery_id = 'DEL-007';

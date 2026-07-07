@@ -434,6 +434,9 @@ def update_order_status(
         (order_status, order_id)
     )
 
+    if order_status == "CANCELLED":
+        _cancel_and_refund(order_id)          # ← NEW
+
     return RedirectResponse(
         f"/employee/branch/orders?success=Order+{order_id}+updated",
         status_code=302
@@ -495,6 +498,11 @@ def assign_rider(
             (delivery_id, order_id, rider_id, distance_km, delivery_fee, delivery_status)
         VALUES (%s, %s, %s, %s, %s, 'ASSIGNED')
     """, (delivery_id, order_id, rider_id, distance_km, delivery_fee))
+
+    # NEW — this is what was missing: the fee never reached online_order before
+    execute("""
+        UPDATE online_order SET delivery_charge = %s WHERE order_id = %s
+    """, (delivery_fee, order_id))
 
     # Bump the order to PACKED if it's still sitting at PLACED/CONFIRMED
     execute("""
@@ -1055,6 +1063,8 @@ async def submit_sale(
         })
 
     total_amt = subtotal - discount_amt
+    tax_amt = round(total_amt * 0.04, 2)
+    total_amt = round(total_amt + tax_amt, 2)
 
     # ── 5. Insert sale ───────────────────────────────────────────────────────
     execute("""
@@ -1131,6 +1141,7 @@ async def submit_sale(
         "customer":       customer_display,
         "cashier":        session.get("user_name", "Cashier"),
         "payment_method": payment_method,
+        "tax":            tax_amt,          # ← NEW
         "subtotal":       round(subtotal, 2),
         "discount":       round(discount_amt, 2),
         "total":          round(total_amt, 2),
@@ -1692,7 +1703,62 @@ def rider_update_status(
             WHERE  d.delivery_id = %s
               AND  d.order_id    = oo.order_id
         """, (delivery_id,))
+
+        # ── Finalize billing now that delivery is confirmed ─────────────
+        info = query("""
+            SELECT oo.cust_id, oo.delivery_charge,
+                   s.sale_id, s.total_amt, s.payment_status
+            FROM   delivery d
+            JOIN   online_order oo ON d.order_id = oo.order_id
+            JOIN   sale s          ON oo.sale_id  = s.sale_id
+            WHERE  d.delivery_id = %s
+        """, (delivery_id,))
+
+        if info:
+            info         = info[0]
+            sale_id      = info["sale_id"]
+            cust_id      = info["cust_id"]
+            total_amt    = float(info["total_amt"] or 0)
+            delivery_fee = float(info["delivery_charge"] or 0)
+
+            # COD: only becomes PAID once cash is actually collected
+            if info["payment_status"] == "PENDING":
+                max_pay = query("""
+                    SELECT MAX(CAST(SUBSTRING(payment_id FROM 5) AS INTEGER)) AS mx
+                    FROM   payment WHERE payment_id ~ '^PAY-[0-9]+$'
+                """, ())
+                pay_id = f"PAY-{(max_pay[0]['mx'] or 0) + 1:04d}"
+                execute("""
+                    INSERT INTO payment (payment_id, sale_id, amount, method, status)
+                    VALUES (%s, %s, %s, 'CASH', 'SUCCESS')
+                """, (pay_id, sale_id, total_amt))
+                execute("UPDATE sale SET payment_status = 'PAID' WHERE sale_id = %s", (sale_id,))
+
+                points_earned = int(total_amt // 10)
+                if points_earned > 0:
+                    execute("""
+                        UPDATE customer SET loyalty_points = loyalty_points + %s
+                        WHERE cust_id = %s
+                    """, (points_earned, cust_id))
+
+            # Delivery fee: always cash-collected by the rider, even on
+            # prepaid online orders
+            if delivery_fee > 0:
+                max_pay2 = query("""
+                    SELECT MAX(CAST(SUBSTRING(payment_id FROM 5) AS INTEGER)) AS mx
+                    FROM   payment WHERE payment_id ~ '^PAY-[0-9]+$'
+                """, ())
+                pay_id2 = f"PAY-{(max_pay2[0]['mx'] or 0) + 1:04d}"
+                execute("""
+                    INSERT INTO payment (payment_id, sale_id, amount, method, status, reference_no)
+                    VALUES (%s, %s, %s, 'CASH', 'SUCCESS', %s)
+                """, (pay_id2, sale_id, delivery_fee, f"Delivery fee - {delivery_id}"))
+
     elif new_status == "FAILED":
+        # Need order_id — this route only receives delivery_id
+        order_row = query("SELECT order_id FROM delivery WHERE delivery_id = %s", (delivery_id,))
+        order_id = order_row[0]["order_id"] if order_row else None
+
         execute("""
             UPDATE online_order oo
             SET    order_status = 'CANCELLED'
@@ -1700,6 +1766,9 @@ def rider_update_status(
             WHERE  d.delivery_id = %s
               AND  d.order_id    = oo.order_id
         """, (delivery_id,))
+
+        if order_id:
+            _cancel_and_refund(order_id)
 
     return RedirectResponse(
         f"/employee/delivery_rider/dashboard?success=Delivery+{delivery_id}+updated+to+{new_status.replace('_','+')}",
@@ -1876,3 +1945,49 @@ def mark_read(notif_id: str, session=Depends(require_employee)):
         WHERE  notif_id = %s AND recipient_type='EMPLOYEE' AND recipient_id = %s
     """, (notif_id, session["user_id"]))
     return JSONResponse({"ok": True})
+
+    
+def _cancel_and_refund(order_id: str):
+    """Single source of truth for cancelling an online order — restocks
+    inventory, reverses loyalty points and refunds payment if money was
+    already collected, and closes out the sale. Idempotent."""
+    row = query("""
+        SELECT s.sale_id, s.cust_id, s.total_amt, s.payment_status
+        FROM   online_order oo JOIN sale s ON oo.sale_id = s.sale_id
+        WHERE  oo.order_id = %s
+    """, (order_id,))
+    if not row:
+        return
+    row = row[0]
+    sale_id, cust_id = row["sale_id"], row["cust_id"]
+
+    if row["payment_status"] == "CANCELLED":
+        return  # already handled — don't double-refund or double-restock
+
+    # ── Restock every item sold in this order ────────────────────────
+    items = query("SELECT product_id, quantity FROM sale_item WHERE sale_id = %s", (sale_id,))
+    for it in items:
+        execute("""
+            UPDATE branch_inventory bi
+            SET    quantity = quantity + %s
+            FROM   online_order oo
+            WHERE  bi.product_id = %s AND bi.branch_id = oo.branch_id
+              AND  oo.order_id = %s
+        """, (it["quantity"], it["product_id"], order_id))
+
+    # ── Refund + reverse points only if money was actually collected ──
+    if row["payment_status"] == "PAID":
+        execute("""
+            UPDATE payment SET status = 'REFUNDED'
+            WHERE sale_id = %s AND status = 'SUCCESS'
+        """, (sale_id,))
+        points_to_reverse = int(float(row["total_amt"] or 0) // 10)
+        if points_to_reverse > 0 and cust_id:
+            execute("""
+                UPDATE customer
+                SET loyalty_points = GREATEST(loyalty_points - %s, 0)
+                WHERE cust_id = %s
+            """, (points_to_reverse, cust_id))
+    # PENDING (COD, never charged) needs no refund — nothing was collected.
+
+    execute("UPDATE sale SET payment_status = 'CANCELLED' WHERE sale_id = %s", (sale_id,))

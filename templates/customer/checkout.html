@@ -1,92 +1,162 @@
-{% extends "customer/base.html" %}
-{% block title %}Checkout{% endblock %}
+{% extends "customer/base.html" %} {% block title %}Checkout{% endblock %} {%
+block content %}
 
-{% block content %}
-
-<div class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-10 text-white mb-10 shadow-xl">
-    <h1 class="text-4xl font-bold">
-        💳 Checkout
-    </h1>
-    <p class="mt-2 text-green-100">
-        Review your order and choose how you'd like to pay.
-    </p>
+<div
+  class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-10 text-white mb-10 shadow-xl"
+>
+  <h1 class="text-4xl font-bold">💳 Checkout</h1>
+  <p class="mt-2 text-green-100">
+    Review your order and choose how you'd like to pay.
+  </p>
 </div>
 
 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div
+    class="md:col-span-2 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition"
+  >
+    <h2 class="text-xl font-bold text-[#044635] mb-4">Order Summary</h2>
 
-    <div class="md:col-span-2 bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition">
-        <h2 class="text-xl font-bold text-[#044635] mb-4">Order Summary</h2>
-
-        <div class="divide-y divide-gray-100">
-            {% for item in items %}
-            <div class="flex justify-between py-3">
-                <div>
-                    <span>{{ item.product_name }} <span class="text-gray-400 text-sm">× {{ item.quantity }}</span></span>
-                    {% if item.disc_label %}
-                    <span class="ml-2 text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">{{ item.disc_label }}</span>
-                    <p class="text-xs text-gray-400 line-through">৳{{ "%.2f"|format(item.original_price * item.quantity) }}</p>
-                    {% endif %}
-                </div>
-                <span class="font-semibold">৳{{ "%.2f"|format(item.line_total) }}</span>
-            </div>
-            {% endfor %}
+    <div class="divide-y divide-gray-100">
+      {% for item in items %}
+      <div class="flex justify-between py-3">
+        <div>
+          <span
+            >{{ item.product_name }}
+            <span class="text-gray-400 text-sm"
+              >× {{ item.quantity }}</span
+            ></span
+          >
+          {% if item.disc_label %}
+          <span
+            class="ml-2 text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full"
+            >{{ item.disc_label }}</span
+          >
+          <p class="text-xs text-gray-400 line-through">
+            ৳{{ "%.2f"|format(item.original_price * item.quantity) }}
+          </p>
+          {% endif %}
         </div>
-
-        {% if total_savings > 0 %}
-        <div class="flex justify-between items-center bg-red-50 text-red-700 px-4 py-2 rounded-xl mt-3">
-            <span class="text-sm font-semibold">🎉 You save</span>
-            <span class="font-bold">৳{{ "%.2f"|format(total_savings) }}</span>
-        </div>
-        {% endif %}
-
-        <div class="flex justify-between items-center bg-green-200 text-green-800 px-4 py-3 rounded-xl mt-2">
-            <span class="font-semibold">Total Amount</span>
-            <span class="font-bold text-lg">৳{{ "%.2f"|format(grand_total) }}</span>
-        </div>
+        <span class="font-semibold">৳{{ "%.2f"|format(item.line_total) }}</span>
+      </div>
+      {% endfor %}
     </div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition">
-        <h2 class="text-xl font-bold text-[#044635] mb-4">Pickup & Payment</h2>
-
-        <form action="/customer/checkout" method="post" class="space-y-5">
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Pickup Branch</label>
-                <div class="bg-[#e6f4ef] text-[#044635] font-semibold px-4 py-2 rounded-xl text-sm">
-                    🏪 {{ selected_branch.branch_name if selected_branch else 'Not selected' }}
-                </div>
-                <input type="hidden" name="branch_id" value="{{ selected_branch_id }}">
-            </div>
-<div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Pickup Date</label>
-                <input type="date" name="expected_delivery" required
-                       min="{{ today }}"
-                       class="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635]">
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Pickup / Delivery Address</label>
-                <textarea name="delivery_address" required rows="2" placeholder="Enter address or pickup note"
-                          class="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635] resize-none"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
-                <div class="space-y-2">
-                    {% for method in [('CASH','💵 Cash on Delivery'), ('BKASH','📱 bKash'), ('NAGAD','📱 Nagad'), ('ROCKET','📱 Rocket'), ('CARD','💳 Visa / Card')] %}
-                    <label class="flex items-center gap-3 border border-gray-200 rounded-xl px-3 py-2 cursor-pointer hover:border-[#044635] transition">
-                        <input type="radio" name="payment_method" value="{{ method[0] }}" {% if loop.first %}checked{% endif %} required>
-                        <span class="text-sm">{{ method[1] }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <button type="submit"
-                    class="w-full bg-[#044635] hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition">
-                Place Order
-            </button>
-        </form>
+    {% if total_savings > 0 %}
+    <div
+      class="flex justify-between items-center bg-red-50 text-red-700 px-4 py-2 rounded-xl mt-3"
+    >
+      <span class="text-sm font-semibold">🎉 You save</span>
+      <span class="font-bold">৳{{ "%.2f"|format(total_savings) }}</span>
     </div>
+    {% endif %}
+    <div class="flex justify-between text-gray-600 py-1">
+      <span>Product Total</span>
+      <span class="font-semibold">৳{{ "%.2f"|format(product_total) }}</span>
+    </div>
+    <div class="flex justify-between text-gray-600 py-1">
+      <span>Tax (4%)</span>
+      <span class="font-semibold">৳{{ "%.2f"|format(tax_amt) }}</span>
+    </div>
+    <div
+      class="flex justify-between items-center bg-green-200 text-green-800 px-4 py-3 rounded-xl mt-2"
+    >
+      <span class="font-semibold">Total to Pay Now</span>
+      <span class="font-bold text-lg">৳{{ "%.2f"|format(grand_total) }}</span>
+    </div>
+    <p class="text-xs text-gray-500 mt-2">
+      Delivery fee is not included above — it's confirmed once a rider is
+      assigned and collected in cash on arrival.
+    </p>
+    <div
+      class="flex justify-between items-center bg-green-200 text-green-800 px-4 py-3 rounded-xl mt-2"
+    >
+      <span class="font-semibold">Total Amount</span>
+      <span class="font-bold text-lg">৳{{ "%.2f"|format(grand_total) }}</span>
+    </div>
+  </div>
 
+  <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition">
+    <h2 class="text-xl font-bold text-[#044635] mb-4">Pickup & Payment</h2>
+
+    <form action="/customer/checkout" method="post" class="space-y-5">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2"
+          >Pickup Branch</label
+        >
+        <div
+          class="bg-[#e6f4ef] text-[#044635] font-semibold px-4 py-2 rounded-xl text-sm"
+        >
+          🏪 {{ selected_branch.branch_name if selected_branch else 'Not
+          selected' }}
+        </div>
+        <input
+          type="hidden"
+          name="branch_id"
+          value="{{ selected_branch_id }}"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2"
+          >Pickup Date</label
+        >
+        <input
+          type="date"
+          name="expected_delivery"
+          required
+          min="{{ today }}"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635]"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2"
+          >Pickup / Delivery Address</label
+        >
+        <textarea
+          name="delivery_address"
+          required
+          rows="2"
+          placeholder="Enter address or pickup note"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#044635] resize-none"
+        ></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2"
+          >Payment Method</label
+        >
+        <div class="space-y-2">
+          {% for method in [('CASH','💵 Cash on Delivery'), ('BKASH','📱
+          bKash'), ('NAGAD','📱 Nagad'), ('ROCKET','📱 Rocket'), ('CARD','💳
+          Visa / Card')] %}
+          <label
+            class="flex items-center gap-3 border border-gray-200 rounded-xl px-3 py-2 cursor-pointer hover:border-[#044635] transition"
+          >
+            <input
+              type="radio"
+              name="payment_method"
+              value="{{ method[0] }}"
+              {%
+              if
+              loop.first
+              %}checked{%
+              endif
+              %}
+              required
+            />
+            <span class="text-sm">{{ method[1] }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full bg-[#044635] hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition"
+      >
+        Place Order
+      </button>
+    </form>
+  </div>
 </div>
 
 {% endblock %}

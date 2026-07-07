@@ -166,8 +166,9 @@ def place_order(
     if not items:
         return RedirectResponse("/customer/shop", status_code=302)
 
-    tax_amt = 0.0
-    total_amt = subtotal - discount_amt + tax_amt
+    # 4% tax on the product total (discount applied first), delivery fee excluded
+    tax_amt = round((subtotal - discount_amt) * 0.04, 2)
+    total_amt = round(subtotal - discount_amt + tax_amt, 2)
     payment_status = "PENDING" if payment_method == "CASH" else "PAID"
 
     emp_row = query("""
@@ -197,6 +198,13 @@ def place_order(
             VALUES (%s, %s, %s, %s, %s)
         """, (sale_id, pid, qty, unit_price, line_total))
 
+        # NEW — online orders never touched stock before
+        execute("""
+            UPDATE branch_inventory
+            SET    quantity = quantity - %s
+            WHERE  branch_id = %s AND product_id = %s
+        """, (qty, branch_id, pid))
+
     # Saved with structural form values instead of placeholder text
     execute("""
         INSERT INTO online_order
@@ -211,14 +219,24 @@ def place_order(
             VALUES (%s, %s, %s, %s, 'SUCCESS')
         """, (payment_id, sale_id, total_amt, payment_method))
 
+     # Points only once payment is actually confirmed PAID
+        points_earned = int(total_amt // 10)
+        if points_earned > 0:
+            execute("""
+                UPDATE customer SET loyalty_points = loyalty_points + %s
+                WHERE cust_id = %s
+            """, (points_earned, cust_id))
+        # else: CASH (COD) — no payment row, no points yet. Both happen when
+        
+
     # Award loyalty points: 1 point per 10 BDT spent
-    points_earned = int(total_amt // 10)
-    if points_earned > 0:
-        execute("""
-            UPDATE customer
-            SET loyalty_points = COALESCE(loyalty_points, 0) + %s
-            WHERE cust_id = %s
-        """, (points_earned, cust_id))
+    # points_earned = int(total_amt // 10)
+    # if points_earned > 0:
+    #     execute("""
+    #         UPDATE customer
+    #         SET loyalty_points = COALESCE(loyalty_points, 0) + %s
+    #         WHERE cust_id = %s
+    #     """, (points_earned, cust_id))
 
     request.session["cart"] = {}
     _refresh_customer_session(request, session)
@@ -236,6 +254,7 @@ def view_invoice(sale_id: str, request: Request, session=Depends(require_custome
                b.branch_name, b.address AS branch_address, b.phone AS branch_phone
         FROM sale s
         JOIN branch b ON s.branch_id = b.branch_id
+        LEFT JOIN online_order oo ON s.sale_id = oo.sale_id
         WHERE s.sale_id = %s AND s.cust_id = %s
     """, (sale_id, cust_id))
 
@@ -269,6 +288,7 @@ def view_invoice_json(sale_id: str, session=Depends(require_customer)):
                b.branch_name, b.address AS branch_address, b.phone AS branch_phone
         FROM sale s
         JOIN branch b ON s.branch_id = b.branch_id
+        LEFT JOIN online_order oo ON s.sale_id = oo.sale_id
         WHERE s.sale_id = %s AND s.cust_id = %s
     """, (sale_id, cust_id))
 
@@ -492,9 +512,14 @@ def checkout_page(request: Request, session=Depends(require_customer)):
     selected_branch_id = request.session.get("selected_branch")
     selected_branch = next((b for b in branches if b["branch_id"] == selected_branch_id), None)
 
+    tax_amt = round(subtotal * 0.04, 2)
+    grand_total = round(subtotal + tax_amt, 2)
+
     return templates.TemplateResponse(request, "customer/checkout.html", {
         "items": items,
-        "grand_total": subtotal,
+        "grand_total": grand_total,
+        "product_total": subtotal,      # ← was missing
+        "tax_amt": tax_amt,              # ← was missing
         "total_savings": total_savings,
         "branches": branches,
         "selected_branch_id": selected_branch_id,
