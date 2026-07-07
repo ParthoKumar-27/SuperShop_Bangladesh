@@ -1415,7 +1415,9 @@
         class="nav-item {{ 'active' if path in [
            '/employee/branch/dashboard',
            '/employee/branch/dashboard/branch_manager',
+           '/employee/delivery_rider/dashboard',
            '/employee/cashier/dashboard',
+           '/employee/sales_staff/dashboard',
            '/employee/deliveries',
            '/employee/products'
          ] else '' }}"
@@ -1470,23 +1472,23 @@
       </a>
 
       {% elif position == 'SALES_STAFF' %}
-      <div class="nav-label">Floor</div>
+      <!-- <div class="nav-label">Floor</div>
       <a
         href="/employee/products"
         class="nav-item {{ 'active' if path == '/employee/products' else '' }}"
       >
-        <i class="fas fa-tag"></i> <span class="nav-text">Products</span>
-      </a>
+         <i class="fas fa-tag"></i> <span class="nav-text">Products</span> 
+      </a> -->
 
       {% elif position == 'DELIVERY_RIDER' %}
-      <div class="nav-label">Deliveries</div>
+      <!-- <div class="nav-label">Deliveries</div>
       <a
         href="/employee/deliveries"
         class="nav-item {{ 'active' if path == '/employee/deliveries' else '' }}"
       >
         <i class="fas fa-motorcycle"></i>
         <span class="nav-text">My Deliveries</span>
-      </a>
+      </a> -->
       {% endif %}
 
       <div class="sidebar-user">

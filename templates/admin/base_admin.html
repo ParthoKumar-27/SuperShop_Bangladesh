@@ -1167,9 +1167,11 @@ body.sidebar-collapsed .sidebar-user .user-avatar {
           >
             <i class="fas fa-bell"></i>
 
-            {# ── Dot ONLY renders when there are notifications ──────────── #}
-            {% if notifications and notifications|length > 0 %}
-            <span class="notif-count">{{ unread_count if unread_count else notifications|length }}</span>
+            {# ── Badge ONLY renders when there are UNREAD notifications ── #}
+            {# Showing total length here would keep the dot alive after #}
+            {# marking all read — only unread count should drive the badge. #}
+            {% if unread_count and unread_count > 0 %}
+            <span class="notif-count">{{ unread_count }}</span>
             {% endif %}
           </div>
 
