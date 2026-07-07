@@ -47,6 +47,24 @@ def notify_all_branch_managers(notif_type, title, message, **kw):
             branch_id=m["branch_id"], **kw
         )
 
+
+def notify_all_admins(notif_type, title, message, **kw):
+    """Send the same notification to every active admin account.
+    Used for events that need admin attention regardless of branch, e.g. a
+    branch manager adding a new staff member who needs approval/activation."""
+    admins = query("""
+        SELECT admin_id
+        FROM   admin_account
+        WHERE  is_active = 'Y'
+    """, ())
+    if not admins:
+        return
+    for a in admins:
+        create_notification(
+            "ADMIN", a["admin_id"], notif_type, title, message,
+            **kw,
+        )
+
 def check_low_stock(inv_id, branch_id):
     row = query("""
         SELECT bi.quantity, bi.reorder_level, p.product_name

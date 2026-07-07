@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI,APIRouter, Request, Form, HTTPException, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -17,7 +17,58 @@ from auth import (
     require_customer,
     require_login,
 )
-from notifications import notify_all_branch_managers, notify_branch_manager
+from notifications import (
+    notify_all_branch_managers,
+    notify_branch_manager,
+    notify_all_admins,
+)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ADMIN NOTIFICATIONS — context + helpers shared by every admin page
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _fetch_admin_notifications(admin_id: str, limit: int = 10):
+    """Return the most recent N notifications for the given admin (any admin
+    can see them because they all share the same notification pool when an
+    event is broadcast to all admins via notify_all_admins())."""
+    rows = query("""
+        SELECT notif_id, notif_type, title, message, link_url,
+               is_read, ref_table, ref_id,
+               TO_CHAR(created_at, 'DD Mon YYYY, HH12:MI AM') AS created_at
+        FROM   notification
+        WHERE  recipient_type = 'ADMIN'
+          AND  (recipient_id = %s OR recipient_id IS NULL)
+        ORDER  BY created_at DESC
+        LIMIT  %s
+    """, (admin_id, limit))
+    return rows
+
+
+def _pending_employee_count() -> int:
+    """How many employee rows are waiting on admin activation."""
+    row = query("""
+        SELECT COUNT(*) AS n
+        FROM   employee
+        WHERE  is_active = 'N'
+    """, ())
+    return int(row[0]["n"]) if row else 0
+
+
+def _admin_context(session: dict, **extra) -> dict:
+    """Build the common admin template context (notifications + counters)."""
+    admin_id = session.get("user_id") if session else None
+    notifications = _fetch_admin_notifications(admin_id) if admin_id else []
+    unread_count  = sum(1 for n in notifications if n.get("is_read") == "N")
+    base = {
+        "notifications":  notifications,
+        "unread_count":   unread_count,
+        "pending_staff":  _pending_employee_count(),
+        "user_name":      session.get("user_name") if session else None,
+        "role":           "ADMIN",
+    }
+    base.update(extra)
+    return base
 
 # Bangladesh is UTC+6 — apply it consistently so log timestamps match local time
 BD_TZ = timezone(timedelta(hours=6))
@@ -35,6 +86,17 @@ def _to_bd(dt):
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="templates")
 templates.env.filters["bdtime"] = _to_bd
+
+
+def _render(request: Request, template_name: str, session: dict, **extra):
+    """Single point of admin template rendering. Always merges in
+    notifications + pending_staff + user_name + role so child templates
+    never need to worry about context plumbing."""
+    return templates.TemplateResponse(
+        request,
+        template_name,
+        _admin_context(session, **extra),
+    )
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ADMIN DASHBOARD  (protected — ADMIN only)
@@ -138,19 +200,16 @@ def admin_dashboard(request: Request, session=Depends(require_admin)):
     chart_labels = [row["day"] for row in weekly]
     chart_data = [float(row["revenue"]) for row in weekly]
 
-    return templates.TemplateResponse(
+    return _render(
         request,
         "admin/index.html",
-        {
-            "stats": stats,
-            "recent_sales": recent_sales,
-            "branch_stats": branch_stats,
-            "top_products": top_products,
-            "chart_labels": chart_labels,
-            "chart_data": chart_data,
-            "user_name": session.get("user_name"),
-            "role": "ADMIN",
-        }
+        session,
+        stats=stats,
+        recent_sales=recent_sales,
+        branch_stats=branch_stats,
+        top_products=top_products,
+        chart_labels=chart_labels,
+        chart_data=chart_data,
     )
 
 
@@ -181,15 +240,15 @@ def customers_page(request: Request, session=Depends(require_admin)):
         FROM   customer
         ORDER BY cust_name
     """)
-    return templates.TemplateResponse(request, "admin/customers.html", {
-        "customers": customers,
-        "user_name": session.get("user_name"),
-        "role":      "ADMIN",
-    })
+    return _render(request, "admin/customers.html", session, customers=customers)
 
 
 @admin_router.get("/dashboard/employees", response_class=HTMLResponse)
-def employees_page(request: Request, session=Depends(require_admin)):
+def employees_page(
+    request: Request,
+    pending: str = "",
+    session=Depends(require_admin),
+):
     employees = query("""
         SELECT e.emp_id,
                e.emp_name,
@@ -209,7 +268,7 @@ def employees_page(request: Request, session=Depends(require_admin)):
             ON e.branch_id = b.branch_id
         LEFT JOIN department d
             ON e.dept_id = d.dept_id
-        ORDER BY e.emp_name
+        ORDER BY e.is_active ASC, e.emp_name ASC
     """)
 
     departments = query("""
@@ -225,16 +284,118 @@ def employees_page(request: Request, session=Depends(require_admin)):
         ORDER BY branch_name
     """)
 
-    return templates.TemplateResponse(
+    # Pending = employees whose is_active is 'N'. ?pending=1 → only show those.
+    pending_only = (pending == "1")
+    pending_count = sum(1 for e in employees if e.get("is_active") == "N")
+    if pending_only:
+        employees = [e for e in employees if e.get("is_active") == "N"]
+
+    return _render(
         request,
         "admin/employees.html",
-        {
-            "employees":   employees,
-            "departments": departments,
-            "branches":    branches,
-            "user_name":   session.get("user_name"),
-            "role":        "ADMIN",
-        }
+        session,
+        employees=employees,
+        departments=departments,
+        branches=branches,
+        pending_only=pending_only,
+        pending_count=pending_count,
+    )
+
+
+@admin_router.post("/dashboard/employees/{emp_id}/activate")
+def activate_employee(
+    request: Request,
+    emp_id: str,
+    session=Depends(require_admin),
+):
+    """Mark an inactive employee as active. Used by the Pending Review flow
+    when a branch manager adds a new staff member and the admin approves."""
+    exists = query("SELECT emp_id, emp_name, is_active FROM employee WHERE emp_id = %s", (emp_id,))
+    if not exists:
+        return RedirectResponse(
+            "/admin/dashboard/employees?pending=1&error=Employee+not+found",
+            status_code=302,
+        )
+    if exists[0]["is_active"] == "Y":
+        return RedirectResponse(
+            "/admin/dashboard/employees?error=Employee+already+active",
+            status_code=302,
+        )
+
+    execute("""
+        UPDATE employee
+        SET    is_active = 'Y'
+        WHERE  emp_id    = %s
+    """, (emp_id,))
+
+    # If they have an app_user row (typical), keep it active; otherwise skip.
+    execute("""
+        UPDATE app_user
+        SET    is_active = 'Y'
+        WHERE  role = 'EMPLOYEE' AND ref_id = %s
+    """, (emp_id,))
+
+    # Mark related admin notifications as read so the bell stops nagging.
+    execute("""
+        UPDATE notification
+        SET    is_read = 'Y', read_at = CURRENT_TIMESTAMP
+        WHERE  recipient_type = 'ADMIN'
+          AND  ref_table     = 'employee'
+          AND  ref_id        = %s
+          AND  is_read       = 'N'
+    """, (emp_id,))
+
+    log_action(
+        session, "UPDATE", "employee", emp_id,
+        f"Activated employee {exists[0]['emp_name']} ({emp_id})",
+        old_values={"is_active": "N"},
+        new_values={"is_active": "Y"},
+        request=request,
+    )
+
+    return RedirectResponse(
+        f"/admin/dashboard/employees?success=Employee+{emp_id}+({exists[0]['emp_name']})+activated",
+        status_code=302,
+    )
+
+
+@admin_router.post("/dashboard/employees/{emp_id}/deactivate")
+def deactivate_employee(
+    request: Request,
+    emp_id: str,
+    session=Depends(require_admin),
+):
+    """Reverse of activate_employee — soft-disable login."""
+    exists = query("SELECT emp_id, emp_name, is_active FROM employee WHERE emp_id = %s", (emp_id,))
+    if not exists:
+        return RedirectResponse(
+            "/admin/dashboard/employees?error=Employee+not+found",
+            status_code=302,
+        )
+    if exists[0]["is_active"] == "N":
+        return RedirectResponse(
+            "/admin/dashboard/employees?error=Employee+already+inactive",
+            status_code=302,
+        )
+
+    execute("UPDATE employee SET is_active = 'N' WHERE emp_id = %s", (emp_id,))
+    execute("""
+        UPDATE app_user
+        SET    is_active = 'N'
+        WHERE  role = 'EMPLOYEE' AND ref_id = %s
+    """, (emp_id,))
+
+    log_action(
+        session, "UPDATE", "employee", emp_id,
+        f"Deactivated employee {exists[0]['emp_name']} ({emp_id})",
+        old_values={"is_active": "Y"},
+        new_values={"is_active": "N"},
+        request=request,
+    )
+
+    return RedirectResponse(
+        f"/admin/dashboard/employees?success=Employee+{emp_id}+deactivated",
+        status_code=302,
     )
 
 
@@ -407,11 +568,7 @@ def branches_page(request: Request, session=Depends(require_login)):
                LEFT JOIN employee e ON bm.emp_id = e.emp_id
         ORDER BY b.branch_id
     """)
-    return templates.TemplateResponse(request, "admin/branches.html", {
-        "branches":  branches,
-        "user_name": session.get("user_name"),
-        "role":      session.get("role"),
-    })
+    return _render(request, "admin/branches.html", session, branches=branches)
 
 
 @admin_router.get("/dashboard/discounts", response_class=HTMLResponse)
@@ -463,17 +620,14 @@ def discounts_page(request: Request, session=Depends(require_admin)):
     else:
         next_discount_id = "DIS-001"
 
-    return templates.TemplateResponse(
+    return _render(
         request,
         "admin/discounts.html",
-        {
-            "discounts":        discounts,
-            "categories":       categories,
-            "products":         products,
-            "next_discount_id": next_discount_id,
-            "user_name":        session.get("user_name"),
-            "role":             "ADMIN",
-        }
+        session,
+        discounts=discounts,
+        categories=categories,
+        products=products,
+        next_discount_id=next_discount_id,
     )
 
 @admin_router.post("/dashboard/discounts/add")
@@ -601,14 +755,11 @@ def admin_sales(
         ORDER BY s.sale_date DESC
     """)
 
-    return templates.TemplateResponse(
+    return _render(
         request,
         "admin/sales.html",
-        {
-            "sales": sales,
-            "role": "ADMIN",
-            "user_name": session.get("user_name"),
-        }
+        session,
+        sales=sales,
     )
 
 
@@ -640,15 +791,12 @@ def admin_inventory(request: Request, session=Depends(require_admin)):
         ORDER BY branch_name
     """)
 
-    return templates.TemplateResponse(
+    return _render(
         request,
         "admin/inventory.html",
-        {
-            "inventory": inventory,
-            "branches": branches,
-            "user_name": session.get("user_name"),
-            "role": "ADMIN",
-        }
+        session,
+        inventory=inventory,
+        branches=branches,
     )
 
 
@@ -671,14 +819,11 @@ def admin_profile(
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
 
-    return templates.TemplateResponse(
+    return _render(
         request,
         "admin/profile.html",
-        {
-            "admin": admin[0],
-            "user_name": session.get("user_name"),
-            "role": "ADMIN"
-        }
+        session,
+        admin=admin[0],
     )
 
 @admin_router.post("/dashboard/profile/update")
@@ -801,17 +946,14 @@ def manage_branches(
     departments = query("SELECT dept_id, dept_name FROM department ORDER BY dept_name")
 
     cities = query("SELECT city_id, city_name, division FROM city ORDER BY city_name")
-    return templates.TemplateResponse(
+    return _render(
         request,
         "admin/manage_branches.html",
-        {
-            "branches": branches,
-            "unassigned_managers": unassigned_managers,  
-            "cities": cities,
-            "departments": departments,
-            "user_name": session.get("user_name"),
-            "role": "ADMIN",
-        }
+        session,
+        branches=branches,
+        unassigned_managers=unassigned_managers,
+        cities=cities,
+        departments=departments,
     )
 
 @admin_router.get("/dashboard/suppliers")
@@ -826,16 +968,11 @@ def suppliers_page(
         ORDER BY supplier_name
     """)
 
-    return templates.TemplateResponse(
+    return _render(
         request,
         "admin/suppliers.html",
-        {
-            "request": request,
-            "suppliers": suppliers,
-            "role": "ADMIN",
-            "user_name": session.get("user_name"),
-        },
-        
+        session,
+        suppliers=suppliers,
     )
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -918,20 +1055,21 @@ def admin_products_page(
     else:
         next_product_id = "P-00001"
 
-    return templates.TemplateResponse(request, "admin/products.html", {
-        "products":        products,
-        "categories":      categories,
-        "suppliers":       suppliers,
-        "next_product_id": next_product_id,
-        "selected_cat":    cat_id,
-        "search_term":     q,
-        "sort_value":      sort,
-        "cat_counts":      cat_counts,
-        "total_all":       total_all,
-        "clear_url":       str(request.url_for("admin_products_page")),
-        "user_name": session.get("user_name"),
-        "role":      session.get("role"),
-    })
+    return _render(
+        request,
+        "admin/products.html",
+        session,
+        products=products,
+        categories=categories,
+        suppliers=suppliers,
+        next_product_id=next_product_id,
+        selected_cat=cat_id,
+        search_term=q,
+        sort_value=sort,
+        cat_counts=cat_counts,
+        total_all=total_all,
+        clear_url=str(request.url_for("admin_products_page")),
+    )
 
 
 @admin_router.post("/dashboard/products/add")
@@ -1043,6 +1181,42 @@ def action_logs_page(request: Request, session=Depends(require_admin)):
     # Format each row's created_at into BD-local time for display
     for row in logs:
         row["created_at"] = _to_bd(row.get("created_at"))
-    return templates.TemplateResponse(request, "admin/logs.html", {
-        "logs": logs, "user_name": session.get("user_name"), "role": "ADMIN",
-    })
+    return _render(request, "admin/logs.html", session, logs=logs)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ADMIN NOTIFICATIONS — JSON endpoints used by the bell dropdown
+# ══════════════════════════════════════════════════════════════════════════════
+
+@admin_router.get("/notifications")
+def admin_list_notifications(session=Depends(require_admin)):
+    admin_id = session.get("user_id")
+    rows = _fetch_admin_notifications(admin_id, limit=20)
+    unread = sum(1 for r in rows if r.get("is_read") == "N")
+    return JSONResponse({"notifications": rows, "unread_count": unread})
+
+
+@admin_router.post("/notifications/{notif_id}/read")
+def admin_mark_notification_read(notif_id: str, session=Depends(require_admin)):
+    execute("""
+        UPDATE notification
+        SET    is_read  = 'Y',
+               read_at  = CURRENT_TIMESTAMP
+        WHERE  notif_id = %s
+          AND  recipient_type = 'ADMIN'
+    """, (notif_id,))
+    return JSONResponse({"ok": True})
+
+
+@admin_router.post("/notifications/read-all")
+def admin_mark_all_notifications_read(session=Depends(require_admin)):
+    admin_id = session.get("user_id")
+    execute("""
+        UPDATE notification
+        SET    is_read = 'Y',
+               read_at = CURRENT_TIMESTAMP
+        WHERE  recipient_type = 'ADMIN'
+          AND  is_read  = 'N'
+          AND  (recipient_id = %s OR recipient_id IS NULL)
+    """, (admin_id,))
+    return JSONResponse({"ok": True})

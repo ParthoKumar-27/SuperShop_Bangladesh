@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from database import query, execute
 from auth import _hash, _verify
-from notifications import check_low_stock
+from notifications import check_low_stock, notify_all_admins
 employee_router = APIRouter(prefix="/employee", tags=["Employee"])
 templates = Jinja2Templates(directory="templates")
 
@@ -1832,6 +1832,23 @@ def add_staff(
             (user_id, phone, password_hash, role, ref_id, is_active, created_at)
         VALUES (%s, %s, %s, 'EMPLOYEE', %s, 'Y', CURRENT_TIMESTAMP)
     """, (user_id, phone_clean, pw_hash, emp_id))
+
+    # ── Notify admin: new employee needs review + activation ──────────────────
+    manager_name = session.get("user_name") or "Branch Manager"
+    try:
+        notify_all_admins(
+            "NEW_EMPLOYEE_PENDING",
+            "New staff pending review",
+            f"{emp_name.strip()} ({emp_id}) was added by {manager_name} "
+            f"as {position.replace('_', ' ').title()} at branch {branch_id}. "
+            f"Review and activate them to enable login.",
+            link_url="/admin/dashboard/employees?pending=1",
+            ref_table="employee",
+            ref_id=emp_id,
+        )
+    except Exception:
+        # Notifications must never break the staff-add flow
+        pass
 
     return RedirectResponse(
         f"/employee/branch/staff?success=Staff+member+{emp_id}+added.+Temporary+password+set+for+login.",

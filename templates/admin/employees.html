@@ -171,6 +171,61 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  /* Activate / deactivate inline button (sits next to row-edit-btn) */
+  .row-act-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px;
+    padding: 0; margin-right: 4px;
+    border-radius: 8px;
+    border: none; cursor: pointer;
+    font-family: "DM Sans", sans-serif;
+    font-size: 12px;
+    transition: background 0.13s, box-shadow 0.13s, transform 0.1s;
+    white-space: nowrap;
+    position: relative;
+  }
+  .row-act-activate {
+    background: #dcfce7; color: #166534;
+  }
+  .row-act-activate:hover {
+    background: #bbf7d0;
+    box-shadow:
+      0 4px 12px rgba(22, 101, 52, 0.32),
+      0 0 0 4px rgba(220, 252, 231, 0.6);
+    transform: translateY(-1px);
+  }
+  .row-act-deactivate {
+    background: #fee2e2; color: #991b1b;
+  }
+  .row-act-deactivate:hover {
+    background: #fecaca;
+    box-shadow:
+      0 4px 12px rgba(153, 27, 27, 0.32),
+      0 0 0 4px rgba(254, 226, 226, 0.6);
+  }
+  .row-act-btn::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(2px);
+    background: var(--dark);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 5;
+  }
+  .row-act-btn:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* Status toggle pills */
   .status-pill {
     flex: 1; display: flex; align-items: center; gap: 8px;
@@ -370,6 +425,73 @@
 <div class="page-heading">Employees</div>
 <div class="page-subheading">View and manage all employees.</div>
 
+{# ── Pending Review banner (shown when ?pending=1 or when there are any) ── #}
+{% if pending_only %}
+<div style="background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);
+            border:1px solid #fdba74;border-radius:12px;
+            padding:14px 18px;margin-bottom:18px;
+            display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+  <div style="width:42px;height:42px;border-radius:50%;background:var(--orange);
+              color:#fff;display:flex;align-items:center;justify-content:center;
+              font-size:18px;flex-shrink:0;">
+    <i class="fas fa-user-clock"></i>
+  </div>
+  <div style="flex:1;min-width:200px;">
+    <div style="font-weight:700;color:#9a3412;font-size:14px;">
+      Pending Review — {{ pending_count }} staff waiting for activation
+    </div>
+    <div style="font-size:12px;color:#7c2d12;margin-top:3px;">
+      These employees were added by a branch manager and can't log in until you activate them.
+    </div>
+  </div>
+  <a href="/admin/dashboard/employees"
+     style="background:#fff;border:1.5px solid #fdba74;color:#9a3412;
+            padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;
+            text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+    <i class="fas fa-list"></i> Show all employees
+  </a>
+</div>
+{% endif %}
+
+{# ── Top stat strip ─────────────────────────────────────────────────── #}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;">
+  <div style="background:#fff;border-radius:12px;padding:14px 16px;
+              box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;
+              border-left:4px solid var(--green);">
+    <div style="width:38px;height:38px;border-radius:10px;background:rgba(4,70,53,0.1);
+                color:var(--green);display:flex;align-items:center;justify-content:center;font-size:15px;">
+      <i class="fas fa-users"></i>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--mid);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Total</div>
+      <div style="font-size:20px;font-weight:700;color:var(--dark);">{{ employees|length if not pending_only else pending_count }}</div>
+    </div>
+  </div>
+
+  <a href="/admin/dashboard/employees?pending=1"
+     style="background:#fff;border-radius:12px;padding:14px 16px;
+            box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;
+            border-left:4px solid var(--orange);text-decoration:none;
+            transition:transform .15s,box-shadow .15s;
+            {% if pending_only %}background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);{% endif %}"
+     onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 24px rgba(241,123,13,0.18)';"
+     onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)';">
+    <div style="width:38px;height:38px;border-radius:10px;background:rgba(241,123,13,0.12);
+                color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:15px;">
+      <i class="fas fa-user-clock"></i>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--mid);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Pending Review</div>
+      <div style="font-size:20px;font-weight:700;color:{% if pending_count %}var(--orange){% else %}var(--mid){% endif %};">
+        {{ pending_count }}
+        {% if pending_count %}
+        <span style="font-size:11px;background:var(--orange);color:#fff;padding:2px 7px;border-radius:999px;margin-left:4px;vertical-align:middle;">action needed</span>
+        {% endif %}
+      </div>
+    </div>
+  </a>
+</div>
+
 <div class="filter-bar" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
   <div class="filter-input-wrap" style="flex:1;min-width:220px;">
     <i class="fas fa-search"></i>
@@ -409,7 +531,7 @@
                display:flex;align-items:center;gap:10px;">
       <span style="width:10px;height:10px;background:var(--orange);
                    border-radius:50%;display:inline-block;"></span>
-      Employee List
+      {% if pending_only %}Pending Review{% else %}Employee List{% endif %}
     </h3>
     <span style="font-size:12px;color:var(--mid);">Total: {{ employees|length }}</span>
   </div>
@@ -479,7 +601,31 @@
 
           <td style="font-size:13px;white-space:nowrap;">{{ e.hire_date }}</td>
 
-          <td class="col-actions" style="text-align:right;">
+          <td class="col-actions" style="text-align:right;white-space:nowrap;">
+            {% if e.is_active == 'N' %}
+            <form method="POST"
+                  action="/admin/dashboard/employees/{{ e.emp_id }}/activate"
+                  style="display:inline;margin:0;"
+                  onsubmit="return confirm('Activate {{ e.emp_name | e }}? They will be able to log in immediately.');">
+              <button type="submit"
+                      class="row-act-btn row-act-activate"
+                      title="Activate this employee so they can log in">
+                <i class="fas fa-user-check"></i>
+              </button>
+            </form>
+            {% else %}
+            <form method="POST"
+                  action="/admin/dashboard/employees/{{ e.emp_id }}/deactivate"
+                  style="display:inline;margin:0;"
+                  onsubmit="return confirm('Deactivate {{ e.emp_name | e }}? They will no longer be able to log in.');">
+              <button type="submit"
+                      class="row-act-btn row-act-deactivate"
+                      title="Deactivate this employee">
+                <i class="fas fa-user-slash"></i>
+              </button>
+            </form>
+            {% endif %}
+
             <button class="row-edit-btn"
                     data-emp-id="{{ e.emp_id }}"
                     data-emp-name="{{ e.emp_name | e }}"

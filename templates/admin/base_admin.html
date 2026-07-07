@@ -575,16 +575,10 @@
         background: rgba(255, 255, 255, 0.2);
         transform: rotate(10deg) scale(1.06);
       }
-      .stats-header-bell::after {
-        content: "";
-        width: 7px;
-        height: 7px;
-        background: var(--orange);
-        border-radius: 50%;
-        position: absolute;
-        top: 6px;
-        right: 7px;
-      }
+      /* Bell dot is rendered conditionally by the template
+         (only when notifications exist) — see .notif-count above.
+         No CSS ::after here, otherwise it would always show even
+         when the admin has no pending notifications. */
 
       /* Scrollable page area */
       .page-area {
@@ -1169,24 +1163,50 @@ body.sidebar-collapsed .sidebar-user .user-avatar {
           <div
             class="stats-header-bell"
             onclick="toggleDropdown('notificationMenu')"
+            title="{% if unread_count %}You have {{ unread_count }} unread notification(s){% else %}Notifications{% endif %}"
           >
             <i class="fas fa-bell"></i>
 
+            {# ── Dot ONLY renders when there are notifications ──────────── #}
             {% if notifications and notifications|length > 0 %}
-            <span class="notif-count">{{ notifications|length }}</span>
+            <span class="notif-count">{{ unread_count if unread_count else notifications|length }}</span>
             {% endif %}
           </div>
 
           <div class="dropdown-menu" id="notificationMenu">
-            <div class="dropdown-title">Notifications</div>
-
-            {% if notifications and notifications|length > 0 %} {% for n in
-            notifications %}
-            <div class="dropdown-item notification-item">
-              <div>{{ n.message }}</div>
-              <small>{{ n.created_at }}</small>
+            <div class="dropdown-title" style="display:flex;align-items:center;justify-content:space-between;">
+              <span>Notifications</span>
+              {% if notifications and notifications|length > 0 %}
+              <button type="button"
+                      onclick="markAllAdminNotifsRead(event)"
+                      style="background:rgba(255,255,255,0.18);border:none;color:#fff;
+                             font-size:11px;font-weight:600;padding:4px 10px;
+                             border-radius:999px;cursor:pointer;
+                             transition:background .15s;">
+                Mark all read
+              </button>
+              {% endif %}
             </div>
-            {% endfor %} {% else %}
+
+            {% if notifications and notifications|length > 0 %}
+              {% for n in notifications %}
+              <a href="{{ n.link_url or '#' }}"
+                 class="dropdown-item notification-item"
+                 style="text-decoration:none;{% if n.is_read == 'N' %}background:rgba(241,123,13,0.06);border-left:3px solid var(--orange);padding-left:13px;{% endif %}"
+                 onclick="markAdminNotifRead(event, '{{ n.notif_id }}')">
+                <div style="font-weight:{% if n.is_read == 'N' %}600{% else %}500{% endif %};display:flex;align-items:center;gap:6px;">
+                  {% if n.is_read == 'N' %}<span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;"></span>{% endif %}
+                  <span>{{ n.title or 'Notification' }}</span>
+                </div>
+                <small style="display:block;color:var(--mid);margin-top:3px;line-height:1.35;">
+                  {{ n.message }}
+                </small>
+                <small style="display:block;color:var(--mid);margin-top:4px;font-size:10.5px;opacity:0.8;">
+                  <i class="far fa-clock" style="font-size:9px;"></i> {{ n.created_at }}
+                </small>
+              </a>
+              {% endfor %}
+            {% else %}
             <div class="dropdown-empty">No notifications</div>
             {% endif %}
           </div>
@@ -1316,6 +1336,31 @@ function toggleSidebar() {
     .classList.replace('fa-chevron-left', 'fa-chevron-right');
 }
 
+    </script>
+    <script>
+      // ── Admin notification helpers ─────────────────────────────────────────
+      function markAdminNotifRead(event, notifId) {
+        // Best-effort async mark-read; don't prevent navigation — link_url
+        // is the destination (the API call runs in the background).
+        try {
+          fetch('/admin/notifications/' + encodeURIComponent(notifId) + '/read', {
+            method: 'POST',
+            credentials: 'same-origin',
+          }).catch(() => {});
+        } catch (_) { /* no-op */ }
+      }
+
+      function markAllAdminNotifsRead(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        fetch('/admin/notifications/read-all', {
+          method: 'POST',
+          credentials: 'same-origin',
+        })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function () { window.location.reload(); })
+          .catch(function () { window.location.reload(); });
+      }
     </script>
     {% block scripts %}{% endblock %}
   </body>

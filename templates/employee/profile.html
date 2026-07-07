@@ -357,6 +357,106 @@
   }
   .input-eye:hover { color: var(--dark); }
 
+  /* ── Bottom-right toast (matches staffs page) ── */
+  .toast-wrap {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    min-width: 280px;
+    max-width: 380px;
+    padding: 12px 16px 12px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #06604a 0%, #044635 55%, #03332a 100%);
+    color: #ffffff;
+    box-shadow:
+      0 18px 40px rgba(2, 28, 22, 0.32),
+      0 4px 12px rgba(2, 28, 22, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    animation: toastIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  }
+  .toast::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at 100% 0%,
+      rgba(255, 255, 255, 0.12),
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+  .toast.toast-out { animation: toastOut 0.22s ease forwards; }
+  @keyframes toastIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes toastOut {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(120%); opacity: 0; }
+  }
+  .toast-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+  }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 2px;
+  }
+  .toast-msg {
+    font-weight: 600;
+    color: #ffffff;
+    word-break: break-word;
+  }
+  .toast-close {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.12s;
+  }
+  .toast-close:hover { background: rgba(255, 255, 255, 0.22); }
+
+  /* Error variant — keep dark-green family but warmer accent */
+  .toast.toast-error {
+    background: linear-gradient(135deg, #7a1f1f 0%, #5a1414 55%, #3f0d0d 100%);
+    box-shadow:
+      0 18px 40px rgba(60, 10, 10, 0.32),
+      0 4px 12px rgba(60, 10, 10, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  .toast.toast-error .toast-icon { background: rgba(255, 255, 255, 0.16); }
+
 </style>
 
 <div class="prof-wrap">
@@ -369,19 +469,11 @@
     </div>
   </div>
 
-  <!-- Alerts -->
-  {% if request.query_params.get('success') %}
-  <div class="prof-alert success">
-    <i class="fas fa-check-circle"></i>
-    {{ request.query_params.get('success') }}
-  </div>
-  {% endif %}
-  {% if request.query_params.get('error') %}
-  <div class="prof-alert error">
-    <i class="fas fa-exclamation-circle"></i>
-    {{ request.query_params.get('error') }}
-  </div>
-  {% endif %}
+  <!-- Flash messages (rendered as bottom-right toasts; hidden anchors keep the toast bootstrap working without inline banners) -->
+  {% set msg_ok  = request.query_params.get('success') %}
+  {% set msg_err = request.query_params.get('error') %}
+  <span style="display:none" aria-hidden="true" data-flash-success>{{ msg_ok or '' }}</span>
+  <span style="display:none" aria-hidden="true" data-flash-error>{{ msg_err or '' }}</span>
 
   <!-- Hero identity strip -->
   <div class="prof-hero">
@@ -604,6 +696,84 @@
       icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
   }
+
+  // ── Toast system (bottom-right, matches staffs / inventory page) ─────────
+  (function initToastSystem() {
+    // Inject container if not present
+    if (!document.querySelector('.toast-wrap')) {
+      document.body.insertAdjacentHTML(
+        'beforeend',
+        '<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>'
+      );
+    }
+
+    const TOAST_CONFIG = {
+      success: { title: 'SUCCESS', icon: 'fa-check-circle' },
+      error:   { title: 'ERROR',   icon: 'fa-exclamation-circle' },
+      info:    { title: 'INFO',    icon: 'fa-info-circle' },
+    };
+
+    window.showToast = function (message, kind = 'success', ttl = 3500) {
+      const cfg = TOAST_CONFIG[kind] || TOAST_CONFIG.success;
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = 'toast' + (kind === 'error' ? ' toast-error' : '');
+      el.innerHTML = `
+        <div class="toast-icon"><i class="fas ${cfg.icon}"></i></div>
+        <div class="toast-body">
+          <div class="toast-title">${cfg.title}</div>
+          <div class="toast-msg"></div>
+        </div>
+        <button class="toast-close" type="button" aria-label="Dismiss">✕</button>
+      `;
+      el.querySelector('.toast-msg').textContent = message;
+      wrap.appendChild(el);
+
+      const dismiss = () => {
+        if (el.classList.contains('toast-out')) return;
+        el.classList.add('toast-out');
+        setTimeout(() => el.remove(), 240);
+      };
+      el.querySelector('.toast-close').addEventListener('click', dismiss);
+      if (ttl > 0) setTimeout(dismiss, ttl);
+    };
+
+    // Bootstrap: read URL params first, then hidden anchors, then strip query
+    function bootFlash() {
+      const url = new URL(window.location.href);
+      const params = url.searchParams;
+      const kind =
+        params.get('success') ? 'success' :
+        params.get('error')   ? 'error'   :
+        params.get('info')    ? 'info'    : null;
+
+      if (kind) {
+        const msg =
+          params.get('success') || params.get('error') || params.get('info');
+        showToast(msg, kind);
+        ['success', 'error', 'info'].forEach(k => params.delete(k));
+        const qs = params.toString();
+        const newUrl =
+          url.pathname + (qs ? '?' + qs : '') + url.hash;
+        window.history.replaceState({}, '', newUrl);
+        return;
+      }
+
+      // Fallback: hidden anchors (in case backend forwarded without query params)
+      const okEl  = document.querySelector('[data-flash-success]');
+      const errEl = document.querySelector('[data-flash-error]');
+      const ok  = okEl  && okEl.textContent.trim();
+      const err = errEl && errEl.textContent.trim();
+      if (err) showToast(err, 'error');
+      else if (ok) showToast(ok, 'success');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootFlash);
+    } else {
+      bootFlash();
+    }
+  })();
 </script>
 
 {% endblock %}
