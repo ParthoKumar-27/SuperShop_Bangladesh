@@ -123,7 +123,7 @@ CREATE TABLE employee (
     emp_name    VARCHAR(60)     NOT NULL,
     email       VARCHAR(100),
     phone       VARCHAR(15),
-    branch_id   CHAR(6)         
+    branch_id   CHAR(6),         
     dept_id     CHAR(6),
     position    VARCHAR(30)     NOT NULL,
     salary      NUMERIC(10,2),
