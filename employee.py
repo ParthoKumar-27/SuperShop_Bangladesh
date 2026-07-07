@@ -104,10 +104,14 @@ def _branch_manager_dashboard(request: Request, session):
     branch = branch[0] if branch else {}
 
     # ── Today / this month stats ────────────────────────────────────────
+    # NOTE: exclude CANCELLED sales from revenue & order counts — a cancelled
+    # sale shouldn't count toward today's revenue or order total.
     today_stats = query("""
         SELECT COUNT(*) AS n, COALESCE(SUM(total_amt),0) AS revenue
         FROM   sale
-        WHERE  branch_id = %s AND DATE(sale_date) = CURRENT_DATE
+        WHERE  branch_id = %s
+          AND  DATE(sale_date) = CURRENT_DATE
+          AND  payment_status <> 'CANCELLED'
     """, (branch_id,))[0]
 
     month_stats = query("""
@@ -147,12 +151,14 @@ def _branch_manager_dashboard(request: Request, session):
     """, (branch_id,))[0]["n"]
 
     # ── 7-day sales activity chart ──────────────────────────────────────
+    # Exclude CANCELLED sales so cancelled/refunded amounts don't show on the chart.
     weekly = query("""
         SELECT TO_CHAR(DATE(sale_date), 'Dy') AS day,
                COALESCE(SUM(total_amt), 0)    AS revenue
         FROM   sale
         WHERE  branch_id = %s
           AND  sale_date >= CURRENT_DATE - INTERVAL '6 day'
+          AND  payment_status <> 'CANCELLED'
         GROUP  BY DATE(sale_date)
         ORDER  BY DATE(sale_date)
     """, (branch_id,))
@@ -160,11 +166,13 @@ def _branch_manager_dashboard(request: Request, session):
     chart_data   = [float(row["revenue"]) for row in weekly]
 
     # ── Order type breakdown (in-store vs online) this month ───────────
+    # Same: exclude CANCELLED so the in-store/online counts reflect real sales.
     breakdown = query("""
         SELECT order_type, COUNT(*) AS n, COALESCE(SUM(total_amt),0) AS revenue
         FROM   sale
         WHERE  branch_id = %s
           AND  DATE_TRUNC('month', sale_date) = DATE_TRUNC('month', CURRENT_DATE)
+          AND  payment_status <> 'CANCELLED'
         GROUP  BY order_type
     """, (branch_id,))
     in_store = next((b for b in breakdown if b["order_type"] == "IN_STORE"), {"n": 0, "revenue": 0})
