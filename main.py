@@ -10,7 +10,7 @@ from customer import customer_router
 from admin import admin_router
 from auth import auth_router
 from employee import employee_router
-
+from database import close_pool
 
 # ── App setup ──────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -75,3 +75,7 @@ def storefront(request: Request):
             "role":       request.session.get("role"),
         }
     )
+
+@app.on_event("shutdown")
+def shutdown():
+    close_pool()

@@ -1,8 +1,5 @@
-{% extends "admin/base_admin.html" %}
-
-{% block title %}Products{% endblock %}
-
-{% block content %}
+{% extends "admin/base_admin.html" %} {% block title %}Products{% endblock %} {%
+block content %}
 <style>
   /* ── Centered modal (shared, same pattern as discounts page) ── */
   .dm-overlay {
@@ -84,10 +81,155 @@
     background: #e5e7eb;
     color: var(--dark);
   }
+  .view-toggle-btn {
+    padding: 8px 12px;
+    border: none;
+    background: white;
+    color: var(--mid);
+    cursor: pointer;
+    font-size: 13px;
+    transition:
+      background 0.13s,
+      color 0.13s;
+  }
+  .view-toggle-btn.active {
+    background: var(--green);
+    color: white;
+  }
+  .view-toggle-btn:not(.active):hover {
+    background: #f3f4f6;
+  }
 
+  /* Grid (boxed) view */
+  .prod-grid {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 16px;
+    padding: 18px;
+  }
+  .prod-grid.active {
+    display: grid;
+  }
+  .prod-card {
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    transition:
+      box-shadow 0.15s,
+      transform 0.15s;
+  }
+  .prod-card:hover {
+    box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
+    transform: translateY(-2px);
+  }
+  .prod-card-img {
+    width: 100%;
+    height: 130px;
+    background: #f3f4f6 center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+    font-size: 26px;
+  }
+  .prod-card-body {
+    padding: 12px;
+  }
+  .prod-card-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--dark);
+    margin-bottom: 2px;
+  }
+  .prod-card-brand {
+    font-size: 11px;
+    color: var(--mid);
+    margin-bottom: 8px;
+  }
+  .prod-card-price {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .prod-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
   .dm-body {
     padding: 20px 22px;
     flex: 1;
+  }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    background: #fafafa;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+    position: relative;
+  }
+  .dropzone:hover,
+  .dropzone.dragover {
+    border-color: var(--green);
+    background: rgba(4, 70, 53, 0.05);
+  }
+  .dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .dropzone-icon {
+    font-size: 22px;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  .dropzone-text {
+    font-size: 12px;
+    color: var(--mid);
+    font-weight: 600;
+  }
+  .dropzone-sub {
+    font-size: 10px;
+    color: var(--mid);
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+  .dropzone-preview-wrap {
+    position: relative;
+    display: none;
+  }
+  .dropzone-preview-wrap img {
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+    border-radius: 10px;
+    display: block;
+  }
+  .dropzone-remove-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    cursor: pointer;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dropzone-remove-btn:hover {
+    background: rgba(0, 0, 0, 0.75);
   }
 
   /* Form elements */
@@ -302,8 +444,16 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%),
-      radial-gradient(80% 60% at 100% 100%, rgba(241, 123, 13, 0.22) 0%, rgba(241, 123, 13, 0) 60%);
+      radial-gradient(
+        120% 80% at 0% 0%,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0) 55%
+      ),
+      radial-gradient(
+        80% 60% at 100% 100%,
+        rgba(241, 123, 13, 0.22) 0%,
+        rgba(241, 123, 13, 0) 60%
+      );
     pointer-events: none;
   }
   .toast.toast-error {
@@ -371,7 +521,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s, transform 0.1s;
+    transition:
+      background 0.15s,
+      transform 0.1s;
     margin-left: 4px;
     position: relative;
     z-index: 1;
@@ -409,21 +561,27 @@
     bottom: 0;
     left: 0;
     height: 3px;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.4));
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.85),
+      rgba(255, 255, 255, 0.4)
+    );
     border-radius: 0 0 12px 12px;
     animation: toastProgress 4s linear forwards;
     z-index: 1;
   }
   @keyframes toastProgress {
-    from { width: 100%; }
-    to   { width: 0%; }
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
   }
 </style>
 
 <div class="page-heading">Products</div>
-<div class="page-subheading">
-  View and manage all available products.
-</div>
+<div class="page-subheading">View and manage all available products.</div>
 
 <!-- Server-side filters: changing the category or sort re-submits this
      GET form so the SQL query in admin.py does the work. The search box
@@ -433,7 +591,13 @@
   method="GET"
   action="/admin/dashboard/products"
   class="filter-bar"
-  style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"
+  style="
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  "
 >
   <!-- Search (auto-submits on Enter / after debounce) -->
   <div class="filter-input-wrap">
@@ -449,25 +613,28 @@
     />
   </div>
 
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-
+  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
     <!-- Category filter — drives the SQL WHERE clause -->
-    <select id="catFilter" name="cat_id" class="filter-select"
-            onchange="document.getElementById('productsFilterForm').submit()">
-      <option value="">
-        All Categories ({{ total_all }})
-      </option>
+    <select
+      id="catFilter"
+      name="cat_id"
+      class="filter-select"
+      onchange="document.getElementById('productsFilterForm').submit()"
+    >
+      <option value="">All Categories ({{ total_all }})</option>
       {% for cat in categories %}
       <option
         value="{{ cat.cat_id }}"
-        {% if selected_cat == cat.cat_id %}selected{% endif %}
+        {% if selected_cat==cat.cat_id %}selected{% endif %}
       >
         {{ cat.cat_name }} ({{ cat_counts.get(cat.cat_id, 0) }})
       </option>
-      {% endfor %}
-      {# Show "Uncategorized" only when at least one product has no cat #}
-      {% if cat_counts.get('', 0) %}
-      <option value="__NONE__" {% if selected_cat == '__NONE__' %}selected{% endif %}>
+      {% endfor %} {# Show "Uncategorized" only when at least one product has no
+      cat #} {% if cat_counts.get('', 0) %}
+      <option
+        value="__NONE__"
+        {% if selected_cat=="__NONE__" %}selected{% endif %}
+      >
         Uncategorized ({{ cat_counts.get('', 0) }})
       </option>
       {% endif %}
@@ -480,12 +647,62 @@
       class="filter-select"
       onchange="document.getElementById('productsFilterForm').submit()"
     >
-      <option value=""          {% if not sort_value %}selected{% endif %}>Sort Products</option>
-      <option value="name_asc"  {% if sort_value == 'name_asc'  %}selected{% endif %}>Name ↑</option>
-      <option value="name_desc" {% if sort_value == 'name_desc' %}selected{% endif %}>Name ↓</option>
-      <option value="price_asc" {% if sort_value == 'price_asc' %}selected{% endif %}>Price ↑</option>
-      <option value="price_desc"{% if sort_value == 'price_desc'%}selected{% endif %}>Price ↓</option>
+      <option value="" {% if not sort_value %}selected{% endif %}>
+        Sort Products
+      </option>
+      <option
+        value="name_asc"
+        {% if sort_value=="name_asc" %}selected{% endif %}
+      >
+        Name ↑
+      </option>
+      <option
+        value="name_desc"
+        {% if sort_value=="name_desc" %}selected{% endif %}
+      >
+        Name ↓
+      </option>
+      <option
+        value="price_asc"
+        {% if sort_value=="price_asc" %}selected{% endif %}
+      >
+        Price ↑
+      </option>
+      <option
+        value="price_desc"
+        {% if sort_value=="price_desc" %}selected{% endif %}
+      >
+        Price ↓
+      </option>
     </select>
+
+    <div
+      style="
+        display: flex;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      "
+    >
+      <button
+        type="button"
+        id="viewListBtn"
+        class="view-toggle-btn active"
+        onclick="setView('list')"
+        title="List view"
+      >
+        <i class="fas fa-list"></i>
+      </button>
+      <button
+        type="button"
+        id="viewGridBtn"
+        class="view-toggle-btn"
+        onclick="setView('grid')"
+        title="Grid view"
+      >
+        <i class="fas fa-th-large"></i>
+      </button>
+    </div>
 
     <!-- Add button (kept outside the form so it doesn't submit it) -->
     <button
@@ -499,59 +716,69 @@
   </div>
 </form>
 
-{# clear_url is built server-side in admin.py to avoid unsupported
-   Jinja **kwargs macros. #}
+{# clear_url is built server-side in admin.py to avoid unsupported Jinja
+**kwargs macros. #}
 
-<div class="card">
+<div class="card" id="listViewWrap">
   <div class="card-header">
     <h3
       style="
         color: var(--green);
         font-weight: 800;
-        letter-spacing: .3px;
-        display:flex;
-        align-items:center;
-        gap:10px;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
       "
     >
       <span
         style="
-          width:10px;
-          height:10px;
-          background:var(--orange);
-          border-radius:50%;
-          display:inline-block;
+          width: 10px;
+          height: 10px;
+          background: var(--orange);
+          border-radius: 50%;
+          display: inline-block;
         "
       ></span>
       Product List
     </h3>
 
-    <span style="font-size:12px;color:var(--mid);display:flex;align-items:center;gap:10px">
-      {% if selected_cat or search_term %}
-        Showing: {{ products|length }} / {{ total_all }}
-        <a
-          href="{{ clear_url }}"
-          style="
-            text-decoration:none;
-            color:var(--green);
-            font-weight:600;
-            font-size:11px;
-            padding:3px 9px;
-            border:1px solid var(--green);
-            border-radius:999px;
-          "
-        >
-          <i class="fas fa-times"></i> Clear filters
-        </a>
-      {% else %}
-        Total: {{ products|length }}
-      {% endif %}
+    <span
+      style="
+        font-size: 12px;
+        color: var(--mid);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      "
+    >
+      {% if selected_cat or search_term %} Showing: {{ products|length }} / {{
+      total_all }}
+      <a
+        href="{{ clear_url }}"
+        style="
+          text-decoration: none;
+          color: var(--green);
+          font-weight: 600;
+          font-size: 11px;
+          padding: 3px 9px;
+          border: 1px solid var(--green);
+          border-radius: 999px;
+        "
+      >
+        <i class="fas fa-times"></i> Clear filters
+      </a>
+      {% else %} Total: {{ products|length }} {% endif %}
     </span>
   </div>
 
-  <div style="overflow-x:hidden;
-  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.1);
-  border-radius: 12px;">
+  <div
+    style="
+      overflow-x: hidden;
+      box-shadow: 0 8px 20px rgba(16, 24, 40, 0.1);
+      border-radius: 12px;
+    "
+  >
     <table class="data-table">
       <thead>
         <tr>
@@ -559,31 +786,28 @@
           <th>Product</th>
           <th>Category</th>
           <th>Supplier</th>
-          <th style="text-align:right">Price</th>
+          <th style="text-align: right">Price</th>
           <th>Unit</th>
           <th>Status</th>
-          <th style="text-align:center">Action</th>
+          <th style="text-align: center">Action</th>
         </tr>
       </thead>
 
       <tbody id="productBody">
         {% for p in products %}
         <tr>
-
           <!-- ID -->
-          <td><strong style="color:var(--green)">
-            {{ p.product_id }}
-          </strong>
-            
+          <td>
+            <strong style="color: var(--green)"> {{ p.product_id }} </strong>
           </td>
 
           <!-- Product -->
           <td>
-            <div style="font-weight:600">
-             <strong>{{ p.product_name }}</strong>
+            <div style="font-weight: 600">
+              <strong>{{ p.product_name }}</strong>
             </div>
 
-            <div style="font-size:11px;color:var(--mid)">
+            <div style="font-size: 11px; color: var(--mid)">
               {{ p.brand or 'No Brand' }}
             </div>
           </td>
@@ -596,17 +820,12 @@
           </td>
 
           <!-- Supplier -->
-          <td style="font-size:12px;color:var(--mid)">
+          <td style="font-size: 12px; color: var(--mid)">
             {{ p.supplier_name or '—' }}
           </td>
 
           <!-- Price -->
-          <td
-            style="
-              text-align:right;
-              font-weight:700;
-            "
-          >
+          <td style="text-align: right; font-weight: 700">
             ৳ {{ "%.2f"|format(p.unit_price) }}
           </td>
 
@@ -616,18 +835,14 @@
           <!-- Status -->
           <td>
             {% if p.is_active == 'Y' %}
-            <span class="badge badge-green">
-              Active
-            </span>
+            <span class="badge badge-green"> Active </span>
             {% else %}
-            <span class="badge badge-red">
-              Inactive
-            </span>
+            <span class="badge badge-red"> Inactive </span>
             {% endif %}
           </td>
 
           <!-- Action -->
-          <td style="text-align:center">
+          <td style="text-align: center">
             <button
               class="row-edit-btn"
               onclick="editProduct(this)"
@@ -638,14 +853,18 @@
               data-price="{{ p.unit_price }}"
               data-unit="{{ p.unit }}"
               data-status="{{ p.is_active }}"
-
+              data-image="{{ p.image_url or '' }}"
               class="badge"
-              style="background:#e0f2fe;color:#0369a1;border:none;cursor:pointer;"
+              style="
+                background: #e0f2fe;
+                color: #0369a1;
+                border: none;
+                cursor: pointer;
+              "
             >
               <i class="fas fa-edit"></i> Edit
             </button>
           </td>
-
         </tr>
         {% endfor %}
       </tbody>
@@ -653,10 +872,50 @@
   </div>
 </div>
 
+<div class="prod-grid" id="gridViewWrap">
+  {% for p in products %}
+  <div class="prod-card">
+    {% if p.image_url %}
+      <div class="prod-card-img" style="background-image:url('{{ p.image_url | e }}')"></div>
+    {% else %}
+      <div class="prod-card-img"><i class="fas fa-image"></i></div>
+    {% endif %}
+    <div class="prod-card-body">
+      <div class="prod-card-name">{{ p.product_name }}</div>
+      <div class="prod-card-brand">{{ p.brand or 'No Brand' }}</div>
+      <div class="prod-card-price">৳ {{ "%.2f"|format(p.unit_price) }}</div>
+      <div class="prod-card-foot">
+        {% if p.is_active == 'Y' %}
+          <span class="badge badge-green">Active</span>
+        {% else %}
+          <span class="badge badge-red">Inactive</span>
+        {% endif %}
+        <button class="row-edit-btn" onclick="editProduct(this)"
+                data-id="{{ p.product_id }}"
+                data-name="{{ p.product_name }}"
+                data-catid="{{ p.cat_id or '' }}"
+                data-supplierid="{{ p.supplier_id or '' }}"
+                data-price="{{ p.unit_price }}"
+                data-unit="{{ p.unit }}"
+                data-status="{{ p.is_active }}"
+                data-image="{{ p.image_url or '' }}">
+          <i class="fas fa-edit"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
 <!-- ══════════════════════════════════════
      TOAST CONTAINER (pgAdmin-style)
 ══════════════════════════════════════ -->
-<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+<div
+  class="toast-wrap"
+  id="toastWrap"
+  aria-live="polite"
+  aria-atomic="true"
+></div>
 
 <!-- ══════════════════════════════════════
      MODAL 1 — ADD PRODUCT
@@ -673,7 +932,11 @@
       <button class="dm-close" onclick="closePM('pm-add')">✕</button>
     </div>
 
-    <form method="POST" action="/admin/dashboard/products/add">
+    <form
+      method="POST"
+      action="/admin/dashboard/products/add"
+      enctype="multipart/form-data"
+    >
       <div class="dm-body">
         <!-- Auto-generated ID -->
         <div class="dm-group">
@@ -755,6 +1018,31 @@
           </div>
         </div>
       </div>
+
+      <div class="dm-group">
+        <label class="dm-label">Product Image</label>
+
+        <!-- Dropzone (drag-and-drop / click to pick) -->
+        <div class="dropzone" id="addDropzone">
+          <input type="file" id="addImgInput" name="image" accept="image/*" />
+          <div class="dropzone-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+          <div class="dropzone-text">Drop image here or click to upload</div>
+          <div class="dropzone-sub">PNG, JPG, WEBP — up to 5 MB</div>
+        </div>
+
+        <!-- Preview shown after a file is chosen -->
+        <div class="dropzone-preview-wrap" id="addImgPreviewWrap">
+          <img id="addImgPreview" alt="Selected product image preview" />
+          <button
+            type="button"
+            class="dropzone-remove-btn"
+            onclick="clearDrop('add')"
+            aria-label="Remove selected image"
+          >
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+      </div>
       <div class="dm-foot">
         <button type="submit" class="dm-btn dm-btn-primary">
           <i class="fas fa-plus"></i> Create Product
@@ -792,6 +1080,7 @@
       method="POST"
       action="/admin/dashboard/products/modify"
       id="modifyProductForm"
+      enctype="multipart/form-data"
     >
       <div class="dm-body">
         <!-- Locked: which product is being edited -->
@@ -839,12 +1128,7 @@
           </div>
           <div class="dm-group" style="margin-bottom: 0">
             <label class="dm-label">Unit</label>
-            <input
-              class="dm-input"
-              name="unit"
-              id="modProductUnit"
-              required
-            />
+            <input class="dm-input" name="unit" id="modProductUnit" required />
           </div>
         </div>
 
@@ -869,11 +1153,53 @@
             </div>
           </div>
         </div>
+        <div class="dm-group">
+          <label class="dm-label">Product Image</label>
 
+          <!-- Dropzone (drag-and-drop / click to pick) -->
+          <div class="dropzone" id="modDropzone">
+            <input type="file" id="modImgInput" name="image" accept="image/*" />
+            <div class="dropzone-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+            <div class="dropzone-text">Drop image here or click to replace</div>
+            <div class="dropzone-sub">PNG, JPG, WEBP — up to 5 MB</div>
+          </div>
+
+          <!-- Preview shown after a file is chosen (or for the existing image) -->
+          <div class="dropzone-preview-wrap" id="modImgPreviewWrap">
+            <img id="modImgPreview" alt="Selected product image preview" />
+            <button
+              type="button"
+              class="dropzone-remove-btn"
+              onclick="clearDrop('mod')"
+              aria-label="Remove selected image"
+            >
+              <i class="fas fa-xmark"></i>
+            </button>
+          </div>
+
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              margin-top: 8px;
+              font-size: 12px;
+              color: var(--mid);
+            "
+          >
+            <input
+              type="checkbox"
+              name="remove_image"
+              value="1"
+              id="modRemoveImage"
+            />
+            Remove current photo (without uploading a new one)
+          </label>
+        </div>
         <p class="dm-hint" style="margin-top: 10px">
           <i class="fas fa-info-circle"></i>
-          Product name and brand are locked here — delete and re-add to
-          rename a product.
+          Product name and brand are locked here — delete and re-add to rename a
+          product.
         </p>
       </div>
       <div class="dm-foot">
@@ -892,124 +1218,195 @@
   </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-// ────────────────────────────────────────────────────────────────────────
-//  All three controls (search, category, sort) are now part of the
-//  GET form above.  Category and sort re-submit on `change`.
-//  Search uses a small debounce so we don't fire a request on every
-//  keystroke.  No DOM-row filtering happens on the client anymore —
-//  the server returns the right slice of rows.
-// ────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────
+  //  All three controls (search, category, sort) are now part of the
+  //  GET form above.  Category and sort re-submit on `change`.
+  //  Search uses a small debounce so we don't fire a request on every
+  //  keystroke.  No DOM-row filtering happens on the client anymore —
+  //  the server returns the right slice of rows.
+  // ────────────────────────────────────────────────────────────────────────
 
-const filterForm   = document.getElementById("productsFilterForm");
-const searchBox    = document.getElementById("searchBox");
-const sortSelect   = document.getElementById("sortSelect");
-const catFilter    = document.getElementById("catFilter");
+  const filterForm = document.getElementById("productsFilterForm");
+  const searchBox = document.getElementById("searchBox");
+  const sortSelect = document.getElementById("sortSelect");
+  const catFilter = document.getElementById("catFilter");
 
-// Debounce the search box so we only navigate after the user pauses.
-let searchTimer = null;
-if (searchBox) {
-  searchBox.addEventListener("input", () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => filterForm.submit(), 350);
-  });
-  // Submit immediately on Enter, even mid-debounce.
-  searchBox.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
+  // Debounce the search box so we only navigate after the user pauses.
+  let searchTimer = null;
+  if (searchBox) {
+    searchBox.addEventListener("input", () => {
       clearTimeout(searchTimer);
-      filterForm.submit();
-    }
-  });
-}
-
-// Translate the __NONE__ pseudo-value into a server-side flag we can
-// match.  We just keep it as-is — the SQL branch uses COALESCE on cat_id
-// via the SELECT count, but for the actual product list we'll fall back
-// to filtering on NULL below.
-if (catFilter) {
-  catFilter.addEventListener("change", () => filterForm.submit());
-}
-if (sortSelect) {
-  sortSelect.addEventListener("change", () => filterForm.submit());
-}
-
-// ── Modal open / close ────────────────────────────────────────────────────
-function openPM(id) {
-  document.getElementById(id).classList.add("open");
-  document.body.style.overflow = "hidden";
-}
-function closePM(id) {
-  document.getElementById(id).classList.remove("open");
-  document.body.style.overflow = "";
-}
-function closePMOnOverlay(e, el) {
-  if (e.target === el) {
-    closePM(el.id);
-  }
-}
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape")
-    document.querySelectorAll(".dm-overlay.open").forEach((m) => {
-      m.classList.remove("open");
-      document.body.style.overflow = "";
+      searchTimer = setTimeout(() => filterForm.submit(), 350);
     });
-});
+    // Submit immediately on Enter, even mid-debounce.
+    searchBox.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        clearTimeout(searchTimer);
+        filterForm.submit();
+      }
+    });
+  }
 
-// ══════════════════════════════
-//  ROW EDIT → opens Update modal pre-filled
-// ══════════════════════════════
-function editProduct(btn) {
-  const d = btn.dataset;
+  // Translate the __NONE__ pseudo-value into a server-side flag we can
+  // match.  We just keep it as-is — the SQL branch uses COALESCE on cat_id
+  // via the SELECT count, but for the actual product list we'll fall back
+  // to filtering on NULL below.
+  if (catFilter) {
+    catFilter.addEventListener("change", () => filterForm.submit());
+  }
+  if (sortSelect) {
+    sortSelect.addEventListener("change", () => filterForm.submit());
+  }
 
-  document.getElementById("modProductId").value = d.id;
-  document.getElementById("modProductName").value = `${d.id} — ${d.name}`;
-  document.getElementById("modProductCat").value = d.catid || "";
-  document.getElementById("modProductSupplier").value = d.supplierid || "";
-  document.getElementById("modProductPrice").value = d.price;
-  document.getElementById("modProductUnit").value = d.unit;
+  // ── Modal open / close ────────────────────────────────────────────────────
+  function openPM(id) {
+    document.getElementById(id).classList.add("open");
+    document.body.style.overflow = "hidden";
+    if (id === "pm-add") clearDrop("add");
+  }
+  function closePM(id) {
+    document.getElementById(id).classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  function closePMOnOverlay(e, el) {
+    if (e.target === el) {
+      closePM(el.id);
+    }
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape")
+      document.querySelectorAll(".dm-overlay.open").forEach((m) => {
+        m.classList.remove("open");
+        document.body.style.overflow = "";
+      });
+  });
 
-  selectProductStatus(d.status === "N" ? "N" : "Y");
+  function previewImg(input, targetId) {
+    const img = document.getElementById(targetId);
+    if (input.files && input.files[0]) {
+      img.src = URL.createObjectURL(input.files[0]);
+      img.style.display = "block";
+    }
+  }
+  // ══════════════════════════════
+  //  ROW EDIT → opens Update modal pre-filled
+  // ══════════════════════════════
+  function editProduct(btn) {
+    const d = btn.dataset;
+    document.getElementById("modProductId").value = d.id;
+    document.getElementById("modProductName").value = `${d.id} — ${d.name}`;
+    document.getElementById("modProductCat").value = d.catid || "";
+    document.getElementById("modProductSupplier").value = d.supplierid || "";
+    document.getElementById("modProductPrice").value = d.price;
+    document.getElementById("modProductUnit").value = d.unit;
+    selectProductStatus(d.status === "N" ? "N" : "Y");
 
-  openPM("pm-modify");
-}
+    // Reset dropzone state, then load existing photo if present
+    document.getElementById("modImgInput").value = "";
+    document.getElementById("modRemoveImage").value = "0";
+    const wrap = document.getElementById("modImgPreviewWrap");
+    const zone = document.getElementById("modDropzone");
+    const img = document.getElementById("modImgPreview");
+    if (d.image) {
+      img.src = d.image;
+      wrap.style.display = "block";
+      zone.style.display = "none";
+    } else {
+      wrap.style.display = "none";
+      zone.style.display = "block";
+    }
 
-function selectProductStatus(status) {
-  document.getElementById("modProductStatus").value = status;
-  document.getElementById("pillActive").className =
-    "type-pill" + (status === "Y" ? " selected-active" : "");
-  document.getElementById("pillInactive").className =
-    "type-pill" + (status === "N" ? " selected-inactive" : "");
-}
+    openPM("pm-modify");
+  }
 
-// ────────────────────────────────────────────────────────────────────────
-//  TOAST NOTIFICATIONS
-//  showToast(message, kind) — kind = "success" | "error" | "info"
-//  On page load we also read ?success / ?error / ?info from the URL
-//  (these come from the add/modify redirects) so the toast shows after
-//  form submission.
-// ────────────────────────────────────────────────────────────────────────
-const TOAST_ICON = {
-  success: "fa-check",
-  error:   "fa-xmark",
-  info:    "fa-circle-info",
-};
-const TOAST_TITLE = {
-  success: "Success",
-  error:   "Error",
-  info:    "Notice",
-};
+  function selectProductStatus(status) {
+    document.getElementById("modProductStatus").value = status;
+    document.getElementById("pillActive").className =
+      "type-pill" + (status === "Y" ? " selected-active" : "");
+    document.getElementById("pillInactive").className =
+      "type-pill" + (status === "N" ? " selected-inactive" : "");
+  }
+  function setupDropzone(prefix) {
+    const zone = document.getElementById(prefix + "Dropzone");
+    const input = document.getElementById(prefix + "ImgInput");
+    const wrap = document.getElementById(prefix + "ImgPreviewWrap");
+    const img = document.getElementById(prefix + "ImgPreview");
 
-function showToast(message, kind = "success", ttl = 4000) {
-  const wrap = document.getElementById("toastWrap");
-  if (!wrap) return;
+    function showFile(file) {
+      if (!file || !file.type.startsWith("image/")) return;
+      img.src = URL.createObjectURL(file);
+      wrap.style.display = "block";
+      zone.style.display = "none";
+      if (prefix === "mod")
+        document.getElementById("modRemoveImage").value = "0";
+    }
 
-  const t = document.createElement("div");
-  t.className = "toast toast-" + kind;
-  t.innerHTML = `
+    input.addEventListener("change", () => showFile(input.files[0]));
+
+    ["dragenter", "dragover"].forEach((evt) =>
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        zone.classList.add("dragover");
+      }),
+    );
+    ["dragleave", "drop"].forEach((evt) =>
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        zone.classList.remove("dragover");
+      }),
+    );
+    zone.addEventListener("drop", (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        // Sync to the real input so the file actually submits with the form
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        showFile(file);
+      }
+    });
+  }
+
+  function clearDrop(prefix) {
+    const zone = document.getElementById(prefix + "Dropzone");
+    const input = document.getElementById(prefix + "ImgInput");
+    const wrap = document.getElementById(prefix + "ImgPreviewWrap");
+    input.value = "";
+    wrap.style.display = "none";
+    zone.style.display = "block";
+    if (prefix === "mod") document.getElementById("modRemoveImage").value = "1";
+  }
+
+  setupDropzone("add");
+  setupDropzone("mod");
+  // ────────────────────────────────────────────────────────────────────────
+  //  TOAST NOTIFICATIONS
+  //  showToast(message, kind) — kind = "success" | "error" | "info"
+  //  On page load we also read ?success / ?error / ?info from the URL
+  //  (these come from the add/modify redirects) so the toast shows after
+  //  form submission.
+  // ────────────────────────────────────────────────────────────────────────
+  const TOAST_ICON = {
+    success: "fa-check",
+    error: "fa-xmark",
+    info: "fa-circle-info",
+  };
+  const TOAST_TITLE = {
+    success: "Success",
+    error: "Error",
+    info: "Notice",
+  };
+
+  function showToast(message, kind = "success", ttl = 4000) {
+    const wrap = document.getElementById("toastWrap");
+    if (!wrap) return;
+
+    const t = document.createElement("div");
+    t.className = "toast toast-" + kind;
+    t.innerHTML = `
     <div class="toast-icon"><i class="fas ${TOAST_ICON[kind] || TOAST_ICON.success}"></i></div>
     <div class="toast-body">
       <div class="toast-title">${TOAST_TITLE[kind] || "Notice"}</div>
@@ -1019,34 +1416,50 @@ function showToast(message, kind = "success", ttl = 4000) {
     <div class="toast-progress"></div>
   `;
 
-  const dismiss = () => {
-    if (t.classList.contains("hide")) return;
-    t.classList.add("hide");
-    setTimeout(() => t.remove(), 300);
-  };
+    const dismiss = () => {
+      if (t.classList.contains("hide")) return;
+      t.classList.add("hide");
+      setTimeout(() => t.remove(), 300);
+    };
 
-  t.querySelector(".toast-close").addEventListener("click", dismiss);
-  if (ttl > 0) setTimeout(dismiss, ttl);
+    t.querySelector(".toast-close").addEventListener("click", dismiss);
+    if (ttl > 0) setTimeout(dismiss, ttl);
 
-  wrap.appendChild(t);
-}
-
-// Boot: read flash-style query params (?success / ?error / ?info)
-(function bootToasts() {
-  const p = new URLSearchParams(window.location.search);
-  if (p.has("success")) showToast(p.get("success"), "success");
-  if (p.has("error"))   showToast(p.get("error"),   "error");
-  if (p.has("info"))    showToast(p.get("info"),    "info");
-  if (p.has("success") || p.has("error") || p.has("info")) {
-    p.delete("success");
-    p.delete("error");
-    p.delete("info");
-    const qs = p.toString();
-    const newUrl =
-      window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
-    window.history.replaceState({}, "", newUrl);
+    wrap.appendChild(t);
   }
-})();
 
+  // Boot: read flash-style query params (?success / ?error / ?info)
+  (function bootToasts() {
+    const p = new URLSearchParams(window.location.search);
+    if (p.has("success")) showToast(p.get("success"), "success");
+    if (p.has("error")) showToast(p.get("error"), "error");
+    if (p.has("info")) showToast(p.get("info"), "info");
+    if (p.has("success") || p.has("error") || p.has("info")) {
+      p.delete("success");
+      p.delete("error");
+      p.delete("info");
+      const qs = p.toString();
+      const newUrl =
+        window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+      window.history.replaceState({}, "", newUrl);
+    }
+  })();
+
+  function setView(mode) {
+    const list = document.getElementById("listViewWrap");
+    const grid = document.getElementById("gridViewWrap");
+    document
+      .getElementById("viewListBtn")
+      .classList.toggle("active", mode === "list");
+    document
+      .getElementById("viewGridBtn")
+      .classList.toggle("active", mode === "grid");
+    list.style.display = mode === "list" ? "block" : "none";
+    grid.classList.toggle("active", mode === "grid");
+    localStorage.setItem("prodView", mode); // remembers choice — safe here, this is plain HTML not a Claude artifact
+  }
+  (function initView() {
+    setView(localStorage.getItem("prodView") || "list");
+  })();
 </script>
 {% endblock %}

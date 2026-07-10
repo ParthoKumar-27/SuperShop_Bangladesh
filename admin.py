@@ -5,6 +5,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from supabase_client import upload_product_image, delete_product_image
+from fastapi import UploadFile, File
 from action_logger import log_action
 from auth import _hash, _verify
 from branch_routes import branch_router
@@ -1016,15 +1018,15 @@ def admin_products_page(
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
 
     products = query(f"""
-        SELECT p.product_id, p.product_name, p.brand,
-               p.cat_id, p.supplier_id,
-               p.unit_price, p.unit, p.is_active,
-               c.cat_name, s.supplier_name
-        FROM   product p
-               LEFT JOIN category c  USING (cat_id)
-               LEFT JOIN supplier s  USING (supplier_id)
-        {where_sql}
-        ORDER BY {order_clause}
+    SELECT p.product_id, p.product_name, p.brand,
+           p.cat_id, p.supplier_id,
+           p.unit_price, p.unit, p.is_active, p.image_url,
+           c.cat_name, s.supplier_name
+    FROM   product p
+           LEFT JOIN category c  USING (cat_id)
+           LEFT JOIN supplier s  USING (supplier_id)
+    {where_sql}
+    ORDER BY {order_clause}
     """, tuple(params))
 
     # Count per category (for the dropdown badges + "All" total)
@@ -1073,7 +1075,7 @@ def admin_products_page(
 
 
 @admin_router.post("/dashboard/products/add")
-def add_product(
+async def add_product(
     request:      Request,
     product_id:   str   = Form(...),
     product_name: str   = Form(...),
@@ -1082,13 +1084,20 @@ def add_product(
     supplier_id:  str   = Form(""),
     unit_price:   float = Form(...),
     unit:         str   = Form(...),
+    image:        UploadFile | None = File(None),
     session=Depends(require_admin),
 ):
+    image_url = None
+    if image and image.filename:
+        contents = await image.read()
+        if contents:
+            image_url = upload_product_image(contents, image.filename, image.content_type)
+
     execute("""
         INSERT INTO product
             (product_id, product_name, brand, cat_id, supplier_id,
-             unit_price, unit)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+             unit_price, unit, image_url)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         product_id,
         product_name.strip(),
@@ -1097,31 +1106,30 @@ def add_product(
         supplier_id.strip() if supplier_id and supplier_id.strip() else None,
         unit_price,
         unit.strip(),
+        image_url,
     ))
 
     log_action(
-    session, "CREATE", "product", product_id,
-    f'Created product "{product_name}"',
-    new_values={"cat_id": cat_id, "supplier_id": supplier_id, "unit_price": unit_price},
-    request=request,
-)
-    
+        session, "CREATE", "product", product_id,
+        f'Created product "{product_name}"',
+        new_values={"cat_id": cat_id, "supplier_id": supplier_id, "unit_price": unit_price, "image_url": image_url},
+        request=request,
+    )
+
     notify_all_branch_managers(
-        "NEW_PRODUCT",
-        "New product added",
+        "NEW_PRODUCT", "New product added",
         f"{product_name} has been added by admin.",
         link_url="/employee/branch/products",
         ref_table="product", ref_id=product_id,
-)
+    )
 
     return RedirectResponse(
         f"/admin/dashboard/products?success=Product+%22{product_name}%22+added+successfully",
         status_code=302,
     )
 
-
 @admin_router.post("/dashboard/products/modify")
-def modify_product(
+async def modify_product(
     request:     Request,
     product_id:  str   = Form(...),
     cat_id:      str   = Form(""),
@@ -1129,23 +1137,40 @@ def modify_product(
     unit_price:  float = Form(...),
     unit:        str   = Form(...),
     is_active:   str   = Form(...),
+    remove_image: str  = Form(""),           # "1" if admin clicked "remove photo"
+    image:       UploadFile | None = File(None),
     session=Depends(require_admin),
 ):
-    product_name_row = query(
-        "SELECT product_name FROM product WHERE product_id = %s",
+    old_row = query(
+        "SELECT product_name, cat_id, supplier_id, unit_price, unit, is_active, image_url "
+        "FROM product WHERE product_id = %s",
         (product_id,),
     )
-    product_name = (
-        product_name_row[0]["product_name"] if product_name_row else product_id
-    )
-    old_row = query("SELECT cat_id, supplier_id, unit_price, unit, is_active FROM product WHERE product_id = %s", (product_id,))
+    if not old_row:
+        return RedirectResponse("/admin/dashboard/products?error=Product+not+found", status_code=302)
+
+    product_name = old_row[0]["product_name"]
+    current_image_url = old_row[0]["image_url"]
+    new_image_url = current_image_url
+
+    if image and image.filename:
+        contents = await image.read()
+        if contents:
+            if current_image_url:
+                delete_product_image(current_image_url)
+            new_image_url = upload_product_image(contents, image.filename, image.content_type)
+    elif remove_image == "1" and current_image_url:
+        delete_product_image(current_image_url)
+        new_image_url = None
+
     execute("""
         UPDATE product
         SET cat_id      = %s,
             supplier_id = %s,
             unit_price  = %s,
             unit        = %s,
-            is_active   = %s
+            is_active   = %s,
+            image_url   = %s
         WHERE product_id = %s
     """, (
         cat_id.strip() if cat_id and cat_id.strip() else None,
@@ -1153,16 +1178,18 @@ def modify_product(
         unit_price,
         unit.strip(),
         is_active,
+        new_image_url,
         product_id,
     ))
 
     log_action(
-    session, "UPDATE", "product", product_id,
-    f'Updated product "{product_name}"',
-    old_values=old_row[0] if old_row else None,
-    new_values={"cat_id": cat_id, "supplier_id": supplier_id, "unit_price": unit_price, "unit": unit, "is_active": is_active},
-    request=request,
-)
+        session, "UPDATE", "product", product_id,
+        f'Updated product "{product_name}"',
+        old_values=old_row[0],
+        new_values={"cat_id": cat_id, "supplier_id": supplier_id, "unit_price": unit_price,
+                     "unit": unit, "is_active": is_active, "image_url": new_image_url},
+        request=request,
+    )
     return RedirectResponse(
         f"/admin/dashboard/products?success=Product+%22{product_name}%22+updated+successfully",
         status_code=302,

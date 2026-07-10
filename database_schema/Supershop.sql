@@ -235,7 +235,8 @@ CREATE TABLE product (
     unit            VARCHAR(20)     NOT NULL,
     expiry_days     NUMERIC(5,0),
     is_active       CHAR(1)         DEFAULT 'Y',
-
+    image_url       VARCHAR(500),
+    
     CONSTRAINT  p_id_pk         PRIMARY KEY (product_id),
     CONSTRAINT  check_p_id      CHECK (product_id LIKE 'P-%'),
     CONSTRAINT  check_p_u_price CHECK (unit_price > 0),
@@ -556,8 +557,8 @@ CREATE TABLE notification (
                                 ON DELETE CASCADE
 );
 
-CREATE INDEX idx_notif_recipient ON notification (recipient_type, recipient_id, is_read);
-CREATE INDEX idx_notif_ref       ON notification (ref_table, ref_id, notif_type);
+-- CREATE INDEX idx_notif_recipient ON notification (recipient_type, recipient_id, is_read);
+-- CREATE INDEX idx_notif_ref       ON notification (ref_table, ref_id, notif_type);
 
 
 -- ============================================================
