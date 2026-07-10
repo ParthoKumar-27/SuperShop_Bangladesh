@@ -11,9 +11,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set in .env")
 
-# ----------------------------------------------------
+# ---------------------------------------------------
 # Connection Pool
-# ----------------------------------------------------
+# ---------------------------------------------------
 # pool = ThreadedConnectionPool(
 #     minconn=1,
 #     maxconn=20,
