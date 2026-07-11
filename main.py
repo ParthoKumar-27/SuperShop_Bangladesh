@@ -11,6 +11,27 @@ from admin import admin_router
 from auth import auth_router
 from employee import employee_router
 from database import close_pool
+from supabase_client import BUCKET, SUPABASE_URL
+
+# ── Image URL helper ──────────────────────────────────────────────────────────
+# Stored values may be:
+#   1. full public URL  (e.g. https://xyz.supabase.co/storage/v1/object/public/Images/abc.jpg)
+#   2. bare storage key (e.g. products/P-0001.jpg) — from older seed data
+#   3. NULL
+# Always return something the browser can <img src="..."> against, or None.
+def _normalize_image_url(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    raw = raw.strip()
+    if not raw:
+        return None
+    if raw.startswith(("http://", "https://", "//")):
+        return raw
+    # bare key → build public URL from configured bucket
+    key = raw.lstrip("/")
+    if key.startswith(f"{BUCKET}/"):
+        key = key[len(BUCKET) + 1:]
+    return f"{SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{BUCKET}/{key}"
 
 # ── App setup ──────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -58,12 +79,16 @@ def storefront(request: Request):
                p.unit_price,
                p.unit,
                p.cat_id,
+               p.image_url,
                c.cat_name AS category
         FROM   product   p
         LEFT   JOIN category c ON p.cat_id = c.cat_id
         WHERE  p.is_active = 'Y'
         ORDER  BY p.product_name
     """)
+    # Normalize image_url so any legacy bare-key values still render in <img src>
+    for _p in products:
+        _p["image_url"] = _normalize_image_url(_p.get("image_url"))
 
     return templates.TemplateResponse(
         request,

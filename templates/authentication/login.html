@@ -389,7 +389,7 @@
       background: var(--white);
       border-radius: var(--radius);
       box-shadow: var(--shadow-lg);
-      padding: 28px 30px 24px;
+      padding: 22px 26px 20px;
       width: 100%;
       max-width: 400px;
       position: relative;
@@ -412,22 +412,22 @@
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
     .auth-title {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 700;
       color: var(--dark);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .auth-sub {
       font-size: 12.5px;
       color: var(--mid);
-      margin-bottom: 18px;
+      margin-bottom: 12px;
     }
 
     /* ── Role selector ── */
     .role-grid {
       display: flex;
       gap: 10px;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
     }
     .role-btn {
       flex: 1 1 0;
@@ -435,7 +435,7 @@
       border: 1.5px solid var(--border);
       background: var(--white);
       border-radius: 10px;
-      padding: 10px 6px 9px;
+      padding: 7px 6px 6px;
       text-align: center;
       cursor: pointer;
       transition: border-color .18s, background .18s, box-shadow .18s, transform .18s;
@@ -462,8 +462,8 @@
       font-weight: 700;
     }
     .role-icon {
-      font-size: 20px;
-      margin-bottom: 4px;
+      font-size: 18px;
+      margin-bottom: 2px;
       display: inline-block;
       transition: transform .25s cubic-bezier(.34,1.56,.64,1);
     }
@@ -496,7 +496,7 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      padding: 6px 4px 2px;
+      padding: 2px 4px 0;
       animation: illuIn .5s cubic-bezier(.16,1,.3,1) both;
       animation-delay: .15s;
     }
@@ -511,11 +511,11 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--mid);
       background: rgba(241,123,13,.08);
       border: 1px dashed rgba(241,123,13,.45);
-      padding: 6px 12px;
+      padding: 4px 11px;
       border-radius: 999px;
     }
     .illu-dot {
@@ -545,19 +545,19 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .form-group { margin-bottom: 14px; }
+    .form-group { margin-bottom: 10px; }
     .form-label {
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--dark);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: .04em;
     }
     .form-input {
       width: 100%;
-      padding: 11px 14px;
+      padding: 9px 12px;
       border: 1.5px solid var(--border);
       border-radius: 8px;
       font-family: 'DM Sans', sans-serif;
@@ -601,82 +601,67 @@
     .eye-btn.is-visible .icon-off { display: block; }
 
     .input-hint {
-      font-size: 11px;
+      font-size: 10.5px;
       color: var(--mid);
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
-    /* ── Password strength meter (registration modal) ── */
-    .pw-strength {
-      display: flex;
-      gap: 4px;
-      margin-top: 10px;
-      height: 5px;
-    }
-    .pw-strength-bar {
-      flex: 1;
-      height: 100%;
-      border-radius: 3px;
-      background: #e5e7eb;
-      transition: background .25s ease, transform .25s ease;
-      transform-origin: left center;
-    }
-    .pw-strength-bar.active.lv1 { background: linear-gradient(90deg, #e34b3c, #f17b0d); }
-    .pw-strength-bar.active.lv2 { background: linear-gradient(90deg, #f17b0d, #ffa63d); }
-    .pw-strength-bar.active.lv3 { background: linear-gradient(90deg, #e0a800, #d4c11f); }
-    .pw-strength-bar.active.lv4 { background: linear-gradient(90deg, #0a6b4f, #4caf50); }
-    .pw-strength-label {
+    /* ── Compact password meter + confirm hint (registration modal) ── */
+    .pw-meter {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 10px;
       margin-top: 6px;
-      font-size: 11px;
-      color: var(--mid);
-      transition: color .2s ease;
     }
-    .pw-strength-label .label-side {
+    .pw-meter-track {
+      flex: 1;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .pw-meter-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      background: #e5e7eb;
+      transition: width .25s ease, background .25s ease;
+    }
+    .pw-meter-fill.lv1 { background: linear-gradient(90deg, #e34b3c, #f17b0d); }
+    .pw-meter-fill.lv2 { background: linear-gradient(90deg, #f17b0d, #ffa63d); }
+    .pw-meter-fill.lv3 { background: linear-gradient(90deg, #d4c11f, #0a6b4f); }
+    .pw-meter-fill.lv4 { background: linear-gradient(90deg, #0a6b4f, #4caf50); }
+    .pw-meter-label {
+      flex: none;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .04em;
       text-transform: uppercase;
-      letter-spacing: .05em;
-      font-weight: 600;
-    }
-    .pw-strength-label .label-text { font-weight: 700; }
-    .pw-strength-label.lv1 .label-text { color: #e34b3c; }
-    .pw-strength-label.lv2 .label-text { color: var(--orange); }
-    .pw-strength-label.lv3 .label-text { color: #b58900; }
-    .pw-strength-label.lv4 .label-text { color: var(--green-mid); }
-    .pw-strength-label.lv0 .label-text { color: var(--mid); }
-    .pw-rules {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px 12px;
-      margin-top: 8px;
-      font-size: 11px;
       color: var(--mid);
-    }
-    .pw-rule {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      min-width: 72px;
+      text-align: right;
       transition: color .2s ease;
     }
-    .pw-rule .rule-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #d1d5db;
-      flex-shrink: 0;
-      transition: background .2s ease, box-shadow .2s ease;
+    .pw-meter-label.lv1 { color: #e34b3c; }
+    .pw-meter-label.lv2 { color: var(--orange); }
+    .pw-meter-label.lv3 { color: #b58900; }
+    .pw-meter-label.lv4 { color: var(--green-mid); }
+
+    .pw-match-hint {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 4px;
+      min-height: 12px;
+      color: var(--mid);
+      transition: color .15s ease;
     }
-    .pw-rule.met { color: var(--green-mid); }
-    .pw-rule.met .rule-dot {
-      background: var(--green-mid);
-      box-shadow: 0 0 0 3px rgba(10,107,79,.15);
-    }
+    .pw-match-hint.is-match    { color: var(--green-mid); }
+    .pw-match-hint.is-mismatch { color: #e34b3c; }
 
     /* ── Submit button ── */
     .btn-submit {
       width: 100%;
-      padding: 13px;
+      padding: 11px;
       background: linear-gradient(120deg, var(--green), var(--green-mid) 60%, var(--green));
       background-size: 200% 100%;
       background-position: 0% 0%;
@@ -684,13 +669,13 @@
       border: none;
       border-radius: 8px;
       font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
       cursor: pointer;
       position: relative;
       overflow: hidden;
       transition: background-position .4s ease, transform .1s;
-      margin-top: 6px;
+      margin-top: 4px;
     }
     .btn-submit:hover { background-position: 100% 0%; transform: translateY(-1px); }
     .btn-submit:active { transform: translateY(0); }
@@ -700,7 +685,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin: 20px 0;
+      margin: 14px 0 12px;
       color: var(--mid);
       font-size: 12px;
     }
@@ -714,9 +699,9 @@
     /* ── Register link ── */
     .register-row {
       text-align: center;
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--mid);
-      margin-top: 16px;
+      margin-top: 12px;
     }
     .register-row a {
       color: var(--orange);
@@ -742,7 +727,7 @@
       background: var(--white);
       border-radius: var(--radius);
       box-shadow: 0 24px 64px rgba(2,36,27,.32);
-      padding: 36px 32px;
+      padding: 24px 24px 22px;
       width: 100%;
       max-width: 440px;
       position: relative;
@@ -760,15 +745,15 @@
     }
     .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
     .modal-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 700;
       color: var(--dark);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .modal-sub {
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--mid);
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
 
     /* ══════════════════════════════════════════════════
@@ -1263,29 +1248,30 @@
           <label class="form-label">Password</label>
           <div class="input-wrap">
             <input class="form-input" type="password" name="password" id="registerPassword"
-                   placeholder="Min. 6 characters" required minlength="6">
+                   placeholder="Min. 6 characters" required minlength="6" autocomplete="new-password">
             <button type="button" class="eye-btn" onclick="togglePassword(this)" aria-label="Show password">
               <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M9.9 5.1A10.7 10.7 0 0 1 12 5c7 0 11 7 11 7a14 14 0 0 1-3.2 3.8M6.5 6.7C4 8.3 2 12 2 12s4 7 11 7c1.4 0 2.7-.3 3.9-.7"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/></svg>
             </button>
           </div>
-          <!-- Live password strength meter -->
-          <div class="pw-strength" id="pwStrength" aria-hidden="true">
-            <div class="pw-strength-bar" data-seg="1"></div>
-            <div class="pw-strength-bar" data-seg="2"></div>
-            <div class="pw-strength-bar" data-seg="3"></div>
-            <div class="pw-strength-bar" data-seg="4"></div>
+          <!-- Single discreet strength indicator -->
+          <div class="pw-meter" aria-live="polite">
+            <div class="pw-meter-track"><div class="pw-meter-fill" id="pwMeterFill"></div></div>
+            <span class="pw-meter-label" id="pwMeterLabel">Enter a password</span>
           </div>
-          <div class="pw-strength-label lv0" id="pwStrengthLabel">
-            <span class="label-side">Strength</span>
-            <span class="label-text">—</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-wrap">
+            <input class="form-input" type="password" name="confirm_password" id="registerPasswordConfirm"
+                   placeholder="Re-enter password" required minlength="6" autocomplete="new-password">
+            <button type="button" class="eye-btn" onclick="togglePassword(this)" aria-label="Show password">
+              <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M9.9 5.1A10.7 10.7 0 0 1 12 5c7 0 11 7 11 7a14 14 0 0 1-3.2 3.8M6.5 6.7C4 8.3 2 12 2 12s4 7 11 7c1.4 0 2.7-.3 3.9-.7"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/></svg>
+            </button>
           </div>
-          <div class="pw-rules" id="pwRules">
-            <div class="pw-rule" data-rule="len"><span class="rule-dot"></span>6+ characters</div>
-            <div class="pw-rule" data-rule="lower"><span class="rule-dot"></span>Lowercase letter</div>
-            <div class="pw-rule" data-rule="upper"><span class="rule-dot"></span>Uppercase letter</div>
-            <div class="pw-rule" data-rule="digit"><span class="rule-dot"></span>Number</div>
-          </div>
+          <p class="pw-match-hint" id="pwMatchHint" aria-live="polite"></p>
         </div>
         <button type="submit" class="btn-submit">Create Account →</button>
       </form>
@@ -1319,57 +1305,52 @@
     // dismisses via the ✕ button so an accidental click on the
     // backdrop doesn't lose entered registration data.
 
-    /* ── Password strength meter (registration modal) ── */
+    /* ── Password meter + match check (registration modal) ── */
     (function () {
       const pw       = document.getElementById('registerPassword');
-      const bars     = document.querySelectorAll('#pwStrength .pw-strength-bar');
-      const label    = document.getElementById('pwStrengthLabel');
-      const ruleEls  = document.querySelectorAll('#pwRules .pw-rule');
+      const confirm  = document.getElementById('registerPasswordConfirm');
+      const fill     = document.getElementById('pwMeterFill');
+      const label    = document.getElementById('pwMeterLabel');
+      const hint     = document.getElementById('pwMatchHint');
 
-      const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-
+      // Score 0..4 from length + variety; shown only as a single bar + caption.
       function score(value) {
-        const rules = {
-          len:   value.length >= 6,
-          lower: /[a-z]/.test(value),
-          upper: /[A-Z]/.test(value),
-          digit: /[0-9]/.test(value)
-        };
-        const met = Object.values(rules).filter(Boolean).length;
-        // Score 0..4 — len on its own gives 1, len+one-class gives 2, etc.
-        // Bonus point when length >= 10 for "Strong".
-        let s = met;
-        if (rules.len && value.length >= 10 && met >= 3) s = 4;
-        else if (rules.len && met >= 3) s = 3;
-        else if (rules.len && met === 2) s = 2;
-        else if (value.length > 0) s = 1;
-        return { s, rules };
+        if (!value) return 0;
+        if (value.length < 6) return 1; // too short
+        let s = 1;
+        if (value.length >= 8) s++;
+        if (/[A-Z]/.test(value) && /[a-z]/.test(value)) s++;
+        if (/[0-9]/.test(value) || /[^A-Za-z0-9]/.test(value)) s++;
+        return Math.min(s, 4);
       }
 
-      function render() {
-        const value = pw.value;
-        const { s, rules } = score(value);
-
-        bars.forEach((b, i) => {
-          b.classList.toggle('active', i < s);
-          b.classList.toggle('lv1', s === 1 && i < s);
-          b.classList.toggle('lv2', s === 2 && i < s);
-          b.classList.toggle('lv3', s === 3 && i < s);
-          b.classList.toggle('lv4', s === 4 && i < s);
-        });
-
-        label.className = 'pw-strength-label lv' + s;
-        label.querySelector('.label-text').textContent =
-          value.length === 0 ? '—' : STRENGTH_LABELS[s];
-
-        ruleEls.forEach(el => {
-          const rule = el.dataset.rule;
-          el.classList.toggle('met', !!rules[rule]);
-        });
+      function renderMeter() {
+        const v = pw.value;
+        const s = score(v);
+        const widths = ['0%', '25%', '55%', '80%', '100%'];
+        const colors = ['', 'lv1', 'lv2', 'lv3', 'lv4'];
+        const texts  = ['Enter a password', 'Too short', 'Weak', 'OK', 'Strong'];
+        fill.style.width = widths[s];
+        fill.className = 'pw-meter-fill ' + (colors[s] || '');
+        label.textContent = texts[s];
+        label.className = 'pw-meter-label ' + (colors[s] || '');
       }
 
-      pw.addEventListener('input', render);
-      render();
+      function renderMatch() {
+        const a = pw.value, b = confirm.value;
+        if (!b) { hint.textContent = ''; hint.className = 'pw-match-hint'; return; }
+        if (a === b) {
+          hint.textContent = '✓ Passwords match';
+          hint.className = 'pw-match-hint is-match';
+        } else {
+          hint.textContent = '✗ Passwords do not match';
+          hint.className = 'pw-match-hint is-mismatch';
+        }
+      }
+
+      pw.addEventListener('input', () => { renderMeter(); renderMatch(); });
+      confirm.addEventListener('input', renderMatch);
+      renderMeter();
     })();
 
     /* ── Password show/hide ── */
