@@ -60,6 +60,49 @@ app.include_router(employee_router)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  ACTIVE HOT DEALS — products with a currently valid discount row
+# ══════════════════════════════════════════════════════════════════════════════
+def _fetch_hot_deals(limit: int = 6):
+    """Return up to `limit` products that have an active discount row.
+
+    Active = CURRENT_DATE between start_date and end_date. Handles both
+    PERCENT and FLAT discounts and resolves category-wide discounts too.
+    """
+    rows = query(
+        """
+        SELECT  p.product_id,
+                p.product_name,
+                p.brand,
+                p.unit_price,
+                p.unit,
+                p.image_url,
+                d.discount_id,
+                d.discount_name,
+                d.discount_type,
+                d.discount_value,
+                d.end_date,
+                CASE
+                    WHEN d.discount_type = 'PERCENT' THEN
+                         GREATEST(0, p.unit_price - (p.unit_price * d.discount_value / 100.0))
+                    ELSE
+                         GREATEST(0, p.unit_price - d.discount_value)
+                END AS sale_price
+        FROM    discount  d
+        JOIN    product   p ON p.product_id = d.product_id
+                            OR  p.cat_id    = d.cat_id
+        WHERE   CURRENT_DATE BETWEEN d.start_date AND d.end_date
+          AND   p.is_active  = 'Y'
+        ORDER BY d.end_date ASC, p.product_name
+        LIMIT  %s
+        """,
+        (limit,),
+    ) or []
+    for _r in rows:
+        _r["image_url"] = _normalize_image_url(_r.get("image_url"))
+    return rows
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  ROOT — public storefront (no login required)
 # ══════════════════════════════════════════════════════════════════════════════
 @app.get("/", response_class=HTMLResponse)
@@ -90,14 +133,67 @@ def storefront(request: Request):
     for _p in products:
         _p["image_url"] = _normalize_image_url(_p.get("image_url"))
 
+    hot_deals = _fetch_hot_deals(limit=6)
+
     return templates.TemplateResponse(
         request,
         "storefront.html",
         {
             "categories": categories,
             "products":   products,
+            "hot_deals":  hot_deals,
             "logged_in":  bool(request.session.get("role")),
             "role":       request.session.get("role"),
+        }
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PUBLIC SEARCH — same look as storefront, filtered by `?q=` (no login needed)
+# ══════════════════════════════════════════════════════════════════════════════
+@app.get("/search", response_class=HTMLResponse)
+def public_search(request: Request, q: str = ""):
+    q = (q or "").strip()
+
+    categories = query("""
+        SELECT cat_id, cat_name, parent_cat_id
+        FROM   category
+        ORDER  BY parent_cat_id NULLS FIRST, cat_name
+    """)
+
+    if q:
+        like = f"%{q}%"
+        products = query("""
+            SELECT p.product_id,
+                   p.product_name,
+                   p.brand,
+                   p.unit_price,
+                   p.unit,
+                   p.cat_id,
+                   p.image_url,
+                   c.cat_name AS category
+            FROM   product   p
+            LEFT   JOIN category c ON p.cat_id = c.cat_id
+            WHERE  p.is_active = 'Y'
+              AND  (p.product_name ILIKE %s OR p.brand ILIKE %s OR c.cat_name ILIKE %s)
+            ORDER  BY p.product_name
+        """, (like, like, like))
+    else:
+        products = []
+
+    for _p in products:
+        _p["image_url"] = _normalize_image_url(_p.get("image_url"))
+
+    return templates.TemplateResponse(
+        request,
+        "storefront.html",
+        {
+            "categories": categories,
+            "products":   products,
+            "hot_deals":  _fetch_hot_deals(limit=6),
+            "logged_in":  bool(request.session.get("role")),
+            "role":       request.session.get("role"),
+            "search_query": q,
         }
     )
 

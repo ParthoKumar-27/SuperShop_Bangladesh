@@ -98,9 +98,18 @@
       gap: 20px;
       background: linear-gradient(105deg, var(--green-deep) 0%, var(--green) 45%, var(--green-mid) 100%);
       color: #fff;
-      box-shadow: 0 8px 28px rgba(2,36,27,.22);
-      isolation: isolate;
-      overflow: hidden;
+      box-shadow:
+        0 10px 30px rgba(2,36,27,.35),
+        0 2px 0 rgba(241,123,13,.45),
+        0 3px 0 rgba(2,36,27,.35);
+    }
+    .topnav::before {
+      content:'';
+      position:absolute;
+      left:0;right:0;bottom:-3px;height:3px;
+      background:linear-gradient(90deg, transparent 0%, var(--orange) 50%, transparent 100%);
+      opacity:.85;
+      pointer-events:none;
     }
     .topnav::before {
       content: '';
@@ -217,10 +226,10 @@
       right: 0;
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 18px 40px rgba(2,36,27,.22);
+      box-shadow: 0 22px 50px rgba(2,36,27,.30);
       border: 1px solid var(--border);
       overflow: hidden;
-      z-index: 120;
+      z-index: 200;
       max-height: 70vh;
       overflow-y: auto;
     }
@@ -970,6 +979,18 @@
       background: linear-gradient(135deg, #f0f9f4 0%, #fff7ec 100%);
       display: flex; align-items: center; justify-content: center;
       font-size: 44px;
+      overflow: hidden;
+    }
+    .deal-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 6px;
+      background: #ffffff;
+      display: block;
+    }
+    .deal-emoji-fallback {
+      line-height: 1;
     }
     .deal-card h5 {
       font-size: 13px;
@@ -1006,6 +1027,14 @@
       border-radius: 999px;
       letter-spacing: .04em;
       margin-bottom: 6px;
+    }
+    .deal-badge.flat { background: #0a6b4f; }
+    .deal-savings {
+      font-size: 10px;
+      font-weight: 700;
+      color: #047857;
+      margin-top: 2px;
+      display: block;
     }
 
     .marquee {
@@ -1413,13 +1442,14 @@
     SuperShop <span>BD</span>
   </a>
   <div class="topnav-search" id="searchWrap">
-    <form action="/customer/shop" method="get" id="storeSearchForm" autocomplete="off">
+    <form action="/search" method="get" id="storeSearchForm" autocomplete="off">
       <input type="text" name="q"
              placeholder="Search groceries, electronics, snacks&#8230;"
              id="storeSearch"
+             value="{{ search_query|default('') }}"
              aria-label="Search products"
              aria-autocomplete="list" aria-controls="searchSuggest" aria-expanded="false">
-      <button type="button" id="searchClear" aria-label="Clear search" hidden><i class="fas fa-times"></i></button>
+      <button type="button" id="searchClear" aria-label="Clear search" {% if not search_query %}hidden{% endif %}><i class="fas fa-times"></i></button>
       <button type="submit" aria-label="Search"><i class="fas fa-search"></i></button>
     </form>
     <div class="search-suggest" id="searchSuggest" role="listbox" hidden></div>
@@ -1622,41 +1652,81 @@
       <div class="deals-head">
         <div class="deals-title">
           <span class="fire"><i class="fas fa-bolt-lightning"></i></span>
-          Today's Hot Deals
+          {% if hot_deals %}Today's Hot Deals{% else %}Today's Deals{% endif %}
         </div>
         <div class="countdown" aria-label="Offers end in">
           Ends in <b id="cd-h">08</b>:<b id="cd-m">42</b>:<b id="cd-s">15</b>
         </div>
       </div>
       <div class="deals-row" id="dealsRow">
-        {% set deal_pcts  = ['-30%','-25%','-40%','-20%','-15%','-35%'] %}
-        {% set deal_icons = ['','','','','',''] %}
-        {% for p in products[:6] %}
-          {% set di = loop.index0 %}
-          <div class="deal-card" onclick="document.getElementById('productGrid').scrollIntoView({behavior:'smooth'})">
-            <span class="deal-badge">{{ deal_pcts[di % 6] }}</span>
-            <div class="deal-emoji">
-              {% set n = p.product_name | lower %}
-              {%- if 'milk' in n -%}🥛
-              {%- elif 'bread' in n -%}🍞
-              {%- elif 'biscuit' in n or 'digestive' in n -%}🍪
-              {%- elif 'chip' in n -%}🥨
-              {%- elif 'juice' in n -%}🧃
-              {%- elif 'rice' in n -%}🍚
-              {%- elif 'shampoo' in n or 'soap' in n -%}🧴
-              {%- elif 'tea' in n -%}🍵
-              {%- elif 'oil' in n -%}🛢
-              {%- elif 'sugar' in n -%}🍒
-              {%- else -%}🛒
-              {%- endif -%}
+        {% if hot_deals %}
+          {% for d in hot_deals %}
+            {% set savings = (d.unit_price|float) - (d.sale_price|float) %}
+            {% set savings_txt = '-৳' ~ "%.0f"|format(savings) if d.discount_type == 'FLAT'
+                                 else '-' ~ "%.0f"|format(d.discount_value) ~ '%' %}
+            {% set n = d.product_name | lower %}
+            {% set _emoji =
+                '🥛'  if 'milk'        in n else
+                '🍞'  if 'bread'       in n else
+                '🍪'  if 'biscuit'     in n or 'digestive' in n else
+                '🥨'  if 'chip'        in n else
+                '🧃'  if 'juice'       in n else
+                '🍚'  if 'rice'        in n else
+                '🧴'  if 'shampoo'     in n or 'soap' in n else
+                '🍵'  if 'tea'         in n else
+                '🛢'  if 'oil'         in n else
+                '🍒'  if 'sugar'       in n else
+                '🛒' %}
+            <div class="deal-card" onclick="document.getElementById('productGrid').scrollIntoView({behavior:'smooth'})">
+              <span class="deal-badge{% if d.discount_type == 'FLAT' %} flat{% endif %}"
+                    title="{{ d.discount_name }}">{{ savings_txt }}</span>
+              <div class="deal-emoji">
+                {% if d.image_url %}
+                  <img class="deal-img" src="{{ d.image_url }}" alt="{{ d.product_name }}"
+                       loading="lazy" data-fallback="{{ _emoji }}">
+                {% else %}
+                  <span class="deal-emoji-fallback">{{ _emoji }}</span>
+                {% endif %}
+              </div>
+              <h5 title="{{ d.product_name }}">{{ d.product_name }}</h5>
+              <div class="deal-price">
+                <span class="now">&#2547; {{ "%.0f"|format(d.sale_price|float) }}</span>
+                <span class="was">&#2547; {{ "%.0f"|format(d.unit_price|float) }}</span>
+              </div>
+              <span class="deal-savings">Save ৳{{ "%.0f"|format(savings) }}</span>
             </div>
-            <h5 title="{{ p.product_name }}">{{ p.product_name }}</h5>
-            <div class="deal-price">
-              <span class="now">&#2547; {{ "%.0f"|format(p.unit_price|float * 0.7) }}</span>
-              <span class="was">&#2547; {{ "%.0f"|format(p.unit_price|float) }}</span>
+          {% endfor %}
+        {% else %}
+          {# Fallback: no active discounts in the DB — show top-priced products #}
+          {% for p in products[:6] %}
+            {% set di = loop.index0 %}
+            {% set _fallback_pct = [30,25,40,20,15,35][di % 6] %}
+            {% set _sale = p.unit_price|float * (1 - _fallback_pct/100.0) %}
+            <div class="deal-card" onclick="document.getElementById('productGrid').scrollIntoView({behavior:'smooth'})">
+              <span class="deal-badge">-{{ _fallback_pct }}%</span>
+              <div class="deal-emoji">
+                {% set n = p.product_name | lower %}
+                {%- if 'milk' in n -%}🥛
+                {%- elif 'bread' in n -%}🍞
+                {%- elif 'biscuit' in n or 'digestive' in n -%}🍪
+                {%- elif 'chip' in n -%}🥨
+                {%- elif 'juice' in n -%}🧃
+                {%- elif 'rice' in n -%}🍚
+                {%- elif 'shampoo' in n or 'soap' in n -%}🧴
+                {%- elif 'tea' in n -%}🍵
+                {%- elif 'oil' in n -%}🛢
+                {%- elif 'sugar' in n -%}🍒
+                {%- else -%}🛒
+                {%- endif -%}
+              </div>
+              <h5 title="{{ p.product_name }}">{{ p.product_name }}</h5>
+              <div class="deal-price">
+                <span class="now">&#2547; {{ "%.0f"|format(_sale) }}</span>
+                <span class="was">&#2547; {{ "%.0f"|format(p.unit_price|float) }}</span>
+              </div>
             </div>
-          </div>
-        {% endfor %}
+          {% endfor %}
+        {% endif %}
       </div>
     </div>
 
@@ -1699,11 +1769,27 @@
     <div class="products-header" id="productsSection">
       <p class="section-title" id="productsHeading" style="margin-bottom:0">
         <span class="accent"></span>
-        <span class="heading-text">All Products</span>
+        <span class="heading-text">
+          {% if search_query %}Results for &ldquo;{{ search_query }}&rdquo;{% else %}All Products{% endif %}
+        </span>
         <span class="title-extra"><span id="resultCount">{{ products|length }}</span> items</span>
         <span class="right-link" onclick="filterCategory('ALL', document.querySelector('[data-catid=\'ALL\']'))">View All &#8250;</span>
       </p>
     </div>
+
+    {% if search_query and not products %}
+      <div class="search-empty" style="
+        background:#fff;border:1px dashed #d1e0d8;border-radius:14px;
+        padding:32px 18px;text-align:center;color:#475569;margin-bottom:18px;">
+        <i class="fas fa-search" style="font-size:28px;color:#94a3b8;margin-bottom:8px;display:block;"></i>
+        <p style="font-size:14px;font-weight:600;color:#1f2937;margin:0;">
+          No products match &ldquo;<strong>{{ search_query }}</strong>&rdquo;
+        </p>
+        <p style="font-size:12px;color:#64748b;margin-top:6px;">
+          Try a different keyword or <a href="/" style="color:#044635;font-weight:700;">browse all products</a>.
+        </p>
+      </div>
+    {% endif %}
 
     <div class="products-grid" id="productGrid">
       {% for p in products %}
@@ -1766,7 +1852,7 @@
             <div class="product-card-meta">
               <i class="fas fa-star"></i>
               <span class="rate">4.{{ (loop.index * 3) % 10 }}</span>
-              <span>&#183; in stock</span>
+              <span>&#183; available</span>
             </div>
           </div>
         </div>
@@ -2013,21 +2099,34 @@
         activeIdx = (activeIdx - 1 + matches.length) % matches.length;
         updateActive();
       } else if (e.key === 'Enter') {
+        const q = input.value.trim();
+
+        // Empty query — let the browser reload the storefront home page.
+        if (!q) {
+          e.preventDefault();
+          window.location.href = window.location.pathname === '/search' ? '/' : '/';
+          return;
+        }
+
         if (activeIdx >= 0 && matches[activeIdx]) {
+          // Highlighted suggestion — just scroll/flash to the product,
+          // do NOT reload the page.
           e.preventDefault();
           jumpToMatch(activeIdx);
-        } else if (input.value.trim()) {
-          // let the form submit naturally to /customer/shop?q=...
-          // but also flash & scroll the first in-page match for instant feedback
-          const m = matches[0];
-          if (m) {
-            e.preventDefault();
-            jumpToMatch(0);
-            // then go to full search page after a moment
-            setTimeout(function () { form.submit(); }, 700);
-          }
-          // else: browser will submit the form
+          return;
         }
+
+        if (matches.length > 0) {
+          // We have in-page matches — show the first one. No page reload.
+          e.preventDefault();
+          jumpToMatch(0);
+          return;
+        }
+
+        // No in-page matches and no highlighted suggestion — fall back to
+        // the public /search page (works for guests AND logged-in users).
+        closeSuggest();
+        // Allow the natural form submit to proceed (do not preventDefault).
       } else if (e.key === 'Escape') {
         closeSuggest();
         input.blur();
@@ -2061,6 +2160,17 @@
       const span = document.createElement('span');
       span.className = 'pc-emoji-fallback';
       span.textContent = emoji;
+      this.replaceWith(span);
+    });
+  });
+
+  // Deal-card image fallback (image → emoji span on error)
+  document.querySelectorAll('.deal-img').forEach(img => {
+    img.addEventListener('error', function () {
+      const fb = this.dataset.fallback || '🛒';
+      const span = document.createElement('span');
+      span.className = 'deal-emoji-fallback';
+      span.textContent = fb;
       this.replaceWith(span);
     });
   });
