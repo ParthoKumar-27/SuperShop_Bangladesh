@@ -2,83 +2,236 @@
 {% block title %}Our Branches{% endblock %}
 
 {% block content %}
+<style>
+  .br-hero{
+    background:
+      radial-gradient(600px 220px at 90% -30%, rgba(241,123,13,.18), transparent 60%),
+      linear-gradient(135deg,#044635 0%, #0a6b4f 100%);
+    color:#fff;
+    border-radius:18px;
+    padding:22px 24px;
+    box-shadow:0 12px 30px rgba(4,70,53,.25);
+    position:relative; overflow:hidden;
+  }
+  .br-hero::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.06) 50%,transparent 70%);
+    background-size:220% 100%;
+    animation:csSheen 7s ease-in-out infinite;
+    pointer-events:none;
+  }
+  .br-greeting{font-size:12px;color:#a7e0cf;font-weight:600;letter-spacing:.08em;text-transform:uppercase;}
+  .br-hero h1{font-size:26px;font-weight:800;margin-top:4px;letter-spacing:-.02em;}
+  .br-hero h1 span{color:#ffb35c;}
 
-<!-- Hero Section -->
-<div class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-10 text-white mb-10 shadow-xl">
-    <h1 class="text-4xl font-bold mb-3">
-        🏪 SuperShop Branches
-    </h1>
+  .br-search{
+    display:flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:12px;padding:10px 14px;
+    backdrop-filter:blur(6px);
+    min-width:240px;
+  }
+  .br-search input{
+    background:transparent;border:0;outline:0;color:#fff;width:100%;font-size:13px;
+  }
+  .br-search input::placeholder{color:#cfd8d3;}
+  .br-search i{color:#a7e0cf;}
 
-    <p class="text-lg text-green-100">
-        Find your nearest SuperShop branch across Bangladesh.
-    </p>
-</div>
+  .br-grid{
+    display:grid;gap:18px;
+    grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  }
 
-<!-- Branch Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+  .br-card{
+    background:#fff;
+    border:1px solid #eef2f1;
+    border-radius:14px;
+    overflow:hidden;
+    transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;
+    display:flex;flex-direction:column;
+  }
+  .br-card:hover{
+    border-color:#cfeee3;
+    box-shadow:0 14px 32px rgba(4,70,53,.08);
+  }
 
-{% for b in branches %}
+  .br-card-head{
+    display:flex;align-items:center;gap:14px;
+    padding:16px 16px 12px;
+    border-bottom:1px solid #f1f5f4;
+  }
+  .br-ic{
+    width:48px;height:48px;border-radius:12px;flex-shrink:0;
+    background:linear-gradient(135deg,#f0f9f4 0%,#fff7ec 100%);
+    border:1px solid #e6efe9;
+    display:flex;align-items:center;justify-content:center;
+    color:#044635;font-size:18px;
+  }
+  .br-name{font-size:15px;font-weight:800;color:#044635;letter-spacing:-.01em;line-height:1.2;}
+  .br-city{font-size:11.5px;color:#64748b;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:4px;}
 
-<div class="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-2 transition duration-300">
+  .br-meta{padding:12px 16px 14px;display:flex;flex-direction:column;gap:8px;}
+  .br-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#475569;line-height:1.35;}
+  .br-row i{color:#0a6b4f;margin-top:2px;width:14px;text-align:center;flex-shrink:0;}
+  .br-row .text{word-break:break-word;}
 
-    <!-- Top Banner -->
-    <div class="h-28 bg-gradient-to-r from-[#044635] to-[#F17B0D]"></div>
+  .br-foot{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 16px 14px;border-top:1px dashed #eef2f1;margin-top:auto;
+  }
+  .pill-open  {display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#ecfdf5;color:#047857;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+  .pill-open .dot{width:6px;height:6px;border-radius:50%;background:#10b981;}
+  .pill-closed{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#fef2f2;color:#b91c1c;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+  .pill-closed .dot{width:6px;height:6px;border-radius:50%;background:#ef4444;}
 
-    <div class="p-6 -mt-12">
+  .br-actions{display:flex;gap:8px;}
+  .br-btn{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:5px 10px;border-radius:8px;
+    font-size:11.5px;font-weight:700;
+    border:1px solid #e2e8f0;color:#475569;background:#fff;
+    transition:.15s;text-decoration:none;
+  }
+  .br-btn:hover{background:#f1f5f9;color:#0f172a;border-color:#cbd5e1;}
+  .br-btn.primary{background:#044635;color:#fff;border-color:#044635;}
+  .br-btn.primary:hover{background:#033828;border-color:#033828;}
 
-        <!-- Circle Icon -->
-        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-4xl mx-auto">
-            🏬
-        </div>
+  .empty-state{
+    background:#fff;border:1px dashed #d1e0d8;border-radius:14px;
+    padding:36px 18px;text-align:center;color:#64748b;
+  }
+  .empty-state i{font-size:32px;color:#94a3b8;margin-bottom:10px;}
+</style>
 
-        <h2 class="text-center text-2xl font-bold text-[#044635] mt-4">
-            {{ b.branch_name }}
-        </h2>
-
-        <div class="mt-6 space-y-3 text-gray-600">
-
-            <div class="flex items-start gap-3">
-                <span>📍</span>
-                <span>{{ b.city_name }}</span>
-            </div>
-
-            <div class="flex items-start gap-3">
-                <span>🏠</span>
-                <span>{{ b.address }}</span>
-            </div>
-
-            <div class="flex items-start gap-3">
-                <span>📞</span>
-                <span>{{ b.phone }}</span>
-            </div>
-
-            <div class="flex items-start gap-3">
-                <span>🕒</span>
-                <span>{{ b.open_time }} - {{ b.close_time }}</span>
-            </div>
-
-        </div>
-
-        {% if b.is_active == 'Y' %}
-        <div class="mt-6 text-center">
-            <span class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold">
-                ● Open Now
-            </span>
-        </div>
-        {% else %}
-        <div class="mt-6 text-center">
-            <span class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-semibold">
-                ● Closed
-            </span>
-        </div>
-        {% endif %}
-
+{# ── Hero ── #}
+<div class="br-hero mb-6 relative">
+  <div class="relative z-[1] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+    <div>
+      <p class="br-greeting flex items-center gap-2">
+        <i class="fa-solid fa-store"></i>
+        Find a Store
+      </p>
+      <h1 class="mt-1">Our <span>Branches</span></h1>
+      <p class="text-sm text-green-200/80 mt-1">Find the nearest SuperShop branch across Bangladesh.</p>
     </div>
 
+    <div class="br-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input id="brSearch" type="text" placeholder="Search by name, city, address…" autocomplete="off">
+      <button id="brClear" type="button" aria-label="Clear"
+              class="text-green-100/80 hover:text-white transition hidden">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
 </div>
 
-{% endfor %}
-
+{# ── Stats strip ── #}
+{% set _open_cnt = branches | selectattr('is_active', 'equalto', 'Y') | list | length %}
+<div class="flex items-center justify-between mb-4 text-sm">
+  <p class="text-gray-500">
+    <span class="font-bold text-[#044635]">{{ branches | length }}</span> branches ·
+    <span class="font-bold text-emerald-600">{{ _open_cnt }}</span> open now
+  </p>
+  <p class="text-xs text-gray-400 hidden sm:flex items-center gap-1">
+    <i class="fa-solid fa-circle-info"></i>
+    Click <span class="font-semibold text-gray-600">Call</span> to phone the branch directly
+  </p>
 </div>
 
+{# ── Cards ── #}
+{% if branches %}
+  <div class="br-grid" id="brGrid">
+    {% for b in branches %}
+      <article class="br-card"
+               data-name="{{ b.branch_name }}"
+               data-city="{{ b.city_name }}"
+               data-address="{{ b.address }}">
+        <div class="br-card-head">
+          <div class="br-ic"><i class="fa-solid fa-shop"></i></div>
+          <div class="min-w-0 flex-1">
+            <h2 class="br-name truncate">{{ b.branch_name }}</h2>
+            <p class="br-city">
+              <i class="fa-solid fa-location-dot text-[10px]"></i>
+              {{ b.city_name }}
+            </p>
+          </div>
+        </div>
+
+        <div class="br-meta">
+          <div class="br-row">
+            <i class="fa-solid fa-map-pin"></i>
+            <span class="text">{{ b.address }}</span>
+          </div>
+          <div class="br-row">
+            <i class="fa-solid fa-phone"></i>
+            <span class="text">{{ b.phone }}</span>
+          </div>
+          <div class="br-row">
+            <i class="fa-solid fa-clock"></i>
+            <span class="text">{{ b.open_time }} – {{ b.close_time }}</span>
+          </div>
+        </div>
+
+        <div class="br-foot">
+          {% if b.is_active == 'Y' %}
+            <span class="pill-open"><span class="dot"></span> Open Now</span>
+          {% else %}
+            <span class="pill-closed"><span class="dot"></span> Closed</span>
+          {% endif %}
+          <div class="br-actions">
+            <a href="tel:{{ b.phone }}" class="br-btn">
+              <i class="fa-solid fa-phone text-[10px]"></i> Call
+            </a>
+            <a href="https://www.google.com/maps/search/?api=1&query={{ (b.branch_name ~ ' ' ~ b.address ~ ' ' ~ b.city_name) | urlencode }}"
+               target="_blank" rel="noopener" class="br-btn primary">
+              <i class="fa-solid fa-diamond-turn-right text-[10px]"></i> Directions
+            </a>
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  <div id="brEmpty" class="empty-state mt-6 hidden">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <p class="text-sm">No branches match your search.</p>
+  </div>
+
+{% else %}
+  <div class="empty-state">
+    <i class="fa-solid fa-store"></i>
+    <p class="text-sm">No branches are listed yet.</p>
+  </div>
+{% endif %}
+
+<script>
+(function () {
+  const input = document.getElementById('brSearch');
+  const clear = document.getElementById('brClear');
+  const grid  = document.getElementById('brGrid');
+  const empty = document.getElementById('brEmpty');
+  if (!input || !grid) return;
+
+  const cards = Array.from(grid.querySelectorAll('.br-card'));
+
+  function apply() {
+    const q = input.value.trim().toLowerCase();
+    clear.classList.toggle('hidden', !q);
+    let hits = 0;
+    cards.forEach(c => {
+      const hay = (c.dataset.name + ' ' + c.dataset.city + ' ' + c.dataset.address).toLowerCase();
+      const match = !q || hay.includes(q);
+      c.style.display = match ? '' : 'none';
+      if (match) hits++;
+    });
+    if (empty) empty.classList.toggle('hidden', hits !== 0);
+  }
+
+  input.addEventListener('input', apply);
+  clear.addEventListener('click', () => { input.value = ''; apply(); input.focus(); });
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') { input.value = ''; apply(); }});
+})();
+</script>
 {% endblock %}

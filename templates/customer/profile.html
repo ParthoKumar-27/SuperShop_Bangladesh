@@ -2,110 +2,237 @@
 {% block title %}My Profile{% endblock %}
 
 {% block content %}
-<section>
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+<style>
+  .profile-cover {
+    position:relative;
+    height:120px;
+    background:
+      radial-gradient(600px 200px at 0% 0%, rgba(241,123,13,.45), transparent 60%),
+      radial-gradient(600px 200px at 100% 0%, rgba(20,184,166,.45), transparent 60%),
+      linear-gradient(135deg,#044635 0%, #0a6b50 100%);
+    border-radius:18px 18px 0 0;
+  }
+  .profile-avatar {
+    width:96px;height:96px;border-radius:50%;
+    background:linear-gradient(135deg,#ffb347 0%,#F17B0D 55%,#c45f00 100%);
+    display:flex;align-items:center;justify-content:center;
+    font-size:36px;font-weight:800;color:#fff;
+    border:5px solid #fff;
+    box-shadow:0 10px 22px rgba(4,70,53,.20);
+    margin-top:-48px;
+    position:relative;
+  }
 
-    {# ---------- header ---------- #}
-    <div class="flex items-start justify-between mb-6 flex-wrap gap-3">
-      <div>
-        <h2 class="text-xl font-bold text-[#044635]">My Profile</h2>
-        <p class="text-sm text-gray-400 mt-1">View and update your personal information.</p>
+  .stat-card {
+    border:1px solid #eef2f1;border-radius:14px;
+    padding:14px 16px;background:#fff;
+    display:flex;align-items:center;gap:12px;
+    transition:.15s;
+  }
+  .stat-card:hover { transform:translateY(-2px); box-shadow:0 10px 22px rgba(4,70,53,.08); }
+  .stat-icon {
+    width:42px;height:42px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;color:#fff;flex-shrink:0;
+    box-shadow:0 6px 14px rgba(4,70,53,.18);
+  }
+  .stat-icon.emerald { background:linear-gradient(135deg,#10b981,#047857); }
+  .stat-icon.orange  { background:linear-gradient(135deg,#F17B0D,#c45f00); }
+  .stat-icon.teal    { background:linear-gradient(135deg,#14b8a6,#0d9488); }
+  .stat-label { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.06em; }
+  .stat-value { font-size:18px; font-weight:800; color:#0f172a; margin-top:2px; }
+
+  .field-label { display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:6px; }
+  .field-label i { color:#F17B0D; font-size:11px; }
+  .field-input {
+    width:100%; padding:11px 14px;
+    border:1.5px solid #e5e7eb; border-radius:12px;
+    background:#fff; font-size:14px; color:#0f172a;
+    transition: border-color .15s, box-shadow .15s;
+    outline:none;
+  }
+  .field-input:focus { border-color:#044635; box-shadow: 0 0 0 4px rgba(4,70,53,.08); }
+  .field-input:disabled { background:#f8fafc; color:#64748b; cursor:not-allowed; }
+
+  .save-btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:12px 22px; border-radius:12px;
+    background:linear-gradient(135deg,#F17B0D 0%,#c45f00 100%);
+    color:#fff; font-weight:700; font-size:14px;
+    box-shadow:0 10px 22px rgba(241,123,13,.32);
+    transition:.15s;
+  }
+  .save-btn:hover { transform:translateY(-1px); box-shadow:0 14px 28px rgba(241,123,13,.42); }
+  .save-btn:disabled { opacity:.7; cursor:not-allowed; }
+
+  .ghost-btn {
+    padding:12px 18px; border-radius:12px;
+    border:1.5px solid #e5e7eb; color:#475569;
+    background:#fff; font-weight:600; font-size:14px;
+    transition:.15s;
+  }
+  .ghost-btn:hover { background:#f8fafc; border-color:#cbd5e1; }
+
+  .flash {
+    display:flex; align-items:center; gap:10px;
+    padding:12px 14px; border-radius:12px;
+    font-size:13.5px; font-weight:500;
+    border:1px solid; margin-bottom:16px;
+  }
+  .flash-success { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+  .flash-error   { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+</style>
+
+{# ── Breadcrumb ── #}
+<div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-[#044635]/70 mb-2">
+  <i class="fa-solid fa-id-card"></i>
+  <span>Account</span>
+  <span class="text-gray-300">/</span>
+  <span class="text-gray-400">Profile</span>
+</div>
+
+{# ── Profile card (cover + avatar + stats) ── #}
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+  <div class="profile-cover">
+    <div class="absolute top-4 right-4">
+      <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider
+                   bg-white/15 text-white border border-white/25 px-3 py-1 rounded-full backdrop-blur">
+        <i class="fa-solid fa-crown text-[#ffb35c]"></i>
+        {{ profile.membership_type or "REGULAR" }} Member
+      </span>
+    </div>
+  </div>
+
+  <div class="px-6 pb-6">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div class="flex items-end gap-4">
+        <div class="profile-avatar">
+          {{ (profile.cust_name or user_name or "U")[0] | upper }}
+        </div>
+        <div class="pb-1">
+          <h1 class="text-2xl font-extrabold text-gray-800">{{ profile.cust_name or user_name or "Customer" }}</h1>
+          <p class="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+            <i class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
+            Verified account · ID #{{ profile.cust_id }}
+          </p>
+        </div>
       </div>
       <a href="/customer/dashboard"
-         class="text-sm text-gray-500 hover:text-[#044635] transition flex items-center gap-1">
-        ← Back to account
+         class="inline-flex items-center gap-2 text-sm font-semibold text-[#044635] hover:text-[#F17B0D] transition self-start sm:self-end">
+        <i class="fa-solid fa-arrow-left"></i>
+        Back to account
       </a>
     </div>
 
-    {# ---------- flash messages ---------- #}
-    {% if msg == 'profile_updated' %}
-      <div class="mb-5 px-4 py-3 rounded-xl bg-green-50 text-green-700 text-sm border border-green-100">
-        ✅ Profile updated successfully.
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+      <div class="stat-card">
+        <div class="stat-icon emerald"><i class="fa-solid fa-id-badge"></i></div>
+        <div>
+          <div class="stat-label">Customer ID</div>
+          <div class="stat-value">#{{ profile.cust_id }}</div>
+        </div>
       </div>
-    {% elif error %}
-      <div class="mb-5 px-4 py-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100">
-        ⚠️ {{ error }}
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-crown"></i></div>
+        <div>
+          <div class="stat-label">Membership</div>
+          <div class="stat-value">{{ profile.membership_type or "REGULAR" }}</div>
+        </div>
       </div>
-    {% endif %}
-
-    {# ---------- read-only summary card ---------- #}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-      <div class="rounded-xl border border-gray-100 p-4 bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ee]">
-        <p class="text-xs text-gray-500">Customer ID</p>
-        <p class="font-semibold text-[#044635] mt-1">{{ profile.cust_id }}</p>
-      </div>
-      <div class="rounded-xl border border-gray-100 p-4 bg-gradient-to-br from-[#fff7ed] to-[#ffedd5]">
-        <p class="text-xs text-gray-500">Membership</p>
-        <p class="font-semibold text-[#F17B0D] mt-1">{{ profile.membership_type or "REGULAR" }}</p>
-      </div>
-      <div class="rounded-xl border border-gray-100 p-4 bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ee]">
-        <p class="text-xs text-gray-500">Loyalty Points</p>
-        <p class="font-semibold text-[#044635] mt-1">🪙 {{ profile.loyalty_points or 0 }}</p>
+      <div class="stat-card">
+        <div class="stat-icon teal"><i class="fa-solid fa-coins"></i></div>
+        <div>
+          <div class="stat-label">Loyalty Points</div>
+          <div class="stat-value">{{ profile.loyalty_points or 0 }} <span class="text-sm font-medium text-gray-400">pts</span></div>
+        </div>
       </div>
     </div>
-
-    {# ---------- editable form ---------- #}
-    <form action="/customer/profile" method="post" class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
-          <input type="text" name="cust_name" required maxlength="60"
-                 value="{{ profile.cust_name or '' }}"
-                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#044635] focus:ring-2 focus:ring-[#044635]/10 outline-none transition">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
-          <input type="text" name="phone" required maxlength="15"
-                 value="{{ profile.phone or '' }}"
-                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#044635] focus:ring-2 focus:ring-[#044635]/10 outline-none transition">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-          <input type="email" name="email" maxlength="100"
-                 value="{{ profile.email or '' }}"
-                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#044635] focus:ring-2 focus:ring-[#044635]/10 outline-none transition">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
-          <input type="date" name="dob"
-                 value="{{ profile.dob or '' }}"
-                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#044635] focus:ring-2 focus:ring-[#044635]/10 outline-none transition">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
-          <select name="gender"
-                  class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#044635] focus:ring-2 focus:ring-[#044635]/10 outline-none transition bg-white">
-            <option value="" {% if not profile.gender %}selected{% endif %}>Prefer not to say</option>
-            <option value="M" {% if profile.gender == 'M' %}selected{% endif %}>Male</option>
-            <option value="F" {% if profile.gender == 'F' %}selected{% endif %}>Female</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">Address</label>
-          <input type="text" name="address" maxlength="200"
-                 value="{{ profile.address or '' }}"
-                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#044635] focus:ring-2 focus:ring-[#044635]/10 outline-none transition">
-        </div>
-      </div>
-
-      <div class="flex items-center justify-end gap-3 pt-2">
-        <a href="/customer/dashboard"
-           class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">
-          Cancel
-        </a>
-        <button type="submit"
-                class="bg-[#F17B0D] hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition">
-          Save changes
-        </button>
-      </div>
-    </form>
-
   </div>
-</section>
+</div>
+
+{# ── Flash messages ── #}
+{% if msg == 'profile_updated' %}
+  <div class="flash flash-success">
+    <i class="fa-solid fa-circle-check"></i>
+    Profile updated successfully.
+  </div>
+{% elif error %}
+  <div class="flash flash-error">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    {{ error }}
+  </div>
+{% endif %}
+
+{# ── Editable form ── #}
+<form action="/customer/profile" method="post" id="profileForm" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h2 class="font-bold text-gray-800 text-base">Personal Information</h2>
+      <p class="text-xs text-gray-400 mt-0.5">Update your details to keep your account current.</p>
+    </div>
+    <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider hidden sm:inline">
+      <i class="fa-solid fa-lock text-[10px] mr-1"></i> Secure
+    </span>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div>
+      <label class="field-label"><i class="fa-solid fa-user"></i> Full Name</label>
+      <input type="text" name="cust_name" required maxlength="60"
+             value="{{ profile.cust_name or '' }}" class="field-input">
+    </div>
+
+    <div>
+      <label class="field-label"><i class="fa-solid fa-phone"></i> Phone</label>
+      <input type="text" name="phone" required maxlength="15"
+             value="{{ profile.phone or '' }}" class="field-input">
+    </div>
+
+    <div>
+      <label class="field-label"><i class="fa-solid fa-envelope"></i> Email</label>
+      <input type="email" name="email" maxlength="100"
+             value="{{ profile.email or '' }}" class="field-input"
+             placeholder="you@example.com">
+    </div>
+
+    <div>
+      <label class="field-label"><i class="fa-regular fa-calendar"></i> Date of Birth</label>
+      <input type="date" name="dob"
+             value="{{ profile.dob or '' }}" class="field-input">
+    </div>
+
+    <div>
+      <label class="field-label"><i class="fa-solid fa-venus-mars"></i> Gender</label>
+      <select name="gender" class="field-input">
+        <option value="" {% if not profile.gender %}selected{% endif %}>Prefer not to say</option>
+        <option value="M" {% if profile.gender == 'M' %}selected{% endif %}>Male</option>
+        <option value="F" {% if profile.gender == 'F' %}selected{% endif %}>Female</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="field-label"><i class="fa-solid fa-location-dot"></i> Address</label>
+      <input type="text" name="address" maxlength="200"
+             value="{{ profile.address or '' }}" class="field-input"
+             placeholder="House, road, area, city">
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
+    <a href="/customer/dashboard" class="ghost-btn">Cancel</a>
+    <button type="submit" class="save-btn" id="saveBtn">
+      <i class="fa-solid fa-floppy-disk"></i>
+      Save changes
+    </button>
+  </div>
+</form>
+
+<script>
+  const form = document.getElementById('profileForm');
+  const btn  = document.getElementById('saveBtn');
+  form.addEventListener('submit', function () {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+  });
+</script>
 {% endblock %}

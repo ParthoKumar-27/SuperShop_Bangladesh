@@ -3,91 +3,264 @@
 
 {% block content %}
 
-<div class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-10 text-white mb-10 shadow-xl">
+<style>
+  .cart-row { transition: background .2s ease, border-color .2s ease; }
+  .cart-row:hover { background:#fafdfb; }
 
-    <h1 class="text-4xl font-bold">
-        🛒 My Cart
-    </h1>
+  .qty-stepper { display:inline-flex; align-items:center; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; background:#fff; }
+  .qty-stepper button { width:30px; height:30px; display:flex; align-items:center; justify-content:center; color:#475569; font-size:13px; transition:.15s; }
+  .qty-stepper button:hover:not(:disabled) { background:#f1f5f9; color:#044635; }
+  .qty-stepper button:disabled { color:#cbd5e1; cursor:not-allowed; }
+  .qty-stepper input { width:42px; height:30px; border:none; outline:none; text-align:center; font-size:13px; font-weight:600; color:#0f172a; background:transparent; -moz-appearance:textfield; }
+  .qty-stepper input::-webkit-outer-spin-button,
+  .qty-stepper input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
 
-    <p class="mt-2 text-green-100">
-        Review your items before checkout.
+  .cart-thumb {
+    width:64px;height:64px;border-radius:12px;
+    background:linear-gradient(135deg,#f0f9f4 0%,#fff7ec 100%);
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+    border:1px solid #e5e7eb; flex-shrink:0;
+  }
+  .cart-thumb img { width:100%; height:100%; object-fit:contain; padding:6px; }
+
+  .summary-card {
+    background:#fff; border:1px solid #eef2f1; border-radius:18px;
+    box-shadow:0 12px 28px rgba(4,70,53,.06);
+  }
+  .summary-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; font-size:14px; color:#475569; }
+  .summary-row.total { padding-top:14px; margin-top:6px; border-top:1px dashed #cbd5e1; color:#0f172a; font-weight:700; }
+  .summary-row.total .amount { color:#F17B0D; font-size:24px; font-weight:800; }
+
+  .coupon-input { display:flex; gap:8px; }
+  .coupon-input input { flex:1; padding:9px 12px; border:1px solid #e5e7eb; border-radius:10px; font-size:13px; outline:none; transition:.15s; }
+  .coupon-input input:focus { border-color:#044635; box-shadow:0 0 0 3px rgba(4,70,53,.08); }
+  .coupon-input button { padding:9px 14px; background:#f1f5f9; color:#044635; font-weight:700; font-size:13px; border-radius:10px; transition:.15s; }
+  .coupon-input button:hover { background:#e2e8f0; }
+
+  .checkout-btn {
+    width:100%; padding:13px; border-radius:12px;
+    background:linear-gradient(135deg,#F17B0D 0%,#c45f00 100%);
+    color:#fff; font-weight:700; font-size:14.5px; letter-spacing:.01em;
+    box-shadow:0 10px 22px rgba(241,123,13,.32);
+    transition:transform .15s ease, box-shadow .15s ease;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .checkout-btn:hover { transform:translateY(-1px); box-shadow:0 14px 28px rgba(241,123,13,.42); }
+  .checkout-btn:active { transform:translateY(0) scale(.99); }
+
+  .perks li { display:flex; align-items:center; gap:8px; font-size:12.5px; color:#475569; padding:6px 0; }
+  .perks i { color:#10b981; width:16px; text-align:center; }
+
+  .remove-btn {
+    width:34px;height:34px;border-radius:10px;
+    display:inline-flex;align-items:center;justify-content:center;
+    color:#ef4444;background:#fef2f2;border:1px solid #fecaca;
+    transition:.15s;
+  }
+  .remove-btn:hover { background:#fee2e2; color:#b91c1c; }
+
+  .badge-discount { background:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%); color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:6px; letter-spacing:.03em; }
+</style>
+
+{# ── Page header ── #}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.16em] text-[#044635]/70">
+      <i class="fa-solid fa-cart-shopping"></i>
+      <span>Step 1 of 3</span>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-800 mt-1">Your Shopping Cart</h1>
+    <p class="text-sm text-gray-400 mt-0.5">
+      {% if items %}
+        {{ items|length }} item{{ '' if items|length == 1 else 's' }} ready for checkout
+      {% else %}
+        Review your items before checkout
+      {% endif %}
     </p>
-
+  </div>
+  <a href="/customer/shop"
+     class="hidden sm:inline-flex items-center gap-2 text-sm text-[#044635] hover:text-[#F17B0D] font-semibold transition">
+    <i class="fa-solid fa-arrow-left"></i>
+    Continue Shopping
+  </a>
 </div>
 
 {% if not items %}
 
-<div class="bg-white rounded-2xl shadow-lg p-10 text-center text-gray-500">
-    Your cart is empty.
-    <a href="/customer/shop" class="text-[#F17B0D] font-semibold ml-1 hover:underline">Start shopping →</a>
-</div>
+  {# ── Empty state ── #}
+  <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-12 sm:p-16 text-center">
+    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-[#f0f9f4] to-[#fff7ec] flex items-center justify-center mx-auto mb-5">
+      <i class="fa-solid fa-cart-arrow-down text-4xl text-[#F17B0D]"></i>
+    </div>
+    <h2 class="text-xl font-bold text-gray-800">Your cart is empty</h2>
+    <p class="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+      Looks like you haven't added anything yet. Let's find some great deals for you.
+    </p>
+    <a href="/customer/shop"
+       class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl bg-[#044635] hover:bg-[#033828] text-white font-semibold text-sm transition shadow-md hover:shadow-lg">
+      <i class="fa-solid fa-store"></i>
+      Start Shopping
+    </a>
+  </div>
 
 {% else %}
 
-<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-{% for item in items %}
-
-<div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition">
-
-    <h2 class="text-xl font-bold text-[#044635]">
-        {{ item.product_name }}
-    </h2>
-
-    <p class="text-gray-500 mt-1">
-        {{ item.brand or '—' }} • ৳{{ "%.2f"|format(item.unit_price) }} / {{ item.unit }}
-    </p>
-
-    <div class="mt-5">
-
-        <div class="flex justify-between items-center mb-3">
-            <span>Quantity</span>
-            <form action="/customer/cart/update" method="post" class="flex items-center gap-2">
-                <input type="hidden" name="product_id" value="{{ item.product_id }}">
-                <input type="number" name="quantity" value="{{ item.quantity }}" min="0"
-                       class="w-16 border border-gray-300 rounded-lg px-2 py-1 text-center text-sm">
-                <button type="submit" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">
-                    Update
-                </button>
-            </form>
+    {# ── Left: cart items list ── #}
+    <div class="lg:col-span-2 space-y-3">
+      <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-bag-shopping text-[#044635]"></i>
+            <h2 class="font-bold text-gray-800">Cart Items</h2>
+          </div>
+          <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+            {{ items|length }} item{{ '' if items|length == 1 else 's' }}
+          </span>
         </div>
 
-        <div class="flex justify-between items-center bg-green-400 text-green-1000 px-4 py-2 rounded-xl mb-4">
-    <span class="text-sm font-semibold">Subtotal</span>
-    <span class="font-bold">৳{{ "%.2f"|format(item.line_total) }}</span>
-</div>
+        <ul class="divide-y divide-gray-100">
+          {% for item in items %}
+          {% set iname = item.product_name|lower %}
+          {% set emoji = (
+              '🥛' if 'milk'        in iname else
+              '🍦' if 'yogurt'      in iname else
+              '🧈' if 'butter'      in iname else
+              '🍞' if 'bread'       in iname else
+              '🍪' if 'biscuit'     in iname else
+              '🥔' if 'chip'        in iname else
+              '🍿' if 'chanachur'   in iname else
+              '🧃' if 'juice'       in iname else
+              '🍵' if 'tea'         in iname else
+              '🥤' if 'soft drink'  in iname or 'soda' in iname else
+              '🍚' if 'rice'        in iname else
+              '🫙' if 'oil'         in iname else
+              '🍬' if 'sugar'       in iname else
+              '🧼' if 'soap'        in iname else
+              '🧴' if 'shampoo'     in iname else
+              '🪥' if 'toothpaste'  in iname else
+              '🔌' if 'charger'     in iname else
+              '🎧' if 'earphone'    in iname else
+              '👕' if 't-shirt'     in iname or 'shirt' in iname else
+              '🛍️'
+            ) %}
+          <li class="cart-row p-4 sm:p-5 flex items-start gap-4">
+            <div class="cart-thumb">
+              {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.product_name }}" loading="lazy">
+              {% else %}
+                <span>{{ emoji }}</span>
+              {% endif %}
+            </div>
 
-<form action="/customer/cart/remove" method="post">
-    <input type="hidden" name="product_id" value="{{ item.product_id }}">
-    <button type="submit"
-        class="w-full bg-red-200 text-red-800 hover:bg-red-300 px-4 py-2 rounded-xl text-center text-sm font-semibold transition">
-        ✕ Remove
-    </button>
-</form>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="font-semibold text-gray-800 truncate">{{ item.product_name }}</h3>
+                  <p class="text-xs text-gray-400 mt-0.5">
+                    {{ item.brand or 'No brand' }} · ৳{{ "%.2f"|format(item.unit_price) }} / {{ item.unit }}
+                  </p>
+                  {% if item.disc_label %}
+                  <span class="badge-discount inline-block mt-1">{{ item.disc_label }}</span>
+                  {% endif %}
+                </div>
+                <form action="/customer/cart/remove" method="post" class="flex-shrink-0">
+                  <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                  <button type="submit" class="remove-btn" title="Remove item"
+                          onclick="return confirm('Remove this item from your cart?');">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
+                  </button>
+                </form>
+              </div>
 
+              <div class="mt-3 flex items-center justify-between flex-wrap gap-3">
+                <form action="/customer/cart/update" method="post" class="qty-stepper">
+                  <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                  <button type="button" data-step="dec" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                  <input type="number" name="quantity" value="{{ item.quantity }}" min="0" max="99" data-qty>
+                  <button type="button" data-step="inc" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+                </form>
+
+                <div class="text-right">
+                  <p class="text-[11px] uppercase tracking-wider text-gray-400">Subtotal</p>
+                  <p class="font-extrabold text-[#044635] text-base">৳{{ "%.2f"|format(item.line_total) }}</p>
+                </div>
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <a href="/customer/shop"
+         class="sm:hidden inline-flex items-center gap-2 text-sm text-[#044635] font-semibold">
+        <i class="fa-solid fa-arrow-left"></i>
+        Continue Shopping
+      </a>
     </div>
 
-</div>
+    {# ── Right: sticky summary ── #}
+    <aside class="lg:col-span-1">
+      <div class="summary-card p-6 lg:sticky lg:top-28">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fa-solid fa-receipt text-[#F17B0D]"></i>
+          <h2 class="font-bold text-gray-800">Order Summary</h2>
+        </div>
 
-{% endfor %}
+        <div class="summary-row">
+          <span>Subtotal ({{ items|length }} item{{ '' if items|length == 1 else 's' }})</span>
+          <span class="font-semibold text-gray-800">৳{{ "%.2f"|format(grand_total) }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Delivery fee</span>
+          <span class="text-xs text-gray-500 italic">calculated at next step</span>
+        </div>
 
-</div>
+        <div class="coupon-input mt-3 mb-1">
+          <input type="text" placeholder="Promo / Loyalty code" />
+          <button type="button">Apply</button>
+        </div>
 
-<div class="bg-gradient-to-r from-[#044635] to-[#0a6b50] rounded-3xl p-8 mt-8 text-white shadow-xl
-            flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="summary-row total">
+          <span>Total</span>
+          <span class="amount">৳{{ "%.2f"|format(grand_total) }}</span>
+        </div>
 
-    <div>
-        <p class="text-green-100 text-sm">Total Amount</p>
-        <p class="text-3xl font-bold">৳{{ "%.2f"|format(grand_total) }}</p>
-    </div>
+        <a href="/customer/checkout" class="checkout-btn mt-5">
+          Proceed to Checkout
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
 
-    <a href="/customer/checkout"
-       class="bg-[#F17B0D] hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl transition text-center">
-        Proceed to Checkout →
-    </a>
-
-</div>
+        <ul class="perks mt-5 pt-5 border-t border-gray-100">
+          <li><i class="fa-solid fa-shield-halved"></i> Secure checkout with verified payment</li>
+          <li><i class="fa-solid fa-truck-fast"></i> Fast delivery from your selected branch</li>
+          <li><i class="fa-solid fa-rotate-left"></i> Easy returns within 7 days</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
 
 {% endif %}
+
+<script>
+  /* ── qty steppers (auto-submit on change) ─────────────────────── */
+  document.querySelectorAll('form.qty-stepper').forEach(form => {
+    const input = form.querySelector('[data-qty]');
+    const dec   = form.querySelector('[data-step="dec"]');
+    const inc   = form.querySelector('[data-step="inc"]');
+
+    function clamp(v){ return Math.max(0, Math.min(99, v)); }
+
+    dec.addEventListener('click', () => {
+      input.value = clamp((parseInt(input.value,10) || 1) - 1);
+      form.submit();
+    });
+    inc.addEventListener('click', () => {
+      input.value = clamp((parseInt(input.value,10) || 1) + 1);
+      form.submit();
+    });
+  });
+</script>
 
 {% endblock %}

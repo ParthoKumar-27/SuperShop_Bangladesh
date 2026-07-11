@@ -161,107 +161,107 @@
         }
         .cs-side-card{
             position:relative;
-            background:
-                linear-gradient(160deg,#ffffff 0%,#fff7ec 45%,#ffe7cf 100%);
-            border:1px solid rgba(241,123,13,.18);
+            background:#ffffff;
+            border:1px solid #eef2f1;
             border-radius:var(--radius-lg);
-            box-shadow:0 18px 42px rgba(255,146,4,.18),0 4px 14px rgba(4,70,53,.05);
-            padding:22px 18px 16px;
-            animation:csSlideIn .55s cubic-bezier(.2,.8,.2,1) both;
+            box-shadow:0 8px 24px rgba(4,70,53,.06);
+            padding:20px 16px 16px;
+            animation:csSlideIn .45s cubic-bezier(.2,.8,.2,1) both;
             overflow:hidden;
         }
         .cs-side-card::before{
             content:'';
             position:absolute;inset:0;
-            background:radial-gradient(380px 220px at -10% -20%,rgba(20,184,166,.18),transparent 65%);
+            background:
+                linear-gradient(180deg,rgba(4,70,53,.04) 0%,transparent 220px),
+                radial-gradient(360px 180px at 100% 0%,rgba(241,123,13,.05),transparent 70%);
             pointer-events:none;
         }
         @keyframes csSlideIn{
-            from{opacity:0;transform:translateX(-12px);}
+            from{opacity:0;transform:translateX(-8px);}
             to  {opacity:1;transform:translateX(0);}
         }
 
         .cs-side-avatar{
-            width:56px;height:56px;border-radius:50%;
+            width:52px;height:52px;border-radius:50%;
             background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);
-            color:#fff;font-size:20px;font-weight:800;
+            color:#fff;font-size:18px;font-weight:800;
             display:flex;align-items:center;justify-content:center;
-            box-shadow:0 8px 18px rgba(4,70,53,.30),inset 0 1px 0 rgba(255,255,255,.18);
+            box-shadow:0 6px 14px rgba(4,70,53,.25),inset 0 1px 0 rgba(255,255,255,.18);
             flex-shrink:0;
             position:relative;
+            isolation:isolate;
         }
         .cs-side-avatar::after{
             content:'';
-            position:absolute;inset:-3px;
+            position:absolute;inset:-4px;
             border-radius:50%;
-            background:linear-gradient(135deg,var(--orange) 0%,transparent 70%);
-            opacity:.35;
+            background:conic-gradient(from 220deg,var(--orange) 0deg,var(--orange-soft) 90deg,transparent 200deg);
+            opacity:.55;
             z-index:-1;
-            filter:blur(8px);
+            filter:blur(6px);
         }
 
         .cs-points-chip{
             display:inline-flex;align-items:center;gap:6px;
             padding:5px 11px;border-radius:999px;
-            background:linear-gradient(95deg,#fff3e0 0%,#ffe7cf 100%);
-            border:1px solid rgba(241,123,13,.22);
-            color:var(--orange-deep);
-            font-size:11.5px;font-weight:800;
-            box-shadow:0 4px 10px rgba(241,123,13,.12);
+            background:#f0f9f4;
+            border:1px solid #cfeee3;
+            color:#044635;
+            font-size:11.5px;font-weight:700;
         }
         .cs-points-chip i{color:var(--orange);font-size:11px;}
 
         .cs-nav-label{
-            font-size:10px;font-weight:800;text-transform:uppercase;
-            letter-spacing:.14em;color:#b08e6f;
-            padding:14px 6px 6px;
-            display:flex;align-items:center;gap:6px;
+            font-size:10.5px;font-weight:700;text-transform:uppercase;
+            letter-spacing:.12em;color:#94a3b8;
+            padding:16px 6px 6px;
+            display:flex;align-items:center;gap:8px;
         }
-        .cs-nav-label::before{
-            content:'';width:14px;height:1px;
-            background:linear-gradient(90deg,rgba(241,123,13,.6),transparent);
+        .cs-nav-label::after{
+            content:'';flex:1;height:1px;
+            background:linear-gradient(90deg,#e5e7eb,transparent);
         }
 
         .cs-nav{
-            display:flex;flex-direction:column;gap:3px;
+            display:flex;flex-direction:column;gap:2px;
         }
         .cs-nav a{
             display:flex;align-items:center;justify-content:space-between;
-            padding:10px 12px;
-            font-size:13.5px;color:var(--dark);font-weight:500;
-            border-radius:12px;
-            transition:background .2s ease,color .2s ease,transform .2s ease,box-shadow .2s ease;
+            padding:9px 12px;
+            font-size:13.5px;color:#475569;font-weight:500;
+            border-radius:10px;
+            transition:background .15s ease,color .15s ease;
             position:relative;
-            border-left:3px solid transparent;
         }
         .cs-nav a:hover{
-            background:rgba(241,123,13,.10);
-            color:var(--orange-deep);
-            transform:translateX(4px);
+            background:#f8fafc;
+            color:#044635;
         }
         .cs-nav a.active{
-            background:linear-gradient(95deg,var(--orange) 0%,var(--orange-soft) 100%);
-            color:#fff;font-weight:700;
-            box-shadow:0 10px 22px rgba(241,123,13,.32),inset 0 1px 0 rgba(255,255,255,.25);
-            border-left-color:var(--orange-deep);
+            background:#044635;
+            color:#ffffff;
+            font-weight:600;
+            box-shadow:0 4px 10px rgba(4,70,53,.18);
         }
-        .cs-nav a.active .cs-nav-arrow{color:rgba(255,255,255,.9);}
-        .cs-nav-arrow{color:var(--mid);font-size:11px;transition:transform .2s ease;}
-        .cs-nav a:hover .cs-nav-arrow{transform:translateX(2px);}
+        .cs-nav a.active i{ color:#ffb35c; }
+        .cs-nav a.active .cs-nav-arrow{color:rgba(255,255,255,.75);}
+        .cs-nav-arrow{color:#cbd5e1;font-size:12px;transition:transform .15s ease;}
+        .cs-nav a:hover .cs-nav-arrow{transform:translateX(2px);color:#94a3b8;}
 
         .cs-danger-zone{
             margin-top:18px;padding-top:14px;
-            border-top:1px solid rgba(241,123,13,.18);
+            border-top:1px solid #f1f5f9;
         }
         .cs-danger-btn{
             width:100%;text-align:left;
-            padding:10px 12px;border-radius:12px;
+            padding:9px 12px;border-radius:10px;
             color:#dc2626;font-size:13px;font-weight:600;
             background:transparent;border:none;cursor:pointer;
             display:flex;align-items:center;gap:10px;
             transition:background .15s ease,color .15s ease;
         }
-        .cs-danger-btn:hover{background:rgba(220,38,38,.08);color:#b91c1c;}
+        .cs-danger-btn:hover{background:#fef2f2;color:#b91c1c;}
         .cs-danger-btn i{width:18px;text-align:center;}
 
         /* ══════════════════ FOOTER ══════════════════ */
@@ -311,7 +311,9 @@
 
         <!-- Logo -->
         <a href="/" class="flex items-center gap-3">
-            <div class="cs-logo-badge">🛒</div>
+            <div class="cs-logo-badge">
+                <i class="fa-solid fa-bag-shopping"></i>
+            </div>
             <div>
                 <h1 class="text-white text-xl font-extrabold tracking-tight">SuperShop <span class="text-[#ffb35c]">BD</span></h1>
                 <p class="text-green-200 text-[11px] tracking-wide uppercase">Bangladesh Retail Network</p>
@@ -325,10 +327,11 @@
                 {% set cart = request.session.get('cart', {}) %}
                 {% set cart_count = cart.values() | sum if cart else 0 %}
                 <a href="/customer/cart" title="Cart" class="cs-cart-btn">
-                    🛒
-                    {% if cart_count > 0 %}
-                    <span class="cs-cart-badge">{{ cart_count }}</span>
-                    {% endif %}
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    {# Always render the badge slot so JS/AJAX can update
+                       it in place. Hide via [hidden] when truly empty so
+                       non-zero cart counts are always visible. #}
+                    <span class="cs-cart-badge"{% if cart_count == 0 %} hidden{% endif %}>{{ cart_count }}</span>
                 </a>
 
             {% elif role == "EMPLOYEE" %}

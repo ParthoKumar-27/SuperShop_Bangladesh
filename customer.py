@@ -16,6 +16,21 @@ from datetime import date
 
 customer_router = APIRouter(prefix="/customer", tags=["Customer"])
 templates = Jinja2Templates(directory="templates")
+from supabase_client import BUCKET as _BUCKET, SUPABASE_URL as _SUPABASE_URL
+
+def _normalize_image_url(raw):
+    """Build a public Supabase URL from either a full URL or a bare storage key."""
+    if not raw:
+        return None
+    raw = str(raw).strip()
+    if not raw:
+        return None
+    if raw.startswith(("http://", "https://", "//")):
+        return raw
+    key = raw.lstrip("/")
+    if key.startswith(f"{_BUCKET}/"):
+        key = key[len(_BUCKET) + 1:]
+    return f"{_SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{_BUCKET}/{key}"
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER DASHBOARD  (protected — CUSTOMER only)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -368,6 +383,7 @@ def customer_shop(request: Request, session=Depends(require_customer)):
 
     raw_products = query("""
         SELECT p.product_id, p.product_name, p.brand, p.unit_price, p.unit, p.cat_id,
+               p.image_url,
                bi.quantity,
                CASE WHEN bi.quantity <= bi.reorder_level THEN 'LOW' ELSE 'AVAILABLE' END AS stock_status
         FROM branch_inventory bi
@@ -380,6 +396,7 @@ def customer_shop(request: Request, session=Depends(require_customer)):
     products = []
     for p in raw_products:
         disc_price, disc_label = _apply_discount(p["unit_price"], p["product_id"], p["cat_id"], by_product, by_cat)
+        p["image_url"] = _normalize_image_url(p.get("image_url"))
         products.append({**p, "disc_price": disc_price, "disc_label": disc_label})
 
     return templates.TemplateResponse(request, "customer/shop.html", {
@@ -392,16 +409,67 @@ def customer_shop(request: Request, session=Depends(require_customer)):
 
 
 @customer_router.post("/cart/add")
-def add_to_cart(
-    request: Request,
-    product_id: str = Form(...),
-    quantity: int = Form(1),
-    session=Depends(require_customer)
-):
+async def add_to_cart(request: Request, session=Depends(require_customer)):
+    """
+    Add-to-cart endpoint.
+
+    Accepts both regular form POSTs and AJAX (fetch) submissions:
+      • Form POST  → 302 redirect to /customer/shop?msg=added  (existing behaviour)
+      • Fetch POST → JSON { ok, cart_count, product_name, qty, cart_locked }
+    AJAX responses let the shop page update without a full reload.
+    """
+    # ── Read body in a content-type-agnostic way ────────────────────────
+    content_type = (request.headers.get("content-type") or "").lower()
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        product_id = (payload.get("product_id") or "").strip()
+        try:
+            quantity = int(payload.get("quantity") or 1)
+        except (TypeError, ValueError):
+            quantity = 1
+    else:
+        form = await request.form()
+        product_id = (form.get("product_id") or "").strip()
+        try:
+            quantity = int(form.get("quantity") or 1)
+        except (TypeError, ValueError):
+            quantity = 1
+
+    if not product_id:
+        if "application/json" in content_type:
+            return JSONResponse({"ok": False, "error": "Missing product_id"}, status_code=400)
+        return RedirectResponse("/customer/shop?msg=invalid", status_code=302)
+
+    quantity = max(1, quantity)
+
+    # ── Update the session cart ──────────────────────────────────────────
     cart = request.session.get("cart", {})
-    cart[product_id] = cart.get(product_id, 0) + max(1, quantity)
+    cart[product_id] = cart.get(product_id, 0) + quantity
     request.session["cart"] = cart
 
+    cart_count = sum(cart.values())
+
+    # ── Look up product name for the toast ───────────────────────────────
+    row = query(
+        "SELECT product_name FROM product WHERE product_id = %s",
+        (product_id,),
+    )
+    product_name = row[0]["product_name"] if row else product_id
+
+    # ── AJAX response ────────────────────────────────────────────────────
+    if "application/json" in content_type:
+        return JSONResponse({
+            "ok": True,
+            "product_id": product_id,
+            "product_name": product_name,
+            "qty": cart[product_id],
+            "cart_count": cart_count,
+        })
+
+    # ── Classic form fallback ────────────────────────────────────────────
     return RedirectResponse("/customer/shop?msg=added", status_code=302)
 
 
@@ -747,6 +815,22 @@ def customer_dashboard(request: Request, session=Depends(require_customer)):
         ORDER BY s.sale_date DESC
         LIMIT 10
     """, (cust_id,))
+
+    # Attach the first 4 items per order so the dashboard can render product
+    # chips inline (Amazon-style "Your Orders" rows). One round-trip per order
+    # is acceptable since the LIMIT is small.
+    for o in my_orders:
+        o["items"] = query(
+            """
+            SELECT p.product_name, si.quantity, si.line_total
+            FROM   sale_item si
+            JOIN   product   p ON si.product_id = p.product_id
+            WHERE  si.sale_id = %s
+            ORDER  BY si.sale_id
+            LIMIT  4
+            """,
+            (o["sale_id"],),
+        )
 
     cust_info = query(
         "SELECT cust_name, loyalty_points, membership_type FROM customer WHERE cust_id = %s",

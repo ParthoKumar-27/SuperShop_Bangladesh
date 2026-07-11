@@ -2,90 +2,327 @@
 {% block title %}My Account{% endblock %}
 
 {% block content %}
-<section>
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+<style>
+  /* ── Account header ─────────────────────────────────────────────── */
+  .acct-hero{
+    background:
+      radial-gradient(600px 200px at 90% -30%, rgba(241,123,13,.18), transparent 60%),
+      linear-gradient(135deg,#044635 0%, #0a6b4f 100%);
+    color:#fff;
+    border-radius:18px;
+    padding:22px 24px;
+    box-shadow:0 12px 30px rgba(4,70,53,.25);
+    position:relative; overflow:hidden;
+  }
+  .acct-hero::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.06) 50%,transparent 70%);
+    background-size:220% 100%;
+    animation:csSheen 7s ease-in-out infinite;
+    pointer-events:none;
+  }
+  .acct-greeting{font-size:13px;color:#a7e0cf;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+  .acct-hero h1{font-size:26px;font-weight:800;margin-top:4px;letter-spacing:-.02em;}
+  .acct-hero h1 span{color:#ffb35c;}
 
-      <div class="flex items-start justify-between mb-6 flex-wrap gap-3">
+  .stat-tile{
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:14px;padding:12px 14px;
+    display:flex;align-items:center;gap:12px;
+    backdrop-filter:blur(6px);
+  }
+  .stat-tile .stat-ic{
+    width:38px;height:38px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#F17B0D 0%,#c45f00 100%);
+    box-shadow:0 6px 14px rgba(241,123,13,.35);
+  }
+  .stat-tile .stat-val{font-size:18px;font-weight:800;line-height:1;}
+  .stat-tile .stat-lbl{font-size:11px;color:#cfd8d3;text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+
+  /* ── Order row (Amazon-style) ───────────────────────────────────── */
+  .orders-list{display:flex;flex-direction:column;gap:14px;}
+  .order-row{
+    background:#fff;
+    border:1px solid #eef2f1;
+    border-radius:14px;
+    overflow:hidden;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .order-row:hover{border-color:#cfeee3;box-shadow:0 8px 22px rgba(4,70,53,.06);}
+
+  .order-row-head{
+    display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;
+    padding:12px 18px;
+    background:#f8faf9;
+    border-bottom:1px solid #eef2f1;
+    font-size:12px;
+  }
+  .order-row-head .head-cell{display:flex;flex-direction:column;gap:2px;}
+  .order-row-head .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;}
+  .order-row-head .val{font-size:13px;color:#1f2937;font-weight:700;}
+
+  .order-row-body{
+    display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;
+    padding:14px 18px;
+  }
+  @media (max-width:640px){ .order-row-body{grid-template-columns:1fr;} }
+
+  .order-type-ic{
+    width:56px;height:56px;border-radius:12px;flex-shrink:0;
+    background:linear-gradient(135deg,#f0f9f4 0%,#fff7ec 100%);
+    display:flex;align-items:center;justify-content:center;color:#044635;font-size:22px;
+    border:1px solid #e6efe9;
+  }
+
+  .product-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .prod-chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 10px 6px 6px;border-radius:10px;
+    background:#f8faf9;border:1px solid #eef2f1;
+    font-size:12px;color:#1f2937;font-weight:600;
+    max-width:220px;
+  }
+  .prod-chip .prod-ic{
+    width:32px;height:32px;border-radius:8px;
+    background:linear-gradient(135deg,#f0f9f4 0%,#fff7ec 100%);
+    display:inline-flex;align-items:center;justify-content:center;font-size:16px;
+    border:1px solid #e6efe9;flex-shrink:0;
+  }
+  .prod-chip .prod-name{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .prod-more{font-size:12px;color:#64748b;font-weight:600;}
+
+  .order-meta-col{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+  @media (max-width:640px){ .order-meta-col{align-items:flex-start;} }
+  .order-total-row{display:flex;align-items:center;gap:8px;}
+  .order-total-row .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;}
+  .order-total-row .val{font-size:18px;font-weight:800;color:#044635;}
+
+  .order-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  @media (max-width:640px){ .order-actions{justify-content:flex-start;} }
+  .btn-line{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:7px 12px;border-radius:999px;
+    font-size:12px;font-weight:700;
+    border:1px solid #e2e8f0;color:#475569;background:#fff;
+    transition:.15s;cursor:pointer;
+  }
+  .btn-line:hover{background:#f1f5f9;color:#0f172a;border-color:#cbd5e1;}
+  .btn-line.primary{background:#044635;color:#fff;border-color:#044635;}
+  .btn-line.primary:hover{background:#033828;border-color:#033828;}
+  .btn-line.danger{color:#ef4444;border-color:#fecaca;}
+  .btn-line.danger:hover{background:#fee2e2;border-color:#fca5a5;}
+
+  /* ── Status pills ───────────────────────────────────────────────── */
+  .pill{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 9px;border-radius:999px;
+    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .pill .dot{width:6px;height:6px;border-radius:50%;}
+  .pill-paid   {background:#ecfdf5;color:#047857;}
+  .pill-paid .dot{background:#10b981;}
+  .pill-pending{background:#fffbeb;color:#92400e;}
+  .pill-pending .dot{background:#f59e0b;}
+  .pill-failed {background:#fef2f2;color:#b91c1c;}
+  .pill-failed .dot{background:#ef4444;}
+  .pill-state  {background:#eef5fb;color:#1d4ed8;}
+  .pill-state .dot{background:#3b82f6;}
+
+  /* ── Empty state ─────────────────────────────────────────────────── */
+  .empty-illust{
+    width:110px;height:110px;border-radius:50%;
+    background:linear-gradient(135deg,#f0f9f4 0%,#fff7ec 100%);
+    display:flex;align-items:center;justify-content:center;margin:0 auto;
+    box-shadow:inset 0 -6px 0 rgba(4,70,53,.05);
+  }
+
+  /* ── Invoice modal ───────────────────────────────────────────────── */
+  .modal-backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(4px);}
+  .modal-shell{background:#fff;border-radius:18px;box-shadow:0 30px 70px rgba(15,23,42,.35);}
+</style>
+
+{# ── Account hero greeting ── #}
+<div class="acct-hero mb-6 relative">
+  <div class="relative z-[1] flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+    <div>
+      <p class="acct-greeting flex items-center gap-2">
+        <i class="fa-solid fa-circle-user"></i>
+        Hello, {{ (user_name or "Customer").split(' ')[0] }}
+      </p>
+      <h1 class="mt-1">Your <span>Orders</span></h1>
+      <p class="text-sm text-green-200/80 mt-1">Track recent purchases, view invoices and reorder in one tap.</p>
+    </div>
+
+    {% set _paid = my_orders | selectattr('payment_status', 'equalto', 'PAID') | list %}
+    {% set _total_spend = my_orders | sum(attribute='total_amt') %}
+    <div class="grid grid-cols-3 gap-2 lg:flex lg:gap-3">
+      <div class="stat-tile">
+        <div class="stat-ic"><i class="fa-solid fa-receipt"></i></div>
         <div>
-          <h2 class="text-xl font-bold text-[#044635]">My Orders</h2>
-          <p class="text-sm text-gray-400 mt-1">Track your recent purchases and delivery status.</p>
+          <div class="stat-val">{{ my_orders | length }}</div>
+          <div class="stat-lbl">Total Orders</div>
         </div>
       </div>
-
-      {% if not my_orders %}
-        <div class="text-center text-gray-400 py-20">
-          <p class="text-5xl mb-3">🛒</p>
-          <p class="text-gray-500 font-medium">No orders yet</p>
-          <p class="text-sm mt-1">Everything you buy will show up here.</p>
-          <a href="/customer/shop"
-             class="inline-block mt-5 bg-[#F17B0D] text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-orange-600 transition">
-            Start shopping →
-          </a>
+      <div class="stat-tile">
+        <div class="stat-ic"><i class="fa-solid fa-circle-check"></i></div>
+        <div>
+          <div class="stat-val">{{ _paid | length }}</div>
+          <div class="stat-lbl">Paid</div>
         </div>
-      {% else %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {% for o in my_orders %}
-          <div class="rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition">
+      </div>
+      <div class="stat-tile">
+        <div class="stat-ic"><i class="fa-solid fa-coins"></i></div>
+        <div>
+          <div class="stat-val">৳{{ "%.0f"|format(_total_spend) }}</div>
+          <div class="stat-lbl">Spend</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-            <div class="h-28 flex items-center justify-center text-4xl bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ee]">
-              {% if o.order_type == 'ONLINE' %}🚚{% else %}🏬{% endif %}
-            </div>
+{# ── Section header ── #}
+<div class="flex items-center justify-between mb-4">
+  <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.16em] text-[#044635]/70">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+    <span>Order History</span>
+  </div>
+  <a href="/customer/shop"
+     class="inline-flex items-center gap-2 text-sm text-[#044635] hover:text-[#F17B0D] font-semibold transition">
+    <i class="fa-solid fa-store"></i>
+    Continue shopping
+  </a>
+</div>
 
-            <div class="p-4">
-              <p class="text-sm font-semibold text-gray-800">{{ o.sale_id }}</p>
-              <p class="text-xs text-gray-400 mb-2">{{ o.branch_name }} · {{ o.sale_date }}</p>
+{% if not my_orders %}
 
-              <div class="flex items-center gap-1.5 mb-3 flex-wrap">
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full
-                  {% if o.payment_status == 'PAID' %}bg-green-50 text-green-700
-                  {% elif o.payment_status == 'PENDING' %}bg-yellow-50 text-yellow-700
-                  {% else %}bg-red-50 text-red-600{% endif %}">
-                  {{ o.payment_status }}
-                </span>
+  {# ── Empty state ── #}
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 sm:p-16 text-center">
+    <div class="empty-illust mb-5">
+      <i class="fa-solid fa-bag-shopping text-4xl text-[#F17B0D]"></i>
+    </div>
+    <h2 class="text-xl font-bold text-gray-800">No orders yet</h2>
+    <p class="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+      Everything you buy will show up here. Let's find your first order!
+    </p>
+    <a href="/customer/shop"
+       class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl bg-[#044635] hover:bg-[#033828] text-white font-semibold text-sm transition shadow-md hover:shadow-lg">
+      <i class="fa-solid fa-store"></i>
+      Start Shopping
+    </a>
+  </div>
+
+{% else %}
+
+  <div class="orders-list">
+    {% for o in my_orders %}
+      {% set ps = o.payment_status %}
+      {% set pcls = 'pill-paid' if ps == 'PAID' else 'pill-pending' if ps == 'PENDING' else 'pill-failed' %}
+      {% set ic = 'fa-truck-fast' if o.order_type == 'ONLINE' else 'fa-shop' %}
+      {% set _o_items = o['items'] %}
+      <article class="order-row">
+
+        {# Header strip — order id / date / branch ──────────────── #}
+        <div class="order-row-head">
+          <div class="head-cell">
+            <span class="lbl">Order placed</span>
+            <span class="val">{{ o.sale_date }}</span>
+          </div>
+          <div class="head-cell">
+            <span class="lbl">Total</span>
+            <span class="val">৳{{ "%.0f"|format(o.total_amt) }}</span>
+          </div>
+          <div class="head-cell">
+            <span class="lbl">Branch</span>
+            <span class="val truncate max-w-[160px]">{{ o.branch_name }}</span>
+          </div>
+          <div class="head-cell ml-auto">
+            <span class="lbl">Order #</span>
+            <span class="val mono">#{{ o.sale_id }}</span>
+          </div>
+        </div>
+
+        {# Body — type icon, product chips, actions ─────────────── #}
+        <div class="order-row-body">
+          <div class="flex items-start gap-3 min-w-0">
+            <div class="order-type-ic"><i class="fa-solid {{ ic }}"></i></div>
+            <div class="min-w-0">
+
+              {# Status pills row #}
+              <div class="flex items-center gap-1.5 flex-wrap mb-2">
+                <span class="pill {{ pcls }}"><span class="dot"></span> {{ ps }}</span>
                 {% if o.order_status %}
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#044635]/10 text-[#044635]">
-                  {{ o.order_status }}
-                </span>
+                  <span class="pill pill-state"><span class="dot"></span> {{ o.order_status }}</span>
                 {% endif %}
+                <span class="pill" style="background:#f1f5f9;color:#475569">
+                  {{ o.order_type or 'POS' }}
+                </span>
               </div>
 
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-base font-bold text-[#F17B0D]">৳ {{ "%.0f"|format(o.total_amt) }}</span>
-                <div class="flex items-center gap-2">
-                  <form action="/customer/order/hide/{{ o.sale_id }}" method="post"
-                        onsubmit="return confirm('Hide this order from your account view?');">
-                    <button type="submit" title="Hide order"
-                            class="w-8 h-8 rounded-full border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 flex items-center justify-center transition">
-                      ✕
-                    </button>
-                  </form>
-                  
-                  <!-- Updated Invoice Link to Button Modal Trigger -->
-                  <button type="button"
-                          onclick="openInvoice('{{ o.sale_id }}')"
-                          class="bg-[#044635] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#033828] transition">
-                    Invoice
-                  </button>
+              {# Product chips — show up to 4 #}
+              {% if _o_items %}
+                <div class="product-strip">
+                  {% for it in _o_items[:4] %}
+                    <span class="prod-chip" title="{{ it.product_name }}">
+                      <span class="prod-ic">🛍</span>
+                      <span class="prod-name">{{ it.product_name }}</span>
+                      <span class="text-[10px] text-gray-400">×{{ it.quantity }}</span>
+                    </span>
+                  {% endfor %}
+                  {% if _o_items | length > 4 %}
+                    <span class="prod-more">+{{ _o_items | length - 4 }} more</span>
+                  {% endif %}
                 </div>
-              </div>
+              {% else %}
+                <p class="text-xs text-gray-400">No item details available for this order.</p>
+              {% endif %}
             </div>
           </div>
-          {% endfor %}
+
+          <div class="order-meta-col">
+            <div class="order-actions">
+              <form action="/customer/order/hide/{{ o.sale_id }}" method="post"
+                    onsubmit="return confirm('Hide this order from your account view?');">
+                <button type="submit" class="btn-line danger" title="Hide order">
+                  <i class="fa-regular fa-eye-slash"></i>
+                  <span class="hidden sm:inline">Hide</span>
+                </button>
+              </form>
+              <button type="button" onclick="openInvoice('{{ o.sale_id }}')" class="btn-line primary">
+                <i class="fa-solid fa-receipt text-[11px]"></i>
+                View invoice
+              </button>
+            </div>
+          </div>
         </div>
-      {% endif %}
+      </article>
+    {% endfor %}
+  </div>
 
-    </div>
-</section>
+{% endif %}
 
-<!-- Invoice Modal -->
-<div id="invoiceModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto">
-    <div class="flex items-center justify-between p-5 border-b border-gray-100">
-      <h3 class="font-bold text-[#044635] text-lg">Invoice</h3>
-      <button onclick="closeInvoice()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+{# ── Invoice modal ── #}
+<div id="invoiceModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="modal-shell w-full max-w-lg max-h-[88vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-[#044635]/10 text-[#044635] flex items-center justify-center">
+          <i class="fa-solid fa-receipt text-sm"></i>
+        </span>
+        <h3 class="font-bold text-[#044635] text-base">Invoice</h3>
+      </div>
+      <button onclick="closeInvoice()" aria-label="Close" class="w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
-    <div id="invoiceBody" class="p-5 text-sm text-gray-700">
-      <p class="text-gray-400">Loading…</p>
+    <div id="invoiceBody" class="p-5 text-sm text-gray-700 overflow-y-auto">
+      <p class="text-gray-400 flex items-center gap-2 justify-center py-8">
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading…
+      </p>
     </div>
   </div>
 </div>
@@ -96,46 +333,63 @@ async function openInvoice(saleId) {
   const body  = document.getElementById('invoiceBody');
   modal.classList.remove('hidden');
   modal.classList.add('flex');
-  body.innerHTML = '<p class="text-gray-400">Loading…</p>';
+  body.innerHTML = '<p class="text-gray-400 flex items-center gap-2 justify-center py-8"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</p>';
+
   try {
     const res = await fetch(`/customer/invoice/${saleId}/json`);
     if (!res.ok) throw new Error('Not found');
     const inv = await res.json();
-    let itemsHtml = inv.items.map(i => `
-      <tr class="border-b border-gray-50">
-        <td class="py-1.5">${i.product_name}</td>
-        <td class="py-1.5 text-center">${i.quantity}</td>
-        <td class="py-1.5 text-right">৳${i.unit_price.toFixed(2)}</td>
-        <td class="py-1.5 text-right font-medium">৳${i.line_total.toFixed(2)}</td>
-      </tr>`).join('');
+
+    const esc = s => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    const itemsHtml = (inv.items || []).map(i => `
+      <li class="flex items-start justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+        <div class="min-w-0">
+          <p class="font-semibold text-gray-800 text-sm truncate">${esc(i.product_name)}</p>
+          <p class="text-[11px] text-gray-400">৳${Number(i.unit_price).toFixed(2)} × ${esc(i.quantity)}</p>
+        </div>
+        <span class="font-bold text-gray-800 text-sm mono whitespace-nowrap">৳${Number(i.line_total).toFixed(2)}</span>
+      </li>`).join('');
+
+    const payClass = inv.payment_status === 'PAID' ? 'pill-paid' : 'pill-pending';
+
     body.innerHTML = `
-      <p class="font-semibold text-gray-800">${inv.branch_name}</p>
-      <p class="text-xs text-gray-400 mb-3">${inv.branch_address || ''} · ${inv.branch_phone || ''}</p>
-      <p class="text-xs text-gray-400 mb-4">${inv.sale_id} · ${inv.sale_date}</p>
-      <table class="w-full text-xs mb-4">
-        <thead>
-          <tr class="text-gray-400 border-b border-gray-100">
-            <th class="text-left py-1.5 font-medium">Item</th>
-            <th class="text-center py-1.5 font-medium">Qty</th>
-            <th class="text-right py-1.5 font-medium">Price</th>
-            <th class="text-right py-1.5 font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>${itemsHtml}</tbody>
-      </table>
-      <div class="border-t border-gray-100 pt-3 space-y-1 text-sm">
-        <div class="flex justify-between"><span>Subtotal</span><span>৳${inv.subtotal.toFixed(2)}</span></div>
-        <div class="flex justify-between"><span>Discount</span><span>-৳${inv.discount_amt.toFixed(2)}</span></div>
-        <div class="flex justify-between font-bold text-[#F17B0D] text-base pt-1">
-          <span>Total</span><span>৳${inv.total_amt.toFixed(2)}</span>
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <p class="font-bold text-[#044635]">${esc(inv.branch_name)}</p>
+          <p class="text-xs text-gray-400 mt-0.5">${esc(inv.branch_address || '')}</p>
+          <p class="text-xs text-gray-400">${esc(inv.branch_phone || '')}</p>
         </div>
-        <div class="flex justify-between text-xs text-gray-400 pt-1">
-          <span>Payment status</span><span>${inv.payment_status}</span>
+        <div class="text-right">
+          <p class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Invoice</p>
+          <p class="font-extrabold text-[#F17B0D] mono">#${esc(inv.sale_id)}</p>
+          <p class="text-[11px] text-gray-400 mt-0.5">${esc(inv.sale_date)}</p>
         </div>
+      </div>
+
+      <ul class="mb-3">${itemsHtml || '<li class="py-6 text-center text-gray-400 text-sm">No items on this invoice</li>'}</ul>
+
+      <div class="border-t border-gray-100 pt-3 space-y-1.5 text-sm">
+        <div class="flex justify-between text-gray-600"><span>Subtotal</span><span class="mono">৳${Number(inv.subtotal).toFixed(2)}</span></div>
+        ${inv.discount_amt > 0 ? `<div class="flex justify-between text-emerald-700"><span>Loyalty discount</span><span class="mono">-৳${Number(inv.discount_amt).toFixed(2)}</span></div>` : ''}
+        <div class="flex justify-between text-gray-600"><span>Tax</span><span class="mono">৳${Number(inv.tax_amt).toFixed(2)}</span></div>
+        <div class="flex justify-between font-extrabold text-[#F17B0D] text-base pt-2 border-t border-dashed border-gray-200 mt-1">
+          <span>Total</span><span class="mono">৳${Number(inv.total_amt).toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between">
+        <span class="pill ${payClass}"><span class="dot"></span>${esc(inv.payment_status)}</span>
+        <a href="/customer/invoice/${esc(inv.sale_id)}" target="_blank"
+           class="text-xs font-semibold text-[#044635] hover:text-[#F17B0D] inline-flex items-center gap-1">
+          Open full page <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
       </div>
     `;
   } catch (e) {
-    body.innerHTML = '<p class="text-red-500">Could not load invoice.</p>';
+    body.innerHTML = '<p class="text-red-500 text-center py-8"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Could not load invoice.</p>';
   }
 }
 
@@ -144,5 +398,10 @@ function closeInvoice() {
   modal.classList.add('hidden');
   modal.classList.remove('flex');
 }
+
+document.getElementById('invoiceModal').addEventListener('click', function (e) {
+  if (e.target === this) closeInvoice();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInvoice(); });
 </script>
 {% endblock %}
