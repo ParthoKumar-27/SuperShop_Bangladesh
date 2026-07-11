@@ -45,7 +45,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SECRET_KEY", "change-this-in-production-32chars"),
     max_age=3600 * 8,
-    https_only=False,
+    https_only=True,
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
