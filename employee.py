@@ -1079,10 +1079,11 @@ async def submit_sale(
         INSERT INTO sale
             (sale_id, branch_id, cust_id, emp_id, order_type,
              subtotal, discount_amt, tax_amt, total_amt, payment_status)
-        VALUES (%s, %s, %s, %s, 'IN_STORE', %s, %s, 0, %s, 'PAID')
+        VALUES (%s, %s, %s, %s, 'IN_STORE', %s, %s, %s, %s, 'PAID')
     """, (
         sale_id, branch_id, final_cust_id, emp_id,
-        round(subtotal, 2), round(discount_amt, 2), round(total_amt, 2)
+        round(subtotal, 2), round(discount_amt, 2),
+        round(tax_amt, 2), round(total_amt, 2)
     ))
 
     # ── 6. Insert sale_items + deduct inventory ──────────────────────────────

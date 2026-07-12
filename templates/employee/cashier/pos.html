@@ -781,34 +781,57 @@ function selectPayMethod(method, el) {
 }
 
 // ── Submit guard ───────────────────────────────────────────────────────────
+let _submitting = false;   // single-flight lock — prevents double-submit races
+
 function checkSubmitReady() {
-  const hasCart  = _cart.length > 0;
-  const hasPhone = document.getElementById('hCustPhone').value.trim() !== '' ||
-                   true;  // phone optional — walk-in allowed
-  document.getElementById('submitBtn').disabled = !hasCart;
+  const btn = document.getElementById('submitBtn');
+  const hasCart = _cart.length > 0;
+  btn.disabled = !hasCart || _submitting;
 }
 
 // ── Form submit → show receipt ─────────────────────────────────────────────
 document.getElementById('posForm').addEventListener('submit', async function(e) {
   e.preventDefault();
+
+  // Single-flight guard — a double-click should never produce two sales.
+  if (_submitting) return;
+  _submitting = true;
+
+  const btn = document.getElementById('submitBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing…';
+
   syncCartJson();
 
-  const fd  = new FormData(this);
-  const res = await fetch('/employee/cashier/sale/submit', {
-    method: 'POST', body: fd
-  });
-  const data = await res.json();
+  try {
+    const fd  = new FormData(this);
+    const res = await fetch('/employee/cashier/sale/submit', {
+      method: 'POST', body: fd
+    });
+    const data = await res.json();
 
-  if (data.error) {
+    if (data.error) {
+      const a = document.getElementById('posAlert');
+      a.textContent = data.error;
+      a.className = 'pos-alert pos-alert-err show';
+      setTimeout(() => a.classList.remove('show'), 5000);
+      return;
+    }
+
+    showReceipt(data);
+    refreshInventory();   // pull live stock numbers so the dropdown doesn't show stale qty
+  } catch (err) {
     const a = document.getElementById('posAlert');
-    a.textContent = data.error;
+    a.textContent = 'Network error — please try again.';
     a.className = 'pos-alert pos-alert-err show';
     setTimeout(() => a.classList.remove('show'), 5000);
-    return;
+  } finally {
+    // Restore button — only if cart still has items (closeReceipt clears it)
+    btn.innerHTML = originalHtml;
+    _submitting = false;
+    checkSubmitReady();
   }
-
-  showReceipt(data);
-  refreshInventory();   // pull live stock numbers so the dropdown doesn't show stale qty
 });
 
 async function refreshInventory() {

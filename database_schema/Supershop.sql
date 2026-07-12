@@ -590,3 +590,22 @@ CREATE TABLE action_log (
 -- CREATE INDEX idx_log_table_record ON action_log (table_name, record_id);
 -- CREATE INDEX idx_log_actor        ON action_log (actor_type, actor_id);
 -- CREATE INDEX idx_log_created      ON action_log (created_at DESC);
+
+CREATE TABLE customer_message (
+    msg_id       VARCHAR(10)  NOT NULL,
+    cust_id      VARCHAR(10)  NOT NULL,
+    branch_id    VARCHAR(10)  NOT NULL,
+    sender_role  VARCHAR(10)  NOT NULL,   -- 'CUSTOMER' | 'MANAGER'
+    message      VARCHAR(500) NOT NULL,
+    is_read      CHAR(1)      DEFAULT 'N',
+    created_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT msg_pk           PRIMARY KEY (msg_id),
+    CONSTRAINT check_msg_id     CHECK (msg_id LIKE 'MSG-%'),
+    CONSTRAINT msg_sender_role  CHECK (sender_role IN ('CUSTOMER','MANAGER')),
+    CONSTRAINT msg_is_read      CHECK (is_read IN ('Y','N')),
+    CONSTRAINT msg_cust_fk      FOREIGN KEY (cust_id)   REFERENCES customer(cust_id)
+                                ON DELETE CASCADE,
+    CONSTRAINT msg_branch_fk    FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
+                                ON DELETE CASCADE
+);
