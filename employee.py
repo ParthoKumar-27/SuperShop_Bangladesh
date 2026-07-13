@@ -69,11 +69,14 @@ def employee_dashboard_router(request: Request, session=Depends(require_employee
             status_code=302
         )
 
-    return templates.TemplateResponse(request, "employee/branch_manager/dashboard.html", {
-        "user_name": session.get("user_name"),
-        "role":      "EMPLOYEE",
-        "position":  position,
-    })
+    # Unknown / missing position — the generic placeholder template expects
+    # a half-dozen stats and the branch info, and would 500 if we just stubbed
+    # them. Hand control to the global 403 handler in main.py so the user
+    # sees the friendly inline notice and stays on their current page.
+    raise HTTPException(
+        status_code=403,
+        detail="Your role doesn't have an employee dashboard yet. Please contact your admin.",
+    )
 
 
 @employee_router.get("/dashboard/branch_manager", response_class=HTMLResponse)

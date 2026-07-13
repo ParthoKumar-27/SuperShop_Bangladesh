@@ -1,9 +1,11 @@
 import os
+import urllib.parse
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.responses import RedirectResponse
 from branch_routes import branch_router
 from database import query, execute
 from customer import customer_router
@@ -103,10 +105,32 @@ def _fetch_hot_deals(limit: int = 6):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  ROOT — public storefront (no login required)
+#  ROOT — public storefront (no login required).
+#
+#  Logged-in admin or employee who types "/" should *stay on the page they
+#  were viewing*. We return an invisible 200 page that immediately runs
+#  `history.back()` so the browser snaps back to the previous page, leaving
+#  the URL bar pointing at *their* dashboard. Anonymous users and customers
+#  see the storefront as usual.
 # ══════════════════════════════════════════════════════════════════════════════
 @app.get("/", response_class=HTMLResponse)
 def storefront(request: Request):
+    role = (request.session.get("role") if hasattr(request, "session") else None)
+
+    # ── Logged-in admin/employee: keep them on the page they came from ──────
+    if role in ("ADMIN", "EMPLOYEE"):
+        back_url = request.headers.get("referer") or ROLE_HOME.get(role, "/")
+        safe = urllib.parse.quote(back_url, safe="/:?&=")
+        body = (
+            "<!doctype html><html><head><meta charset='utf-8'>"
+            "<style>html,body{margin:0;background:#f8faf9}</style>"
+            "<script>history.back();setTimeout(function(){location.replace("
+            f"{repr(safe)}"
+            ")},50);</script></head><body></body></html>"
+        )
+        return HTMLResponse(content=body, status_code=200)
+
+    # ── Anonymous or customer: render the storefront ─────────────────────────
     # All categories ordered: top-level first, then sub-categories
     categories = query("""
         SELECT cat_id, cat_name, parent_cat_id
@@ -142,8 +166,8 @@ def storefront(request: Request):
             "categories": categories,
             "products":   products,
             "hot_deals":  hot_deals,
-            "logged_in":  bool(request.session.get("role")),
-            "role":       request.session.get("role"),
+            "logged_in":  bool(role),
+            "role":       role,
         }
     )
 
@@ -196,6 +220,71 @@ def public_search(request: Request, q: str = ""):
             "search_query": q,
         }
     )
+
+# ── Error handlers ─────────────────────────────────────────────────────────────
+ROLE_HOME = {
+    "ADMIN":    "/admin/dashboard",
+    "EMPLOYEE": "/employee/branch/dashboard",
+    "CUSTOMER": "/customer/dashboard",
+}
+
+
+@app.exception_handler(403)
+async def _forbidden_handler(request: Request, exc):
+    """Auth failure handler.
+
+    - Anonymous users  → redirect to login (with ?next=<original>).
+    - Logged-in users who URL-edit into a page they're not allowed to
+      access (admin → employee URL, employee → other employee/admin URL,
+      etc.) → the user stays on the page they were already viewing.
+      We return a tiny invisible HTML page that immediately runs
+      `history.back()` so the browser snaps back to where they came from,
+      leaving the URL bar pointing at *their* dashboard (not the forbidden
+      URL they typed). No new page is rendered.
+    """
+    sess = getattr(request, "session", {}) or {}
+    role = sess.get("role")
+
+    # ── Anonymous: must log in first ────────────────────────────────────────
+    if not role:
+        path = request.url.path or "/"
+        qs   = request.url.query or ""
+        next_url = f"{path}?{qs}" if qs else path
+        return RedirectResponse(
+            url=f"/auth/login?next={urllib.parse.quote(next_url, safe='/')}",
+            status_code=302,
+        )
+
+    # ── Already logged in: bounce silently back to the page they came from ──
+    # Returning status 403 keeps it from being cached; the inline <script>
+    # navigates back before the user sees anything.
+    back_url = request.headers.get("referer") or ROLE_HOME.get(role, "/")
+    safe = urllib.parse.quote(back_url, safe="/:?&=")
+    body = (
+        "<!doctype html><html><head><meta charset='utf-8'>"
+        "<style>html,body{margin:0;background:#f8faf9}</style>"
+        "<script>history.back();setTimeout(function(){location.replace("
+        f"{repr(safe)}"
+        ")},50);</script></head><body></body></html>"
+    )
+    return HTMLResponse(content=body, status_code=403)
+
+
+@app.exception_handler(404)
+async def _not_found_handler(request: Request, exc):
+    """Render a friendly 404 page (we don't want the default Starlette plain text)."""
+    role = request.session.get("role") if hasattr(request, "session") else None
+    return templates.TemplateResponse(
+        request,
+        "errors/404.html",
+        {
+            "request_path":  request.url.path,
+            "role":          role,
+            "is_logged_in":  bool(role),
+        },
+        status_code=404,
+    )
+
 
 @app.on_event("shutdown")
 def shutdown():
