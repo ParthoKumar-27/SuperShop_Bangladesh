@@ -50,6 +50,45 @@ app.add_middleware(
     https_only=True,
 )
 
+
+# ── No-cache middleware ────────────────────────────────────────────────────────
+# Logout-then-back-button can otherwise restore authenticated pages from the
+# browser's bfcache or disk cache. Tell the browser not to cache any HTML
+# response; combined with the `pageshow` handler in the templates, this
+# forces a hard reload any time the user navigates back to an auth'd page.
+class NoCacheHTMLMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                ct = b""
+                for k, v in headers:
+                    if k == b"content-type":
+                        ct = v.lower()
+                        break
+                # Apply no-cache only to HTML responses — leave JSON / images
+                # / CSS / JS untouched so the rest of the site stays fast.
+                if ct.startswith(b"text/html"):
+                    headers += [
+                        (b"cache-control", b"no-store, no-cache, must-revalidate, private"),
+                        (b"pragma",        b"no-cache"),
+                        (b"expires",       b"0"),
+                    ]
+                message["headers"] = headers
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
+app.add_middleware(NoCacheHTMLMiddleware)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -64,7 +103,7 @@ app.include_router(employee_router)
 # ══════════════════════════════════════════════════════════════════════════════
 #  ACTIVE HOT DEALS — products with a currently valid discount row
 # ══════════════════════════════════════════════════════════════════════════════
-def _fetch_hot_deals(limit: int = 6):
+def _fetch_hot_deals(limit: int = 20):
     """Return up to `limit` products that have an active discount row.
 
     Active = CURRENT_DATE between start_date and end_date. Handles both
@@ -102,6 +141,76 @@ def _fetch_hot_deals(limit: int = 6):
     for _r in rows:
         _r["image_url"] = _normalize_image_url(_r.get("image_url"))
     return rows
+
+
+# Per-product discount rows used by the storefront products grid. We LEFT JOIN
+# discounts onto product rows, taking the best (largest absolute saving) row
+# per product so a product covered by both a category-wide AND a product-level
+# discount shows the better one. Each row gains:
+#   sale_price    : float  (None if no active discount)
+#   disc_label    : str    ("-15%" or "-৳30") for ribbons/badges
+#   disc_type     : str    ('PERCENT' or 'FLAT' or None)
+#   disc_value    : float  (raw discount number)
+def _annotate_products_with_discounts(products):
+    """Mutate `products` in place — attach sale_price + disc_label where active."""
+    if not products:
+        return products
+    ids = [p["product_id"] for p in products]
+    rows = query(
+        """
+        SELECT  d.product_id  AS dp_id,
+                d.cat_id     AS dc_id,
+                d.discount_type,
+                d.discount_value,
+                p.product_id,
+                p.unit_price,
+                CASE
+                    WHEN d.discount_type = 'PERCENT' THEN
+                         GREATEST(0, p.unit_price - (p.unit_price * d.discount_value / 100.0))
+                    ELSE
+                         GREATEST(0, p.unit_price - d.discount_value)
+                END AS sale_price,
+                (p.unit_price - CASE
+                    WHEN d.discount_type = 'PERCENT' THEN
+                         (p.unit_price * d.discount_value / 100.0)
+                    ELSE LEAST(p.unit_price, d.discount_value)
+                END) AS saving
+        FROM    discount d
+        JOIN    product  p ON p.product_id = d.product_id
+                           OR  p.cat_id    = d.cat_id
+        WHERE   CURRENT_DATE BETWEEN d.start_date AND d.end_date
+          AND   p.is_active  = 'Y'
+          AND   p.product_id = ANY(%s)
+        """,
+        (ids,),
+    ) or []
+
+    best = {}
+    for r in rows:
+        pid = r["product_id"]
+        cur = best.get(pid)
+        if cur is None or (r.get("saving") or 0) > (cur.get("saving") or 0):
+            best[pid] = r
+
+    for p in products:
+        b = best.get(p["product_id"])
+        if not b:
+            p["sale_price"] = None
+            p["disc_label"] = None
+            p["disc_type"]  = None
+            p["disc_value"] = None
+            continue
+        p["sale_price"] = float(b["sale_price"])
+        p["disc_type"]  = b["discount_type"]
+        p["disc_value"] = float(b["discount_value"])
+        if b["discount_type"] == "PERCENT":
+            # Round to nearest int percent for a clean badge
+            pct = int(round(float(b["discount_value"])))
+            p["disc_label"] = f"-{pct}%"
+        else:
+            # FLAT
+            p["disc_label"] = f"-৳{int(round(float(b['discount_value'])))}"
+    return products
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -156,8 +265,14 @@ def storefront(request: Request):
     # Normalize image_url so any legacy bare-key values still render in <img src>
     for _p in products:
         _p["image_url"] = _normalize_image_url(_p.get("image_url"))
+    # Attach per-product discount data so cards can show sale price + ribbon
+    _annotate_products_with_discounts(products)
 
-    hot_deals = _fetch_hot_deals(limit=6)
+    hot_deals = _fetch_hot_deals(limit=20)
+
+    # Cart count (from session) — shown as a badge on the topbar cart icon.
+    _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
+    cart_count = sum(_cart.values()) if isinstance(_cart, dict) else 0
 
     return templates.TemplateResponse(
         request,
@@ -168,6 +283,7 @@ def storefront(request: Request):
             "hot_deals":  hot_deals,
             "logged_in":  bool(role),
             "role":       role,
+            "cart_count": cart_count,
         }
     )
 
@@ -207,6 +323,10 @@ def public_search(request: Request, q: str = ""):
 
     for _p in products:
         _p["image_url"] = _normalize_image_url(_p.get("image_url"))
+    _annotate_products_with_discounts(products)
+
+    _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
+    cart_count = sum(_cart.values()) if isinstance(_cart, dict) else 0
 
     return templates.TemplateResponse(
         request,
@@ -214,10 +334,11 @@ def public_search(request: Request, q: str = ""):
         {
             "categories": categories,
             "products":   products,
-            "hot_deals":  _fetch_hot_deals(limit=6),
+            "hot_deals":  _fetch_hot_deals(limit=20),
             "logged_in":  bool(request.session.get("role")),
             "role":       request.session.get("role"),
             "search_query": q,
+            "cart_count": cart_count,
         }
     )
 

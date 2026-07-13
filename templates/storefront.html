@@ -346,6 +346,43 @@
       gap: 6px;
     }
     .topnav-hotline i { color: var(--orange-soft); }
+
+    /* Cart icon with badge */
+    .topnav-cart {
+      position: relative;
+      width: 38px; height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.22);
+      color: #fff;
+      font-size: 15px;
+      transition: background .15s ease, transform .15s ease, border-color .15s ease;
+    }
+    .topnav-cart:hover {
+      background: rgba(255,255,255,.20);
+      border-color: rgba(255,255,255,.45);
+      transform: translateY(-1px);
+    }
+    .topnav-cart .cart-badge {
+      position: absolute;
+      top: -4px; right: -4px;
+      min-width: 18px; height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 800;
+      line-height: 18px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(241,123,13,.55),
+                  0 0 0 2px var(--green-deep);
+    }
+    .topnav-cart .cart-badge:empty,
+    .topnav-cart .cart-badge[data-zero="1"] { display: none; }
     .btn-signin {
       background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
       color: #fff;
@@ -954,9 +991,79 @@
     }
     .deals-row {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       position: relative;
+    }
+    .deal-card { display: none; }
+    .deal-card.visible { display: block; }
+    @media (max-width: 980px) {
+      .deals-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .deals-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      .deals-row { grid-template-columns: 1fr; }
+    }
+
+    /* Deals pager (orange themed, lives inside the deals box) */
+    .deals-pager {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 16px 0 2px;
+      flex-wrap: wrap;
+    }
+    .deals-pager .dp-btn {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(241,123,13,.30);
+      background: #fff;
+      color: var(--orange-deep);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background .15s ease, color .15s ease,
+                  border-color .15s ease, transform .15s ease,
+                  box-shadow .15s ease;
+    }
+    .deals-pager .dp-btn:hover:not(:disabled) {
+      border-color: var(--orange);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(241,123,13,.22);
+    }
+    .deals-pager .dp-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .deals-pager .dp-btn.active {
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      border-color: var(--orange-deep);
+      box-shadow: 0 8px 18px rgba(241,123,13,.32),
+                  inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    .deals-pager .dp-btn.dots {
+      border: none;
+      background: transparent;
+      cursor: default;
+      min-width: 22px;
+      color: var(--mid);
+    }
+    .deals-pager .dp-btn.dots:hover { transform: none; box-shadow: none; }
+    .deals-pager .dp-info {
+      font-size: 11.5px;
+      color: var(--orange-deep);
+      font-weight: 600;
+      margin-left: 8px;
+      white-space: nowrap;
+      opacity: .8;
     }
     .deal-card {
       background: #fff;
@@ -1182,7 +1289,58 @@
       font-size: 17px;
       font-weight: 800;
       color: var(--orange-deep);
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
     }
+    .product-price-was {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-decoration: line-through;
+      text-decoration-thickness: 1.5px;
+    }
+    .product-card-discount {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 3;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: .2px;
+      box-shadow: 0 4px 10px rgba(220,38,38,.30), inset 0 1px 0 rgba(255,255,255,.22);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .pc-action-icon {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 38px; height: 38px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 8px 16px rgba(241,123,13,.36), inset 0 1px 0 rgba(255,255,255,.22);
+      opacity: 0;
+      transform: translateY(8px) scale(.9);
+      transition: opacity .25s ease, transform .25s ease;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .product-card:hover .pc-action-icon {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .product-card-link { color: inherit; text-decoration: none; display: block; }
+    .product-card-link:hover { color: inherit; }
     .product-card-meta {
       font-size: 10.5px;
       color: var(--mid);
@@ -1232,6 +1390,76 @@
       font-size: 14px;
       padding: 50px 0;
       grid-column: 1 / -1;
+    }
+
+    /* Pager — sits under the products grid */
+    .pager {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 22px 0 6px;
+      flex-wrap: wrap;
+    }
+    .pager-btn {
+      min-width: 38px;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      color: var(--dark);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background .15s ease, color .15s ease,
+                  border-color .15s ease, transform .15s ease,
+                  box-shadow .15s ease;
+    }
+    .pager-btn:hover:not(:disabled) {
+      border-color: var(--orange);
+      color: var(--orange-deep);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(241,123,13,.18);
+    }
+    .pager-btn:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
+    .pager-btn.active {
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      border-color: var(--orange-deep);
+      box-shadow: 0 8px 18px rgba(241,123,13,.32),
+                  inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    .pager-btn.arrow {
+      min-width: 38px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+    .pager-btn.dots {
+      border: none;
+      background: transparent;
+      cursor: default;
+      min-width: 24px;
+    }
+    .pager-btn.dots:hover { transform: none; box-shadow: none; color: var(--mid); }
+    .pager-info {
+      font-size: 12px;
+      color: var(--mid);
+      margin-left: 10px;
+      white-space: nowrap;
+    }
+    @media (max-width: 640px) {
+      .pager-btn         { min-width: 32px; height: 32px; font-size: 12px; }
+      .pager-btn.arrow   { min-width: 32px; }
+      .pager-info        { display: none; }
     }
 
     .collections {
@@ -1456,6 +1684,23 @@
   </div>
   <div class="topnav-actions">
     <span class="topnav-hotline"><i class="fas fa-phone"></i> Help: 16516</span>
+
+    <a href="{{ '/customer/cart' if role == 'CUSTOMER' else '/customer/cart' }}"
+       class="topnav-cart"
+       id="topnavCart"
+       aria-label="View cart"
+       title="View cart">
+      <i class="fas fa-shopping-cart"></i>
+      {% if role == 'CUSTOMER' %}
+      <span class="cart-badge"
+            id="cartBadge"
+            data-count="{{ cart_count or 0 }}"
+            {% if not cart_count %}data-zero="1"{% endif %}>
+        {{ cart_count or 0 }}
+      </span>
+      {% endif %}
+    </a>
+
     {% if role == 'CUSTOMER' %}
       <a href="/customer/dashboard" class="btn-signin"><i class="fas fa-user"></i>&nbsp; My Account</a>
       <a href="/auth/logout" class="btn-logout">Logout</a>
@@ -1728,6 +1973,7 @@
           {% endfor %}
         {% endif %}
       </div>
+      <nav class="deals-pager" id="dealsPager" aria-label="Hot deals pagination"></nav>
     </div>
 
     <!-- CURATED COLLECTIONS -->
@@ -1816,6 +2062,7 @@
         {%- elif 'jam'       in n -%}{% set emoji = '🍯' %}
         {%- else -%}{% set emoji = '🛍' %}
         {%- endif -%}
+        {%- set _card_href = ('/customer/shop?pid=' ~ p.product_id) if logged_in else ('/auth/login?role=customer&next=/customer/shop?pid=' ~ p.product_id) -%}
         <div class="product-card"
              data-catid="{{ p.cat_id if p.cat_id else '' }}"
              data-name="{{ p.product_name | lower }}"
@@ -1825,41 +2072,53 @@
              data-emoji="{{ emoji }}"
              data-product-id="{{ p.product_id }}">
           <button type="button" class="wishlist-btn" aria-label="Save to wishlist"
-                  onclick="toggleWishlist(this)">
+                  onclick="event.stopPropagation(); toggleWishlist(this);">
             <i class="far fa-heart"></i>
           </button>
-          <div class="product-card-img">
-            {% if p.image_url %}
-              <img class="product-card-photo"
-                   src="{{ p.image_url }}"
-                   alt="{{ p.product_name }}"
-                   loading="lazy" />
-            {%- else -%}
-              <span class="pc-emoji-fallback">{{ emoji }}</span>
-            {%- endif %}
-          </div>
-          <div class="product-card-body">
-            <p class="product-name" title="{{ p.product_name }}">{{ p.product_name }}</p>
-            <p class="product-brand">{{ p.brand or 'SuperShop' }}</p>
-            <div class="product-footer">
-              <span class="product-price">&#2547; {{ "%.0f"|format(p.unit_price) }}</span>
-              {% if logged_in %}
-                <button class="btn-add" onclick="quickAdd({{ p.product_id }}, '{{ p.product_name | e }}')">+ Add</button>
-              {% else %}
-                <a href="/auth/login?role=customer" class="btn-login-buy">Login to Buy</a>
-              {% endif %}
+          {% if p.disc_label %}
+            <span class="product-card-discount" aria-label="Discount">{{ p.disc_label }}</span>
+          {% endif %}
+          <a class="product-card-link" href="{{ _card_href }}" aria-label="View {{ p.product_name }}">
+            <div class="product-card-img">
+              {% if p.image_url %}
+                <img class="product-card-photo"
+                     src="{{ p.image_url }}"
+                     alt="{{ p.product_name }}"
+                     loading="lazy" />
+              {%- else -%}
+                <span class="pc-emoji-fallback">{{ emoji }}</span>
+              {%- endif %}
             </div>
-            <div class="product-card-meta">
-              <i class="fas fa-star"></i>
-              <span class="rate">4.{{ (loop.index * 3) % 10 }}</span>
-              <span>&#183; available</span>
+            <div class="product-card-body">
+              <p class="product-name" title="{{ p.product_name }}">{{ p.product_name }}</p>
+              <p class="product-brand">{{ p.brand or 'SuperShop' }}</p>
+              <div class="product-footer">
+                <span class="product-price">
+                  {% if p.sale_price %}
+                    &#2547; {{ "%.0f"|format(p.sale_price) }}
+                    <span class="product-price-was">&#2547; {{ "%.0f"|format(p.unit_price) }}</span>
+                  {% else %}
+                    &#2547; {{ "%.0f"|format(p.unit_price) }}
+                  {% endif %}
+                </span>
+              </div>
+              <div class="product-card-meta">
+                <i class="fas fa-star"></i>
+                <span class="rate">4.{{ (loop.index * 3) % 10 }}</span>
+                <span>&#183; available</span>
+              </div>
             </div>
-          </div>
+          </a>
+          <span class="pc-action-icon" aria-hidden="true">
+            {% if logged_in %}<i class="fas fa-cart-plus"></i>{% else %}<i class="fas fa-arrow-right"></i>{% endif %}
+          </span>
         </div>
       {% endfor %}
 
       <p class="no-results" id="noResults">No products found in this category.</p>
     </div>
+
+    <nav class="pager" id="pager" aria-label="Products pagination"></nav>
 
   </main>
 </div>
@@ -1895,6 +2154,8 @@
 
   let currentFilter = 'all';
   let currentSearch = '';
+  let currentPage   = 1;
+  const PAGE_SIZE   = 20;
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -1914,21 +2175,112 @@
   function applyFilters() {
     const ids = matchingIds(currentFilter);
     const term = norm(currentSearch);
-    let visible = 0;
+
+    // Pass 1: figure out which cards match — respect category + search,
+    // but NOT the current page. This is the master "visible" list.
+    const matching = [];
     document.querySelectorAll('.product-card').forEach(card => {
       const catOk    = ids === null || ids.has(norm(card.dataset.catid));
       const searchOk = !term || norm(card.dataset.name).includes(term);
-      const show = catOk && searchOk;
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
+      if (catOk && searchOk) matching.push(card);
     });
-    document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+
+    // Pass 2: hide non-matching cards outright.
+    document.querySelectorAll('.product-card').forEach(card => {
+      card.style.display = 'none';
+    });
+
+    // Pass 3: paginate over the matching list.
+    const total = matching.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end   = start + PAGE_SIZE;
+    for (let i = start; i < end && i < matching.length; i++) {
+      matching[i].style.display = '';
+    }
+
+    document.getElementById('noResults').style.display = total === 0 ? 'block' : 'none';
     const rc = document.getElementById('resultCount');
-    if (rc) rc.textContent = visible;
+    if (rc) rc.textContent = total;
+
+    renderPager(total, totalPages);
+  }
+
+  function renderPager(total, totalPages) {
+    const pager = document.getElementById('pager');
+    if (!pager) return;
+
+    if (total === 0) {
+      pager.innerHTML = '';
+      pager.style.display = 'none';
+      return;
+    }
+    pager.style.display = '';
+
+    const pages = buildPageList(currentPage, totalPages);
+
+    const prevDisabled = currentPage <= 1 ? 'disabled' : '';
+    const nextDisabled = currentPage >= totalPages ? 'disabled' : '';
+    const from = (currentPage - 1) * PAGE_SIZE + 1;
+    const to   = Math.min(currentPage * PAGE_SIZE, total);
+
+    const html = []
+      + '<button class="pager-btn arrow" ' + prevDisabled
+      +     ' data-page="' + (currentPage - 1) + '" aria-label="Previous page">'
+      +       '<i class="fas fa-chevron-left"></i></button>'
+      + pages.map(function (p) {
+          if (p === '…') {
+            return '<span class="pager-btn dots" aria-hidden="true">…</span>';
+          }
+          const isActive = p === currentPage;
+          return '<button class="pager-btn' + (isActive ? ' active' : '')
+               + '" data-page="' + p + '"'
+               + (isActive ? ' aria-current="page"' : '')
+               + '>' + p + '</button>';
+        }).join('')
+      + '<button class="pager-btn arrow" ' + nextDisabled
+      +     ' data-page="' + (currentPage + 1) + '" aria-label="Next page">'
+      +       '<i class="fas fa-chevron-right"></i></button>'
+      + '<span class="pager-info">Showing ' + from + '–' + to
+      + ' of ' + total + '</span>';
+
+    pager.innerHTML = html;
+
+    pager.querySelectorAll('button.pager-btn[data-page]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const p = parseInt(btn.dataset.page, 10);
+        if (!p || p === currentPage) return;
+        currentPage = p;
+        applyFilters();
+        document.getElementById('productsSection').scrollIntoView(
+          { behavior: 'smooth', block: 'start' }
+        );
+      });
+    });
+  }
+
+  // Build a compact [<] [1] [2] […] [9] [10] [>] style list.
+  function buildPageList(current, total) {
+    if (total <= 7) {
+      return Array.from({ length: total }, function (_, i) { return i + 1; });
+    }
+    const out = [1];
+    const left  = Math.max(2, current - 1);
+    const right = Math.min(total - 1, current + 1);
+
+    if (left > 2) out.push('…');
+    for (let p = left; p <= right; p++) out.push(p);
+    if (right < total - 1) out.push('…');
+    out.push(total);
+    return out;
   }
 
   function filterCategory(rawId, element) {
     currentFilter = rawId;
+    currentPage   = 1;
     document.querySelectorAll('.sidebar-item, .cat-tile').forEach(el => el.classList.remove('active'));
     if (element) element.classList.add('active');
     const heading = document.querySelector('#productsHeading .heading-text');
@@ -2073,6 +2425,7 @@
 
     input.addEventListener('input', function () {
       currentSearch = this.value;
+      currentPage   = 1;
       applyFilters();
       updateClear();
       renderSuggest();
@@ -2137,6 +2490,7 @@
       clearBtn.addEventListener('click', function () {
         input.value = '';
         currentSearch = '';
+        currentPage   = 1;
         applyFilters();
         updateClear();
         closeSuggest();
@@ -2199,6 +2553,16 @@
         body: JSON.stringify({ product_id: productId, quantity: 1 })
       });
       if (res.ok) {
+        // Server returns JSON with the updated cart count — keep the badge in sync.
+        res.json().then(function (j) {
+          if (j && typeof j.cart_count === 'number') {
+            const badge = document.getElementById('cartBadge');
+            if (badge) {
+              badge.textContent = j.cart_count;
+              badge.removeAttribute('data-zero');
+            }
+          }
+        }).catch(function () {});
         toast(name + ' added to cart', 'ok');
       } else {
         toast('Sign in to add items', 'err');
@@ -2238,6 +2602,8 @@
         if (btn) { btn.classList.add('active'); btn.querySelector('i').className = 'fas fa-heart'; }
       }
     });
+    // First-page render of the products grid + pager.
+    if (typeof applyFilters === 'function') applyFilters();
   });
 
   // HERO carousel auto-rotate
@@ -2287,6 +2653,97 @@
     }
     tick();
     setInterval(tick, 1000);
+  })();
+
+  // ── Hot Deals pager ─────────────────────────────────────────────────────
+  // Server returns up to 20 deals. Show 8 per page; the rest are hidden via
+  // .visible toggling. Pager lives inside the deals box itself.
+  (function () {
+    const row   = document.getElementById('dealsRow');
+    const pager = document.getElementById('dealsPager');
+    if (!row || !pager) return;
+
+    const cards = Array.from(row.querySelectorAll('.deal-card'));
+    if (cards.length === 0) {
+      pager.style.display = 'none';
+      return;
+    }
+
+    const PER_PAGE = 8;
+    let page = 1;
+
+    function buildPageList(curr, total) {
+      if (total <= 7) {
+        return Array.from({ length: total }, function (_, i) { return i + 1; });
+      }
+      const out = [1];
+      const left  = Math.max(2, curr - 1);
+      const right = Math.min(total - 1, curr + 1);
+      if (left > 2) out.push('…');
+      for (let p = left; p <= right; p++) out.push(p);
+      if (right < total - 1) out.push('…');
+      out.push(total);
+      return out;
+    }
+
+    function render() {
+      const total = cards.length;
+      const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+      if (page > totalPages) page = totalPages;
+      if (page < 1) page = 1;
+
+      const start = (page - 1) * PER_PAGE;
+      const end   = start + PER_PAGE;
+      cards.forEach(function (c, i) {
+        c.classList.toggle('visible', i >= start && i < end);
+      });
+
+      if (totalPages <= 1) {
+        pager.style.display = 'none';
+        pager.innerHTML = '';
+        return;
+      }
+      pager.style.display = '';
+
+      const list = buildPageList(page, totalPages);
+      const prevDis = page <= 1 ? 'disabled' : '';
+      const nextDis = page >= totalPages ? 'disabled' : '';
+      const from = start + 1;
+      const to   = Math.min(end, total);
+
+      const html =
+          '<button class="dp-btn" ' + prevDis
+        +     ' data-page="' + (page - 1) + '" aria-label="Previous deals">'
+        +       '<i class="fas fa-chevron-left"></i></button>'
+        + list.map(function (p) {
+            if (p === '…') {
+              return '<span class="dp-btn dots" aria-hidden="true">…</span>';
+            }
+            const isActive = p === page;
+            return '<button class="dp-btn' + (isActive ? ' active' : '')
+                 + '" data-page="' + p + '"'
+                 + (isActive ? ' aria-current="page"' : '')
+                 + '>' + p + '</button>';
+          }).join('')
+        + '<button class="dp-btn" ' + nextDis
+        +     ' data-page="' + (page + 1) + '" aria-label="Next deals">'
+        +       '<i class="fas fa-chevron-right"></i></button>'
+        + '<span class="dp-info">Showing ' + from + '–' + to
+        + ' of ' + total + ' deals</span>';
+
+      pager.innerHTML = html;
+
+      pager.querySelectorAll('button.dp-btn[data-page]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const target = parseInt(btn.dataset.page, 10);
+          if (!target || target === page) return;
+          page = target;
+          render();
+        });
+      });
+    }
+
+    render();
   })();
 </script>
 </body>

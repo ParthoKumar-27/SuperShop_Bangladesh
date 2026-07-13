@@ -381,6 +381,29 @@ def customer_shop(request: Request, session=Depends(require_customer)):
         request.session["selected_branch"] = selected_branch_id
     selected_branch = next((b for b in branches if b["branch_id"] == selected_branch_id), None)
 
+    # ── Categories (for the chip filter row) ────────────────────────────
+    categories = query("""
+        SELECT cat_id, cat_name, parent_cat_id
+        FROM category
+        ORDER BY parent_cat_id NULLS FIRST, cat_name
+    """)
+
+    # ── Category filter from ?cat= (accepts a parent or a leaf) ────────
+    selected_cat = (request.query_params.get("cat") or "").strip()
+    selected_cat_id = None
+    selected_cat_name = None
+    extra_cat_ids = []
+    if selected_cat:
+        # Resolve: could be a parent cat_id — include all descendants too.
+        norm = selected_cat.upper().strip()
+        match = next((c for c in categories if c["cat_id"].upper() == norm), None)
+        if match:
+            selected_cat_id = match["cat_id"]
+            selected_cat_name = match["cat_name"]
+            if match["parent_cat_id"] is None:
+                # It's a parent — include all sub-categories
+                extra_cat_ids = [c["cat_id"] for c in categories if c["parent_cat_id"] and c["parent_cat_id"].upper() == norm]
+
     raw_products = query("""
         SELECT p.product_id, p.product_name, p.brand, p.unit_price, p.unit, p.cat_id,
                p.image_url,
@@ -395,6 +418,11 @@ def customer_shop(request: Request, session=Depends(require_customer)):
     by_product, by_cat = _get_active_discounts()
     products = []
     for p in raw_products:
+        if selected_cat_id is not None:
+            in_filter = (p["cat_id"] and p["cat_id"].upper() == selected_cat_id.upper()) \
+                        or (p["cat_id"] and p["cat_id"].upper() in {x.upper() for x in extra_cat_ids})
+            if not in_filter:
+                continue
         disc_price, disc_label = _apply_discount(p["unit_price"], p["product_id"], p["cat_id"], by_product, by_cat)
         p["image_url"] = _normalize_image_url(p.get("image_url"))
         products.append({**p, "disc_price": disc_price, "disc_label": disc_label})
@@ -403,6 +431,9 @@ def customer_shop(request: Request, session=Depends(require_customer)):
         "products": products,
         "branches": branches,
         "selected_branch": selected_branch,
+        "categories": categories,
+        "selected_cat_id": selected_cat_id,
+        "selected_cat_name": selected_cat_name,
         "cart_locked": len(request.session.get("cart", {})) > 0,
         **_customer_context(request, session),
     })

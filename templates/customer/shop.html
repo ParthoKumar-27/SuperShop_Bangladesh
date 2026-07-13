@@ -28,13 +28,16 @@
       </p>
     </div>
 
-    <form method="POST" action="/customer/select-branch" class="flex items-center gap-2 w-full md:w-auto">
+    <form id="branchSwitchForm" method="POST" action="/customer/select-branch"
+          class="flex items-center gap-2 w-full md:w-auto">
       <div class="relative flex-1 md:flex-initial">
         <i class="fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-emerald-700 text-sm pointer-events-none"></i>
         <select name="branch_id"
                 {% if cart_locked %}disabled{% endif %}
+                onchange="if(!this.disabled){this.form.submit();}"
                 class="w-full md:w-64 pl-9 pr-3 py-2.5 rounded-xl text-sm text-gray-800 bg-white
                        border border-white/40 shadow focus:outline-none focus:ring-2 focus:ring-[#F17B0D]
+                       cursor-pointer
                        {% if cart_locked %}bg-gray-100 cursor-not-allowed{% endif %}">
           {% for branch in branches %}
           <option value="{{ branch.branch_id }}"
@@ -44,14 +47,11 @@
           {% endfor %}
         </select>
       </div>
-      <button type="submit"
-              {% if cart_locked %}disabled{% endif %}
-              class="px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2
-                     {% if cart_locked %}bg-gray-300 text-gray-500 cursor-not-allowed
-                     {% else %}bg-[#F17B0D] hover:bg-[#d66a07] text-white shadow-md hover:shadow-lg{% endif %}">
-        <i class="fa-solid fa-rotate"></i>
-        Switch
-      </button>
+      {% if cart_locked %}
+        <span class="text-xs text-amber-100 bg-amber-500/20 border border-amber-300/30 px-3 py-1.5 rounded-full whitespace-nowrap">
+          <i class="fa-solid fa-lock text-[10px]"></i> Cart locked
+        </span>
+      {% endif %}
     </form>
   </div>
 
@@ -84,6 +84,44 @@
              shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044635]/20 focus:border-[#044635]">
   </div>
 </div>
+
+{# ── Category filter chips ── #}
+{% if categories %}
+<div class="flex items-center gap-2 overflow-x-auto pb-2 mb-4 -mx-1 px-1
+            scrollbar-thin scrollbar-thumb-gray-300">
+  <a href="/customer/shop"
+     class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold
+            border transition shadow-sm
+            {% if not selected_cat_id %}
+              bg-[#044635] text-white border-[#044635]
+            {% else %}
+              bg-white text-gray-700 border-gray-200 hover:border-[#044635] hover:text-[#044635]
+            {% endif %}">
+    <i class="fa-solid fa-grip-vertical text-[10px]"></i>
+    All
+  </a>
+  {% for cat in categories if cat.parent_cat_id is none %}
+    {% set is_active = selected_cat_id and selected_cat_id | upper == cat.cat_id | upper %}
+    <a href="/customer/shop?cat={{ cat.cat_id }}"
+       class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold
+              border transition shadow-sm
+              {% if is_active %}
+                bg-[#F17B0D] text-white border-[#F17B0D]
+              {% else %}
+                bg-white text-gray-700 border-gray-200 hover:border-[#F17B0D] hover:text-[#F17B0D]
+              {% endif %}">
+      {{ cat.cat_name }}
+    </a>
+  {% endfor %}
+</div>
+{% if selected_cat_name %}
+<p class="text-xs text-gray-500 -mt-2 mb-3 flex items-center gap-1.5">
+  <i class="fa-solid fa-filter text-[#F17B0D]"></i>
+  Showing <span class="font-semibold text-gray-700">{{ selected_cat_name }}</span>
+  <a href="/customer/shop" class="ml-1 text-[#044635] hover:underline">clear</a>
+</p>
+{% endif %}
+{% endif %}
 
 {# ── Feedback banners ── #}
 {% if request.query_params.get('msg') == 'branch_locked' %}

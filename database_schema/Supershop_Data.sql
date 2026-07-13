@@ -331,6 +331,75 @@ INSERT INTO product VALUES ('P-00047','Women''s T-Shirt (M)','Generic','CAT-C1',
 INSERT INTO product VALUES ('P-00048','Denim Jeans 32','Generic','CAT-C1','SUP-007',1450.00,1120.00,'pcs',NULL,'Y');
 INSERT INTO product VALUES ('P-00049','Sports Cap','Generic','CAT-C1','SUP-007',320.00,240.00,'pcs',NULL,'Y');
 INSERT INTO product VALUES ('P-00050','Cotton Socks (3 Pair)','Generic','CAT-C1','SUP-007',290.00,215.00,'pack',NULL,'Y');
+-- ============================================================
+-- ADDITIONAL PRODUCTS (P-00051 - P-00100)
+-- ============================================================
+
+-- CAT-D1 : Dairy
+INSERT INTO product VALUES ('P-00051','Cheese Slices 200g','Aarong Dairy','CAT-D1','SUP-002',210.00,158.00,'pcs',60,'Y');
+INSERT INTO product VALUES ('P-00052','Condensed Milk 400g','Pran','CAT-D1','SUP-001',150.00,112.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00053','Ghee 500g','Aarong Dairy','CAT-D1','SUP-002',680.00,520.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00054','Sweet Yogurt 500g','Aarong Dairy','CAT-D1','SUP-002',95.00,70.00,'pcs',5,'Y');
+INSERT INTO product VALUES ('P-00055','Cream 200ml','Aarong Dairy','CAT-D1','SUP-002',130.00,98.00,'ml',7,'Y');
+
+-- CAT-B1 : Bakery
+INSERT INTO product VALUES ('P-00056','Burger Buns 4 Pack','Sunfeast','CAT-B1','SUP-004',85.00,62.00,'pack',4,'Y');
+INSERT INTO product VALUES ('P-00057','Brown Bread 400g','Sunfeast','CAT-B1','SUP-004',75.00,55.00,'pcs',5,'Y');
+INSERT INTO product VALUES ('P-00058','Rusk 300g','Olympic','CAT-B1','SUP-008',90.00,67.00,'pcs',180,'Y');
+INSERT INTO product VALUES ('P-00059','Puff Pastry Roll 200g','Pran','CAT-B1','SUP-001',65.00,48.00,'pcs',90,'Y');
+INSERT INTO product VALUES ('P-00060','Wafer Biscuits 150g','Olympic','CAT-B1','SUP-008',60.00,44.00,'pcs',180,'Y');
+
+-- CAT-S1 : Snacks
+INSERT INTO product VALUES ('P-00061','Corn Puffs 100g','Pran','CAT-S1','SUP-001',35.00,25.00,'pcs',90,'Y');
+INSERT INTO product VALUES ('P-00062','Peanuts Salted 150g','Akij','CAT-S1','SUP-007',70.00,52.00,'pcs',120,'Y');
+INSERT INTO product VALUES ('P-00063','Banana Chips 100g','Pran','CAT-S1','SUP-001',55.00,40.00,'pcs',120,'Y');
+INSERT INTO product VALUES ('P-00064','Popcorn 100g','Akij','CAT-S1','SUP-007',50.00,36.00,'pcs',90,'Y');
+INSERT INTO product VALUES ('P-00065','Mixed Nuts 200g','ACI','CAT-S1','SUP-003',280.00,215.00,'pcs',180,'Y');
+
+-- CAT-BV : Beverages
+INSERT INTO product VALUES ('P-00066','Lemon Drink 500ml','Transcom','CAT-BV','SUP-006',45.00,32.00,'pcs',90,'Y');
+INSERT INTO product VALUES ('P-00067','Black Tea 100 bags','ACI','CAT-BV','SUP-003',160.00,120.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00068','Instant Coffee 100g','ACI','CAT-BV','SUP-003',320.00,248.00,'pcs',730,'Y');
+INSERT INTO product VALUES ('P-00069','Soda Water 500ml','Transcom','CAT-BV','SUP-006',35.00,24.00,'pcs',180,'Y');
+INSERT INTO product VALUES ('P-00070','Tamarind Juice 250ml','Pran','CAT-BV','SUP-001',32.00,22.00,'pcs',180,'Y');
+
+-- CAT-F1 : Grocery / Food
+INSERT INTO product VALUES ('P-00071','Chickpea 1kg','Bashundhara','CAT-F1','SUP-002',155.00,120.00,'kg',365,'Y');
+INSERT INTO product VALUES ('P-00072','Mustard Oil 1L','Meghna','CAT-F1','SUP-004',280.00,215.00,'litre',365,'Y');
+INSERT INTO product VALUES ('P-00073','Vermicelli 400g','Pran','CAT-F1','SUP-001',85.00,64.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00074','Turmeric Powder 200g','ACI','CAT-F1','SUP-003',95.00,72.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00075','Chili Powder 200g','ACI','CAT-F1','SUP-003',110.00,84.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00076','Cumin Powder 100g','ACI','CAT-F1','SUP-003',130.00,99.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00077','Mixed Spice 100g','ACI','CAT-F1','SUP-003',95.00,72.00,'pcs',365,'Y');
+INSERT INTO product VALUES ('P-00078','Fine Rice 5kg (Miniket)','Pran','CAT-F1','SUP-001',480.00,365.00,'kg',365,'Y');
+INSERT INTO product VALUES ('P-00079','Brown Sugar 1kg','Bashundhara','CAT-F1','SUP-002',95.00,72.00,'kg',730,'Y');
+INSERT INTO product VALUES ('P-00080','Honey 500g','ACI','CAT-F1','SUP-003',420.00,325.00,'pcs',730,'Y');
+
+-- CAT-P1 : Personal / Household Care
+INSERT INTO product VALUES ('P-00081','Hand Sanitizer 100ml','ACI','CAT-P1','SUP-003',95.00,70.00,'ml',730,'Y');
+INSERT INTO product VALUES ('P-00082','Face Wash 100ml','Square','CAT-P1','SUP-005',210.00,158.00,'ml',730,'Y');
+INSERT INTO product VALUES ('P-00083','Body Lotion 200ml','ACI','CAT-P1','SUP-003',260.00,195.00,'ml',730,'Y');
+INSERT INTO product VALUES ('P-00084','Deodorant Spray 150ml','Square','CAT-P1','SUP-005',310.00,235.00,'ml',730,'Y');
+INSERT INTO product VALUES ('P-00085','Toilet Tissue 4 Roll','Fresh','CAT-P1','SUP-004',180.00,135.00,'pack',1095,'Y');
+INSERT INTO product VALUES ('P-00086','Shaving Razor 3 Pack','Square','CAT-P1','SUP-005',150.00,112.00,'pack',1095,'Y');
+INSERT INTO product VALUES ('P-00087','Baby Diaper (M) 20 Pack','ACI','CAT-P1','SUP-003',650.00,495.00,'pack',730,'Y');
+INSERT INTO product VALUES ('P-00088','Baby Wipes 80 Pack','ACI','CAT-P1','SUP-003',220.00,165.00,'pack',730,'Y');
+INSERT INTO product VALUES ('P-00089','Mosquito Coil 10 Pack','Square','CAT-P1','SUP-005',65.00,47.00,'pack',730,'Y');
+INSERT INTO product VALUES ('P-00090','Air Freshener 250ml','Square','CAT-P1','SUP-005',190.00,142.00,'ml',730,'Y');
+
+-- CAT-M1 : Misc / Electronics-Household
+INSERT INTO product VALUES ('P-00091','Extension Cord 5m','Transcom','CAT-M1','SUP-006',420.00,320.00,'pcs',1095,'Y');
+INSERT INTO product VALUES ('P-00092','Wall Clock','Transcom','CAT-M1','SUP-006',380.00,285.00,'pcs',1825,'Y');
+INSERT INTO product VALUES ('P-00093','Umbrella (Auto)','Generic','CAT-M1','SUP-007',480.00,360.00,'pcs',1825,'Y');
+INSERT INTO product VALUES ('P-00094','Plastic Storage Box 10L','Fresh','CAT-M1','SUP-004',350.00,262.00,'pcs',1825,'Y');
+INSERT INTO product VALUES ('P-00095','Steel Water Bottle 1L','Transcom','CAT-M1','SUP-006',420.00,315.00,'pcs',1825,'Y');
+
+-- CAT-C1 : Clothing
+INSERT INTO product VALUES ('P-00096','Kids T-Shirt (S)','Generic','CAT-C1','SUP-007',280.00,210.00,'pcs',NULL,'Y');
+INSERT INTO product VALUES ('P-00097','Formal Shirt (L)','Generic','CAT-C1','SUP-007',950.00,730.00,'pcs',NULL,'Y');
+INSERT INTO product VALUES ('P-00098','Ladies Kurti (M)','Generic','CAT-C1','SUP-007',780.00,590.00,'pcs',NULL,'Y');
+INSERT INTO product VALUES ('P-00099','Winter Jacket (L)','Generic','CAT-C1','SUP-007',1850.00,1420.00,'pcs',NULL,'N');
+INSERT INTO product VALUES ('P-00100','Bath Towel Large','Fresh','CAT-C1','SUP-004',380.00,285.00,'pcs',NULL,'Y');
 
 -- ============================================================
 --  11. BRANCH_INVENTORY  (200 rows)
