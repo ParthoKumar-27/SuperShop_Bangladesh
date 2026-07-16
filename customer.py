@@ -504,6 +504,53 @@ async def add_to_cart(request: Request, session=Depends(require_customer)):
     return RedirectResponse("/customer/shop?msg=added", status_code=302)
 
 
+@customer_router.post("/cart/set-branch")
+async def set_cart_branch(request: Request, session=Depends(require_customer)):
+    """
+    Persist the branch the customer picked from the storefront popup.
+
+    The storefront calls this once, the first time the user clicks an
+    inline "add to cart" button.  After that the chosen branch sticks to
+    the session and every subsequent add-to-cart just goes through.
+    """
+    content_type = (request.headers.get("content-type") or "").lower()
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        branch_id = (payload.get("branch_id") or "").strip()
+    else:
+        form = await request.form()
+        branch_id = (form.get("branch_id") or "").strip()
+
+    if not branch_id:
+        if "application/json" in content_type:
+            return JSONResponse({"ok": False, "error": "Missing branch_id"}, status_code=400)
+        return RedirectResponse("/", status_code=302)
+
+    # Validate that the branch exists & is active
+    row = query(
+        "SELECT branch_id, branch_name FROM branch "
+        "WHERE branch_id = %s AND is_active = 'Y'",
+        (branch_id,),
+    )
+    if not row:
+        if "application/json" in content_type:
+            return JSONResponse({"ok": False, "error": "Invalid branch"}, status_code=400)
+        return RedirectResponse("/", status_code=302)
+
+    request.session["selected_branch"] = branch_id
+
+    if "application/json" in content_type:
+        return JSONResponse({
+            "ok": True,
+            "branch_id":   branch_id,
+            "branch_name": row[0]["branch_name"],
+        })
+    return RedirectResponse(request.headers.get("referer") or "/", status_code=302)
+
+
 
 
 @customer_router.get("/cart", response_class=HTMLResponse)

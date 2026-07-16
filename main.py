@@ -274,16 +274,34 @@ def storefront(request: Request):
     _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
     cart_count = sum(_cart.values()) if isinstance(_cart, dict) else 0
 
+    # Branches shown in the "pick a branch" popup the first time a customer
+    # adds anything to the cart from the storefront.
+    _branches_rows = query(
+        "SELECT branch_id, branch_name FROM branch "
+        "WHERE is_active = 'Y' ORDER BY branch_name"
+    )
+    _branches_list = list(_branches_rows or [])
+    _selected_branch_id = (
+        request.session.get("selected_branch") if hasattr(request, "session") else None
+    )
+    _selected_branch = (
+        next((b for b in _branches_list if b["branch_id"] == _selected_branch_id), None)
+        if _selected_branch_id
+        else None
+    )
+
     return templates.TemplateResponse(
         request,
         "storefront.html",
         {
-            "categories": categories,
-            "products":   products,
-            "hot_deals":  hot_deals,
-            "logged_in":  bool(role),
-            "role":       role,
-            "cart_count": cart_count,
+            "categories":        categories,
+            "products":          products,
+            "hot_deals":         hot_deals,
+            "logged_in":         bool(role),
+            "role":              role,
+            "cart_count":        cart_count,
+            "branches":          _branches_list,
+            "selected_branch":   _selected_branch,
         }
     )
 

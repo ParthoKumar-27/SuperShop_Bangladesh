@@ -1334,13 +1334,37 @@
       transition: opacity .25s ease, transform .25s ease;
       pointer-events: none;
       z-index: 4;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
     }
     .product-card:hover .pc-action-icon {
       opacity: 1;
       transform: translateY(0) scale(1);
+      pointer-events: auto;
     }
-    .product-card-link { color: inherit; text-decoration: none; display: block; }
+    .pc-action-icon:hover { filter: brightness(1.08); }
+    .pc-action-icon:active { transform: translateY(0) scale(.94); }
+    .pc-action-icon.is-busy { opacity: .7; pointer-events: none; }
+    .pc-action-icon.is-added {
+      background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
+      box-shadow: 0 8px 16px rgba(4,70,53,.40), inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .product-card-link {
+      color: inherit;
+      text-decoration: none;
+      display: block;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+    }
     .product-card-link:hover { color: inherit; }
+    .product-card-link:focus { outline: none; }
+    .product-card-link:focus-visible .product-card-img { box-shadow: 0 0 0 3px rgba(4,70,53,.35); }
     .product-card-meta {
       font-size: 10.5px;
       color: var(--mid);
@@ -1578,9 +1602,9 @@
 
     .toast-stack {
       position: fixed;
-      top: 24px; right: 24px;
+      bottom: 24px; right: 24px;
       display: flex;
-      flex-direction: column;
+      flex-direction: column-reverse;
       gap: 8px;
       z-index: 200;
     }
@@ -1600,8 +1624,8 @@
       animation: toastIn .35s cubic-bezier(.2,.8,.2,1) both;
     }
     @keyframes toastIn {
-      from { opacity: 0; transform: translateX(20px); }
-      to   { opacity: 1; transform: translateX(0); }
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     .toast.ok { border-color: var(--green); }
     .toast.ok i { color: var(--green); }
@@ -1610,6 +1634,355 @@
     .toast.warn { border-color: #fbbf24; }
     .toast.warn i { color: #fbbf24; }
     .toast i { color: var(--orange); font-size: 16px; }
+
+    /* ════════════════════════════════════════════════════════════════════
+       BRANCH-PICKER MODAL (shown only the FIRST time a logged-in customer
+       adds anything to the cart from the storefront).
+       ════════════════════════════════════════════════════════════════════ */
+    .branch-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 36, 27, .55);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 400;
+      animation: bmFade .25s ease both;
+    }
+    .branch-modal-backdrop.open {
+      display: flex;
+    }
+    @keyframes bmFade {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .branch-modal {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 32px 70px rgba(2, 36, 27, .45);
+      overflow: hidden;
+      animation: bmPop .35s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes bmPop {
+      from { opacity: 0; transform: translateY(14px) scale(.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .branch-modal-head {
+      padding: 22px 22px 14px;
+      background: linear-gradient(135deg, var(--green-deep) 0%, var(--green) 60%, var(--green-mid) 100%);
+      color: #fff;
+      position: relative;
+    }
+    .branch-modal-head .bm-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      background: rgba(0,0,0,.28);
+      border: 1px solid rgba(255,179,92,.35);
+      color: var(--orange-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+    .branch-modal-head h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 19px;
+      font-weight: 800;
+      margin: 0 0 4px;
+      letter-spacing: -.01em;
+    }
+    .branch-modal-head p {
+      font-size: 12.5px;
+      color: rgba(255,255,255,.78);
+      line-height: 1.45;
+      margin: 0;
+    }
+    .branch-modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255,255,255,.10);
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s ease;
+    }
+    .branch-modal-close:hover { background: rgba(255,255,255,.20); }
+
+    .branch-modal-body { padding: 18px 22px 8px; }
+    .branch-modal-body label.bm-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+    .branch-modal select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background:
+        linear-gradient(180deg, #fff 0%, #fffaf2 100%);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--dark);
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image:
+        linear-gradient(180deg, #fff 0%, #fffaf2 100%),
+        linear-gradient(45deg, transparent 50%, var(--orange-deep) 50%),
+        linear-gradient(135deg, var(--orange-deep) 50%, transparent 50%);
+      background-position:
+        0 0,
+        calc(100% - 18px) 50%,
+        calc(100% - 13px) 50%;
+      background-size: 100% 100%, 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+    .branch-modal select:focus {
+      outline: none;
+      border-color: var(--orange);
+      box-shadow: 0 0 0 4px rgba(241,123,13,.18);
+    }
+    .branch-modal-hint {
+      margin-top: 8px;
+      font-size: 11.5px;
+      color: var(--mid);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .branch-modal-hint i { color: var(--orange); }
+
+    .branch-modal-foot {
+      padding: 14px 22px 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .bm-btn {
+      padding: 11px 18px;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease, background .15s ease;
+      border: 1.5px solid transparent;
+    }
+    .bm-btn-ghost {
+      background: #f1f5f4;
+      color: var(--dark);
+    }
+    .bm-btn-ghost:hover { background: #e3eae7; }
+    .bm-btn-primary {
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(241,123,13,.32), inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .bm-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(241,123,13,.40);
+      filter: brightness(1.05);
+    }
+    .bm-btn-primary:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Product quick-view modal ───────────────────────────────────── */
+    .qv-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(4, 30, 24, .55);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 1080;
+      padding: 18px;
+      animation: qvFade .18s ease-out;
+    }
+    .qv-backdrop.open { display: flex; }
+    @keyframes qvFade { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes qvPop  { from { opacity: 0; transform: translateY(14px) scale(.97) } to { opacity: 1; transform: none } }
+
+    .qv-modal {
+      width: min(860px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 28px 60px rgba(4,70,53,.30);
+      padding: 28px;
+      position: relative;
+      animation: qvPop .22s ease-out;
+    }
+    .qv-close {
+      position: absolute; top: 14px; right: 14px;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      color: #475569;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: .15s;
+      border: none;
+      cursor: pointer;
+    }
+    .qv-close:hover { background: #e2e8f0; color: #044635; }
+
+    .qv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .qv-photo {
+      background: linear-gradient(135deg, #f0f9f4 0%, #fff7ec 100%);
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      aspect-ratio: 1 / 1;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .qv-photo img { width: 100%; height: 100%; object-fit: contain; padding: 14px; display: block; }
+    .qv-photo img[src=""], .qv-photo img:not([src]) { display: none; }
+    .qv-emoji-fallback { font-size: 110px; line-height: 1; }
+    .qv-photo img.is-loaded + .qv-emoji-fallback,
+    .qv-photo img[src]:not([src=""]) + .qv-emoji-fallback { display: none; }
+
+    .qv-brand {
+      display: inline-block;
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #044635;
+      background: #e8f3ee;
+      padding: 4px 10px; border-radius: 999px;
+      margin-bottom: 10px;
+    }
+    .qv-info h3 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .qv-price-row {
+      display: flex; align-items: baseline; gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .qv-now { font-size: 26px; font-weight: 800; color: #F17B0D; }
+    .qv-was { font-size: 14px; color: #94a3b8; text-decoration: line-through; }
+    .qv-save {
+      font-size: 11px; font-weight: 800;
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      color: #fff;
+      padding: 4px 10px; border-radius: 8px;
+      letter-spacing: .03em;
+    }
+    .qv-desc { color: #475569; font-size: 14px; line-height: 1.55; margin-bottom: 18px; }
+    .qv-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .qv-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 700; font-size: 14px;
+      border: none;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s;
+      text-decoration: none;
+    }
+    .qv-btn-primary {
+      background: linear-gradient(135deg, #F17B0D 0%, #c45f00 100%);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(241,123,13,.32);
+    }
+    .qv-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(241,123,13,.40); filter: brightness(1.05); }
+    .qv-btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .qv-btn-ghost {
+      background: #f1f5f9; color: #044635;
+    }
+    .qv-btn-ghost:hover { background: #e3eae7; }
+    .qv-meta { font-size: 12px; color: #64748b; }
+
+    @media (max-width: 640px) {
+      .qv-grid { grid-template-columns: 1fr; gap: 18px; }
+      .qv-photo { aspect-ratio: 4 / 3; }
+      .qv-modal { padding: 20px; }
+      .qv-info h3 { font-size: 19px; }
+      .qv-now { font-size: 22px; }
+    }
+
+    /* Deal-card inline cart button — hover-revealed like .pc-action-icon,
+       anchored bottom-right. */
+    .deal-card { position: relative; overflow: hidden; }
+    .deal-cart-btn {
+      position: absolute;
+      bottom: 10px; right: 10px;
+      width: 38px; height: 38px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 8px 16px rgba(241,123,13,.36), inset 0 1px 0 rgba(255,255,255,.22);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      opacity: 0;
+      transform: translateY(8px) scale(.9);
+      transition: opacity .25s ease, transform .25s ease,
+                  background .15s ease, box-shadow .15s ease, filter .15s ease;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .deal-card:hover .deal-cart-btn,
+    .deal-cart-btn:focus-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .deal-cart-btn i { pointer-events: none; }
+    .deal-cart-btn:hover { filter: brightness(1.08); }
+    .deal-cart-btn:active { transform: translateY(0) scale(.94); }
+    .deal-cart-btn.is-busy { opacity: .7; pointer-events: none; }
+    .deal-cart-btn.is-added {
+      background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
+      box-shadow: 0 8px 16px rgba(4,70,53,.40), inset 0 1px 0 rgba(255,255,255,.22);
+      transform: translateY(0) scale(1.06);
+    }
+    .deal-cart-btn.guest {
+      background: #e2e8f0;
+      color: #044635;
+      box-shadow: 0 4px 10px rgba(4,70,53,.10);
+    }
+    /* Give the price row a little breathing room so the floating button
+       doesn't sit on top of the original (struck-through) price. */
+    .deal-card .deal-price { padding-right: 48px; }
 
     @media (max-width: 1100px) {
       .hero-shell { grid-template-columns: 1fr; }
@@ -1640,7 +2013,10 @@
     }
   </style>
 </head>
-<body>
+<body
+  data-is-customer="{{ '1' if (logged_in and role == 'CUSTOMER') else '0' }}"
+  data-has-branch="{{ '1' if selected_branch else '0' }}"
+  data-branches='{{ (branches or []) | tojson }}'>
 
 <!-- ANNOUNCEMENT MARQUEE -->
 <div class="announce">
@@ -1922,7 +2298,22 @@
                 '🛢'  if 'oil'         in n else
                 '🍒'  if 'sugar'       in n else
                 '🛒' %}
-            <div class="deal-card" onclick="document.getElementById('productGrid').scrollIntoView({behavior:'smooth'})">
+            <div class="deal-card" data-quick-view
+                 data-product-id="{{ d.product_id }}"
+                 data-product-name="{{ d.product_name }}"
+                 data-brand="{{ (d.brand or 'SuperShop') | e }}"
+                 data-unit-price="{{ d.unit_price|float }}"
+                 data-sale-price="{{ d.sale_price|float }}"
+                 data-image-url="{{ d.image_url or '' }}"
+                 data-emoji="{{ _emoji }}">
+              <button type="button"
+                      class="deal-cart-btn{% if not logged_in %} guest{% endif %}"
+                      data-quick-add
+                      data-product-id="{{ d.product_id }}"
+                      data-product-name="{{ d.product_name }}"
+                      title="{% if logged_in %}Add to cart{% else %}Sign in to shop{% endif %}">
+                {% if logged_in %}<i class="fas fa-cart-plus"></i>{% else %}<i class="fas fa-arrow-right"></i>{% endif %}
+              </button>
               <span class="deal-badge{% if d.discount_type == 'FLAT' %} flat{% endif %}"
                     title="{{ d.discount_name }}">{{ savings_txt }}</span>
               <div class="deal-emoji">
@@ -1947,7 +2338,22 @@
             {% set di = loop.index0 %}
             {% set _fallback_pct = [30,25,40,20,15,35][di % 6] %}
             {% set _sale = p.unit_price|float * (1 - _fallback_pct/100.0) %}
-            <div class="deal-card" onclick="document.getElementById('productGrid').scrollIntoView({behavior:'smooth'})">
+            <div class="deal-card" data-quick-view
+                 data-product-id="{{ p.product_id }}"
+                 data-product-name="{{ p.product_name }}"
+                 data-brand="{{ (p.brand or 'SuperShop') | e }}"
+                 data-unit-price="{{ p.unit_price|float }}"
+                 data-sale-price="{{ _sale|float }}"
+                 data-image-url="{{ p.image_url or '' }}"
+                 data-emoji="{% set n = p.product_name | lower %}{% if 'milk' in n %}🥛{% elif 'bread' in n %}🍞{% elif 'biscuit' in n or 'digestive' in n %}🍪{% elif 'chip' in n %}🥨{% elif 'juice' in n %}🧃{% elif 'rice' in n %}🍚{% elif 'shampoo' in n or 'soap' in n %}🧴{% elif 'tea' in n %}🍵{% elif 'oil' in n %}🛢{% elif 'sugar' in n %}🍒{% else %}🛒{% endif %}">
+              <button type="button"
+                      class="deal-cart-btn{% if not logged_in %} guest{% endif %}"
+                      data-quick-add
+                      data-product-id="{{ p.product_id }}"
+                      data-product-name="{{ p.product_name }}"
+                      title="{% if logged_in %}Add to cart{% else %}Sign in to shop{% endif %}">
+                {% if logged_in %}<i class="fas fa-cart-plus"></i>{% else %}<i class="fas fa-arrow-right"></i>{% endif %}
+              </button>
               <span class="deal-badge">-{{ _fallback_pct }}%</span>
               <div class="deal-emoji">
                 {% set n = p.product_name | lower %}
@@ -2062,7 +2468,6 @@
         {%- elif 'jam'       in n -%}{% set emoji = '🍯' %}
         {%- else -%}{% set emoji = '🛍' %}
         {%- endif -%}
-        {%- set _card_href = ('/customer/shop?pid=' ~ p.product_id) if logged_in else ('/auth/login?role=customer&next=/customer/shop?pid=' ~ p.product_id) -%}
         <div class="product-card"
              data-catid="{{ p.cat_id if p.cat_id else '' }}"
              data-name="{{ p.product_name | lower }}"
@@ -2078,7 +2483,16 @@
           {% if p.disc_label %}
             <span class="product-card-discount" aria-label="Discount">{{ p.disc_label }}</span>
           {% endif %}
-          <a class="product-card-link" href="{{ _card_href }}" aria-label="View {{ p.product_name }}">
+          <div class="product-card-link" role="button" tabindex="0"
+               data-quick-view
+               data-product-id="{{ p.product_id }}"
+               data-product-name="{{ p.product_name }}"
+               data-brand="{{ (p.brand or 'SuperShop') | e }}"
+               data-unit-price="{{ p.unit_price|float }}"
+               {% if p.sale_price %}data-sale-price="{{ p.sale_price|float }}"{% endif %}
+               data-image-url="{{ p.image_url or '' }}"
+               data-emoji="{{ emoji }}"
+               aria-label="Quick view {{ p.product_name }}">
             <div class="product-card-img">
               {% if p.image_url %}
                 <img class="product-card-photo"
@@ -2108,8 +2522,14 @@
                 <span>&#183; available</span>
               </div>
             </div>
-          </a>
-          <span class="pc-action-icon" aria-hidden="true">
+          </div>
+          <span class="pc-action-icon"
+                role="button"
+                tabindex="0"
+                aria-label="{% if logged_in %}Add {{ p.product_name }} to cart{% else %}Sign in to shop{% endif %}"
+                data-quick-add
+                data-product-id="{{ p.product_id }}"
+                data-product-name="{{ p.product_name }}">
             {% if logged_in %}<i class="fas fa-cart-plus"></i>{% else %}<i class="fas fa-arrow-right"></i>{% endif %}
           </span>
         </div>
@@ -2121,6 +2541,81 @@
     <nav class="pager" id="pager" aria-label="Products pagination"></nav>
 
   </main>
+</div>
+
+<!-- BRANCH-PICKER MODAL (shown only to logged-in customers the first time
+     they add something to the cart from the storefront). -->
+{% if logged_in and role == 'CUSTOMER' %}
+<div class="branch-modal-backdrop" id="branchModal" role="dialog" aria-modal="true"
+     aria-labelledby="branchModalTitle" aria-hidden="true">
+  <div class="branch-modal">
+    <div class="branch-modal-head">
+      <span class="bm-badge"><i class="fas fa-location-dot"></i> Pickup &amp; delivery</span>
+      <button type="button" class="branch-modal-close" id="branchModalClose"
+              aria-label="Cancel"><i class="fas fa-xmark"></i></button>
+      <h3 id="branchModalTitle">Choose your branch</h3>
+      <p><strong>Please select your nearest branch.</strong> We'll use this for stock, pricing &amp; delivery.</p>
+    </div>
+    <div class="branch-modal-body">
+      <label class="bm-label" for="branchModalSelect">Branch</label>
+      <select id="branchModalSelect">
+        {% for b in branches %}
+          <option value="{{ b.branch_id }}"
+            {% if selected_branch and selected_branch.branch_id == b.branch_id %}selected{% endif %}>
+            {{ b.branch_name }}
+          </option>
+        {% endfor %}
+      </select>
+      <p class="branch-modal-hint">
+        <i class="fas fa-circle-info"></i>
+        We'll remember your choice for the rest of this session.
+      </p>
+    </div>
+    <div class="branch-modal-foot">
+      <button type="button" class="bm-btn bm-btn-ghost" id="branchModalLater">Decide later</button>
+      <button type="button" class="bm-btn bm-btn-primary" id="branchModalConfirm">
+        <i class="fas fa-check"></i>&nbsp; Confirm &amp; add to cart
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- PRODUCT QUICK-VIEW MODAL
+     Opens when a customer clicks anywhere on a product card (or deal card)
+     body except the cart icon or wishlist. Replaces the old "click → leave
+     the page" behaviour. -->
+<div class="qv-backdrop" id="qvModal" role="dialog" aria-modal="true"
+     aria-labelledby="qvTitle" aria-hidden="true">
+  <div class="qv-modal">
+    <button type="button" class="qv-close" id="qvClose" aria-label="Close">
+      <i class="fas fa-xmark"></i>
+    </button>
+    <div class="qv-grid">
+      <div class="qv-photo">
+        <img id="qvImage" alt="" />
+        <span class="qv-emoji-fallback" id="qvEmoji"></span>
+      </div>
+      <div class="qv-info">
+        <span class="qv-brand" id="qvBrand"></span>
+        <h3 id="qvTitle">Product</h3>
+        <div class="qv-price-row">
+          <span class="qv-now" id="qvNow"></span>
+          <span class="qv-was" id="qvWas"></span>
+          <span class="qv-save" id="qvSave"></span>
+        </div>
+        <p class="qv-desc" id="qvDesc">
+          Add this item to your cart. Pick the quantity on the cart page before checkout.
+        </p>
+        <div class="qv-actions">
+          <button type="button" class="qv-btn qv-btn-primary" id="qvAdd">
+            <i class="fas fa-cart-plus"></i>&nbsp; Add to cart
+          </button>
+        </div>
+        <p class="qv-meta" id="qvMeta"></p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- TOAST CONTAINER -->
@@ -2544,34 +3039,422 @@
     setTimeout(function () { t.remove(); }, 2600);
   }
 
-  // Quick add to cart
-  async function quickAdd(productId, name) {
-    try {
-      const res = await fetch('/customer/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, quantity: 1 })
-      });
-      if (res.ok) {
-        // Server returns JSON with the updated cart count — keep the badge in sync.
-        res.json().then(function (j) {
-          if (j && typeof j.cart_count === 'number') {
-            const badge = document.getElementById('cartBadge');
-            if (badge) {
-              badge.textContent = j.cart_count;
-              badge.removeAttribute('data-zero');
-            }
-          }
-        }).catch(function () {});
-        toast(name + ' added to cart', 'ok');
-      } else {
-        toast('Sign in to add items', 'err');
-        setTimeout(function () { window.location.href = '/auth/login?role=customer'; }, 800);
+  // ── Inline quick-add to cart ──────────────────────────────────────────────
+  // When the user is logged in as a customer, clicking the orange cart-plus
+  // icon on a product card adds it directly to the session cart without
+  // leaving the storefront.  On the very first click of the session we pop
+  // up a branch picker so we know which branch should fulfil the order;
+  // subsequent clicks just POST straight to /customer/cart/add.
+  const IS_CUSTOMER    = document.body.dataset.isCustomer === '1';
+  // Initial cart count — comes from the cart badge on the navbar.  Used
+  // by the branch gate: an empty cart always asks for a branch again.
+  let   CART_COUNT     = (function () {
+        const b = document.getElementById('cartBadge');
+        return b ? parseInt(b.dataset.count || '0', 10) || 0 : 0;
+      })();
+  // The branch gate fires again whenever:
+  //   1. The server says we have no branch yet, OR
+  //   2. The cart is empty (user emptied the cart or opened a fresh session).
+  // So HAS_BRANCH is recomputed on every check.
+  function hasBranch() {
+        const serverFlag = document.body.dataset.hasBranch === '1';
+        const localFlag  = !!window.localStorage.getItem('ss_branch_picked');
+        return (serverFlag || localFlag) && CART_COUNT > 0;
       }
-    } catch (e) {
-      toast('Network error — try again', 'err');
+  // Backwards-compat constant — JS expressions like `if (!HAS_BRANCH)` still
+  // work, but at evaluation time they re-check via the function above.
+  const HAS_BRANCH     = hasBranch();
+  let   BRANCHES_LIST  = [];
+  try { BRANCHES_LIST = JSON.parse(document.body.dataset.branches || '[]'); }
+  catch (_) { BRANCHES_LIST = []; }
+
+  let pendingAdd = null;          // { productId, name, btn } held while modal is open
+  let branchModalOpen = false;
+
+  function updateCartBadge(count) {
+    const badge = document.getElementById('cartBadge');
+    if (!badge || typeof count !== 'number') return;
+    badge.textContent = count;
+    badge.removeAttribute('data-zero');
+    // Keep CART_COUNT in sync so hasBranch() returns the right answer on
+    // the next click.  When the cart drops back to zero, drop the local
+    // "branch already picked" flag so the next add re-asks for a branch.
+    CART_COUNT = count;
+    if (count <= 0) {
+      try { window.localStorage.removeItem('ss_branch_picked'); } catch (_) {}
+      // Reset the quick-view branch gate too, so the next QV add re-shows
+      // the branch picker.
+      try { QVBranchConfirmed = false; } catch (_) {}
     }
   }
+  function flashAdded(btn) {
+    if (!btn) return;
+    const icon = btn.querySelector('i');
+    const original = icon ? icon.className : '';
+    btn.classList.add('is-added');
+    if (icon) icon.className = 'fas fa-check';
+    setTimeout(function () {
+      btn.classList.remove('is-added');
+      if (icon) icon.className = original || 'fas fa-cart-plus';
+    }, 1100);
+  }
+
+  async function postCartAdd(productId) {
+    const res = await fetch('/customer/cart/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: productId, quantity: 1 })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    return res.json().catch(function () { return {}; });
+  }
+
+  async function postSetBranch(branchId) {
+    const res = await fetch('/customer/cart/set-branch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ branch_id: branchId })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    return res.json().catch(function () { return {}; });
+  }
+
+  async function performAdd(productId, name, btn) {
+    if (btn) {
+      btn.classList.add('is-busy');
+      btn.disabled = true;
+    }
+    try {
+      const data = await postCartAdd(productId);
+      if (data && typeof data.cart_count === 'number') updateCartBadge(data.cart_count);
+      toast((name || 'Item') + ' added to cart', 'ok');
+      flashAdded(btn);
+    } catch (e) {
+      toast('Could not add to cart — try again', 'err');
+    } finally {
+      if (btn) {
+        btn.classList.remove('is-busy');
+        // Always re-enable: covers both the success path (called from the
+        // QV modal's setTimeout re-enable) and the failure path, so a
+        // network error doesn't leave the button stuck in a disabled state.
+        btn.disabled = false;
+      }
+    }
+  }
+
+  function openBranchModal(productId, name, btn) {
+    const modal = document.getElementById('branchModal');
+    if (!modal) {
+      // No modal in DOM (e.g. role is not customer) — fall back to old behaviour.
+      if (IS_CUSTOMER) {
+        // Defensive fallback: just add.
+        performAdd(productId, name, btn);
+      } else {
+        window.location.href = '/auth/login?role=customer';
+      }
+      return;
+    }
+    pendingAdd = { productId: productId, name: name, btn: btn };
+    branchModalOpen = true;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    // Focus the select for keyboard users
+    setTimeout(function () {
+      const sel = document.getElementById('branchModalSelect');
+      if (sel) sel.focus();
+    }, 50);
+  }
+
+  function closeBranchModal() {
+    const modal = document.getElementById('branchModal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    branchModalOpen = false;
+    // If the caller passed a button (e.g. the QV "Add to cart" button that
+    // disabled itself while waiting for a branch), re-enable it so it
+    // isn't stuck in a disabled state if the user backs out of the picker.
+    if (pendingAdd && pendingAdd.btn && pendingAdd.btn.disabled) {
+      pendingAdd.btn.disabled = false;
+    }
+    pendingAdd = null;
+  }
+
+  async function confirmBranchModal() {
+    const sel  = document.getElementById('branchModalSelect');
+    const btn  = document.getElementById('branchModalConfirm');
+    if (!sel || !btn || !pendingAdd) return;
+    const branchId = sel.value;
+    if (!branchId) { toast('Please pick a branch first', 'warn'); return; }
+    btn.disabled = true;
+    try {
+      await postSetBranch(branchId);
+    } catch (e) {
+      btn.disabled = false;
+      toast('Could not save branch — try again', 'err');
+      return;
+    }
+    // Mark the choice locally so the popup is a true one-time gate
+    window.localStorage.setItem('ss_branch_picked', branchId);
+    btn.disabled = false;
+    const payload = pendingAdd;
+    closeBranchModal();
+    // Once the user has picked a branch, the quick-view flow can skip the
+    // branch modal on subsequent adds (until the cart empties).
+    QVBranchConfirmed = true;
+    await performAdd(payload.productId, payload.name, payload.btn);
+  }
+
+  // Wire the inline add buttons.  Use delegated listener so we don't have to
+  // touch every card in case the grid is re-rendered.
+  document.addEventListener('click', function (e) {
+    const trigger = e.target.closest('[data-quick-add]');
+    if (!trigger) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const productId = trigger.dataset.productId;
+    const name      = trigger.dataset.productName || 'Item';
+
+    // Guests → send them through the login redirect (preserves old behaviour)
+    if (!IS_CUSTOMER) {
+      window.location.href = '/auth/login?role=customer&next=' +
+        encodeURIComponent(window.location.pathname + window.location.search);
+      return;
+    }
+
+    // Customer with no branch picked yet (or cart is empty) → ask first.
+    if (!hasBranch()) {
+      openBranchModal(productId, name, trigger);
+      return;
+    }
+    performAdd(productId, name, trigger);
+  });
+
+  // ── Product quick-view modal ─────────────────────────────────────────
+  // Clicking the body of a product card (image / name / price) opens a
+  // modal with bigger preview + a real "Add to cart" button.  Cart icon
+  // and wishlist button keep their original behaviour because they call
+  // event.stopPropagation() and they're not inside [data-quick-view].
+  let qvCurrent = null;        // { productId, name, btn }
+  let qvOpen = false;
+
+  function openQuickView(trigger) {
+    const modal = document.getElementById('qvModal');
+    if (!modal) return;
+    const d = trigger.dataset;
+    qvCurrent = { productId: d.productId, name: d.productName || 'Item' };
+
+    // Image vs emoji fallback
+    const img = document.getElementById('qvImage');
+    const emo = document.getElementById('qvEmoji');
+    if (d.imageUrl) {
+      img.src = d.imageUrl;
+      img.alt = d.productName || '';
+      img.style.display = 'block';
+      emo.style.display = 'none';
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      emo.textContent = d.emoji || '🛍';
+      emo.style.display = 'block';
+    }
+
+    document.getElementById('qvTitle').textContent = d.productName || 'Product';
+    document.getElementById('qvBrand').textContent = d.brand || 'SuperShop';
+
+    const unit = parseFloat(d.unitPrice || '0') || 0;
+    const saleRaw = d.salePrice;
+    const sale = (saleRaw && saleRaw !== '') ? (parseFloat(saleRaw) || 0) : 0;
+    const hasSale = sale > 0 && sale < unit;
+    const now = hasSale ? sale : unit;
+
+    document.getElementById('qvNow').textContent = '৳' + now.toFixed(0);
+    const wasEl = document.getElementById('qvWas');
+    const saveEl = document.getElementById('qvSave');
+    if (hasSale) {
+      wasEl.textContent = '৳' + unit.toFixed(0);
+      wasEl.style.display = '';
+      saveEl.textContent = 'Save ৳' + (unit - sale).toFixed(0);
+      saveEl.style.display = '';
+    } else {
+      wasEl.textContent = '';
+      wasEl.style.display = 'none';
+      saveEl.textContent = '';
+      saveEl.style.display = 'none';
+    }
+
+    const meta = document.getElementById('qvMeta');
+    if (meta) {
+      meta.textContent = IS_CUSTOMER
+        ? 'In stock at your selected branch.'
+        : 'Sign in as a customer to add items to your cart.';
+    }
+
+    qvOpen = true;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeQuickView() {
+    const modal = document.getElementById('qvModal');
+    if (!modal) return;
+    qvOpen = false;
+    qvCurrent = null;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    // Defensive: if a previous click left the QV "Add to cart" button in a
+    // disabled state (e.g. user cancelled the branch picker), reset it so
+    // the next open of the modal shows a clickable button again.
+    const qvAddBtn = document.getElementById('qvAdd');
+    if (qvAddBtn) {
+      qvAddBtn.disabled = false;
+      qvAddBtn.classList.remove('is-busy');
+    }
+  }
+
+  async function quickViewAdd() {
+    const btn = document.getElementById('qvAdd');
+    if (!btn || !qvCurrent) return;
+    // Re-read the product id from the button's own dataset if qvCurrent is
+    // somehow stale, so a failed quick-view session still opens the branch
+    // picker / sends a real product_id.
+    const productId = qvCurrent.productId || btn.dataset.productId || '';
+    const name      = qvCurrent.name || btn.dataset.productName || 'Item';
+    btn.disabled = true;
+    try {
+      if (!IS_CUSTOMER) {
+        window.location.href = '/auth/login?role=customer&next=' +
+          encodeURIComponent(window.location.pathname + window.location.search);
+        // Page is navigating away; leave the button state alone.
+        return;
+      }
+      if (!productId) {
+        toast('Could not add to cart — missing product', 'err');
+        btn.disabled = false;
+        return;
+      }
+      // Always go through the branch picker first from the quick-view flow
+      // so customers see the same "Please select your nearest branch" UX
+      // they get from the inline cart icons.  This guarantees the modal
+      // shows on every QV add, even if hasBranch() is briefly stale.
+      if (!hasBranch() || !QVBranchConfirmed) {
+        QVBranchConfirmed = false;
+        closeQuickView();
+        openBranchModal(productId, name, btn);
+        return;
+      }
+      const data = await postCartAdd(productId);
+      if (data && typeof data.cart_count === 'number') updateCartBadge(data.cart_count);
+      toast((name || 'Item') + ' added to cart', 'ok');
+      // Brief success state on the button before closing
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check"></i>&nbsp; Added!';
+      setTimeout(function () {
+        closeQuickView();
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }, 700);
+    } catch (e) {
+      toast('Could not add to cart — try again', 'err');
+      btn.disabled = false;
+    }
+  }
+
+  // Tracks whether the customer has already picked a branch inside the
+  // quick-view flow this session.  Reset whenever the cart empties so the
+  // branch modal re-appears the next time.
+  let QVBranchConfirmed = false;
+
+  // Click on product card body OR deal card → open quick view (unless the
+  // click was on the cart icon, wishlist, or pager).
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-quick-add]'))  return; // cart icon handles itself
+    if (e.target.closest('.wishlist-btn'))     return;
+    if (e.target.closest('.deals-pager'))      return;
+    if (e.target.closest('.pager'))            return;
+    if (e.target.closest('a, button')) {
+      // Only allow generic anchor/button clicks inside cards if they're
+      // not real navigation (e.g. the cart icon span is not a button).
+      const interactive = e.target.closest('a, button');
+      if (interactive && interactive.tagName === 'A' && interactive.getAttribute('href')) return;
+      if (interactive && interactive.tagName === 'BUTTON' &&
+          !interactive.hasAttribute('data-quick-add')) {
+        // Real button (e.g. wishlist) — let its own handler run.
+        if (!interactive.classList.contains('wishlist-btn')) return;
+      }
+    }
+    const card = e.target.closest('[data-quick-view]');
+    if (!card) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openQuickView(card);
+  });
+
+  // Keyboard activation for the product card body (Enter / Space)
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const card = e.target && e.target.closest && e.target.closest('[data-quick-view]');
+    if (!card) return;
+    e.preventDefault();
+    openQuickView(card);
+  });
+
+  // Wire quick-view controls (modal is always present in the DOM)
+  (function () {
+    const modal = document.getElementById('qvModal');
+    if (!modal) return;
+    const close = document.getElementById('qvClose');
+    const add   = document.getElementById('qvAdd');
+    if (close) close.addEventListener('click', closeQuickView);
+    if (add)   add.addEventListener('click', quickViewAdd);
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) closeQuickView();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!qvOpen) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeQuickView(); }
+    });
+  })();
+
+  // Keyboard activation (Enter / Space) on the inline action icon
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const trigger = e.target && e.target.closest && e.target.closest('[data-quick-add]');
+    if (!trigger) return;
+    e.preventDefault();
+    trigger.click();
+  });
+
+  function branchHasValue() {
+    // Kept for backwards compat with any inline callers; mirrors HAS_BRANCH.
+    return HAS_BRANCH;
+  }
+
+  // Wire the branch modal controls (only present for logged-in customers)
+  (function () {
+    const modal  = document.getElementById('branchModal');
+    if (!modal) return;
+    const close  = document.getElementById('branchModalClose');
+    const later  = document.getElementById('branchModalLater');
+    const ok     = document.getElementById('branchModalConfirm');
+    if (close) close.addEventListener('click', closeBranchModal);
+    if (later) later.addEventListener('click', closeBranchModal);
+    if (ok)    ok.addEventListener('click', confirmBranchModal);
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) closeBranchModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!branchModalOpen) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeBranchModal(); }
+      else if (e.key === 'Enter' && document.activeElement &&
+               document.activeElement.id === 'branchModalSelect') {
+        e.preventDefault();
+        confirmBranchModal();
+      }
+    });
+  })();
 
   // Wishlist toggle (localStorage)
   function getWishlist() {
