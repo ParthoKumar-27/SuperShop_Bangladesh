@@ -91,6 +91,12 @@ app.add_middleware(NoCacheHTMLMiddleware)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+templates.env.filters["sum_cart_qty"] = lambda c: (
+    0 if not c else sum(
+        (int(v.get("qty", 0)) if isinstance(v, dict) else int(v or 0))
+        for v in c.values()
+    )
+)
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(auth_router)
@@ -271,8 +277,18 @@ def storefront(request: Request):
     hot_deals = _fetch_hot_deals(limit=20)
 
     # Cart count (from session) — shown as a badge on the topbar cart icon.
+    # Cart entries may be the legacy shape {pid: qty} or the new shape
+    # {pid: {"qty": n, "branch_id": bid}} — count qty in either case.
     _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
-    cart_count = sum(_cart.values()) if isinstance(_cart, dict) else 0
+    if isinstance(_cart, dict):
+        cart_count = 0
+        for _entry in _cart.values():
+            if isinstance(_entry, dict):
+                cart_count += int(_entry.get("qty", 0) or 0)
+            else:
+                cart_count += int(_entry or 0)
+    else:
+        cart_count = 0
 
     # Branches shown in the "pick a branch" popup the first time a customer
     # adds anything to the cart from the storefront.
@@ -344,7 +360,15 @@ def public_search(request: Request, q: str = ""):
     _annotate_products_with_discounts(products)
 
     _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
-    cart_count = sum(_cart.values()) if isinstance(_cart, dict) else 0
+    if isinstance(_cart, dict):
+        cart_count = 0
+        for _entry in _cart.values():
+            if isinstance(_entry, dict):
+                cart_count += int(_entry.get("qty", 0) or 0)
+            else:
+                cart_count += int(_entry or 0)
+    else:
+        cart_count = 0
 
     return templates.TemplateResponse(
         request,

@@ -1,448 +1,1066 @@
 {% extends "customer/base.html" %}
-{% block title %}Shop{% endblock %}
+{% block title %}Shop · {{ selected_branch.branch_name if selected_branch else 'SuperShop BD' }}{% endblock %}
 
 {% block content %}
 
-{# ── Hero / branch selector ── #}
-<section class="relative overflow-hidden rounded-3xl mb-6
-                bg-gradient-to-br from-[#044635] via-[#075c44] to-[#0a6b50]
-                text-white shadow-lg">
-  <div class="absolute -top-16 -right-16 w-64 h-64 bg-[#F17B0D]/20 rounded-full blur-3xl pointer-events-none"></div>
-  <div class="absolute -bottom-20 -left-10 w-72 h-72 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none"></div>
+{# ── small URL builder used by chips + pager to preserve ?cat= and ?q= ── #}
+{% macro cs_url(page=None) -%}
+    {%- set params = [] -%}
+    {%- if selected_cat_id %}{% set _ = params.append('cat=' ~ selected_cat_id) %}{% endif -%}
+    {%- if request.query_params.get('q') %}{% set _ = params.append('q=' ~ request.query_params.get('q')) %}{% endif -%}
+    {%- if page is not none %}{% set _ = params.append('page=' ~ page) %}{% endif -%}
+    /customer/shop{% if params %}?{{ params|join('&') }}{% endif -%}
+{%- endmacro %}
 
-  <div class="relative px-6 sm:px-10 py-8 sm:py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-    <div class="min-w-0">
-      <div class="flex items-center gap-2 text-emerald-200 text-xs font-semibold uppercase tracking-[.18em] mb-2">
-        <i class="fa-solid fa-store"></i>
-        <span>Shopping from</span>
-      </div>
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-        {% if selected_branch %}
-          {{ selected_branch.branch_name }}
-        {% else %}
-          Pick a branch to start shopping
-        {% endif %}
-      </h1>
-      <p class="text-emerald-100/90 text-sm mt-1">
-        Fresh groceries, daily essentials, and exclusive member deals — delivered fast.
-      </p>
-    </div>
-
-    <form id="branchSwitchForm" method="POST" action="/customer/select-branch"
-          class="flex items-center gap-2 w-full md:w-auto">
-      <div class="relative flex-1 md:flex-initial">
-        <i class="fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-emerald-700 text-sm pointer-events-none"></i>
-        <select name="branch_id"
-                {% if cart_locked %}disabled{% endif %}
-                onchange="if(!this.disabled){this.form.submit();}"
-                class="w-full md:w-64 pl-9 pr-3 py-2.5 rounded-xl text-sm text-gray-800 bg-white
-                       border border-white/40 shadow focus:outline-none focus:ring-2 focus:ring-[#F17B0D]
-                       cursor-pointer
-                       {% if cart_locked %}bg-gray-100 cursor-not-allowed{% endif %}">
-          {% for branch in branches %}
-          <option value="{{ branch.branch_id }}"
-            {% if selected_branch and selected_branch.branch_id == branch.branch_id %}selected{% endif %}>
-            {{ branch.branch_name }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-      {% if cart_locked %}
-        <span class="text-xs text-amber-100 bg-amber-500/20 border border-amber-300/30 px-3 py-1.5 rounded-full whitespace-nowrap">
-          <i class="fa-solid fa-lock text-[10px]"></i> Cart locked
-        </span>
-      {% endif %}
-    </form>
-  </div>
-
-  {% if cart_locked %}
-  <div class="relative px-6 sm:px-10 pb-4 -mt-2">
-    <span class="inline-flex items-center gap-2 text-xs text-amber-100 bg-amber-500/20 border border-amber-300/30 px-3 py-1.5 rounded-full">
-      <i class="fa-solid fa-circle-info"></i>
-      Cart has items — clear cart to switch branches
-    </span>
-  </div>
-  {% endif %}
-</section>
-
-{# ── Toolbar (search + result count) ── #}
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-  <div>
-    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-      <i class="fa-solid fa-bag-shopping text-[#F17B0D]"></i>
-      All Products
-    </h2>
-    <p class="text-xs text-gray-400 mt-0.5">
-      <span id="resultCount">{{ products|length }}</span> items available
-    </p>
-  </div>
-
-  <div class="relative w-full sm:w-80">
-    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-    <input id="searchBox" type="text" placeholder="Search groceries, brands, items…"
-      class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm
-             shadow-sm focus:outline-none focus:ring-2 focus:ring-[#044635]/20 focus:border-[#044635]">
-  </div>
-</div>
-
-{# ── Category filter chips ── #}
-{% if categories %}
-<div class="flex items-center gap-2 overflow-x-auto pb-2 mb-4 -mx-1 px-1
-            scrollbar-thin scrollbar-thumb-gray-300">
-  <a href="/customer/shop"
-     class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold
-            border transition shadow-sm
-            {% if not selected_cat_id %}
-              bg-[#044635] text-white border-[#044635]
-            {% else %}
-              bg-white text-gray-700 border-gray-200 hover:border-[#044635] hover:text-[#044635]
-            {% endif %}">
-    <i class="fa-solid fa-grip-vertical text-[10px]"></i>
-    All
-  </a>
-  {% for cat in categories if cat.parent_cat_id is none %}
-    {% set is_active = selected_cat_id and selected_cat_id | upper == cat.cat_id | upper %}
-    <a href="/customer/shop?cat={{ cat.cat_id }}"
-       class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold
-              border transition shadow-sm
-              {% if is_active %}
-                bg-[#F17B0D] text-white border-[#F17B0D]
-              {% else %}
-                bg-white text-gray-700 border-gray-200 hover:border-[#F17B0D] hover:text-[#F17B0D]
-              {% endif %}">
-      {{ cat.cat_name }}
-    </a>
-  {% endfor %}
-</div>
-{% if selected_cat_name %}
-<p class="text-xs text-gray-500 -mt-2 mb-3 flex items-center gap-1.5">
-  <i class="fa-solid fa-filter text-[#F17B0D]"></i>
-  Showing <span class="font-semibold text-gray-700">{{ selected_cat_name }}</span>
-  <a href="/customer/shop" class="ml-1 text-[#044635] hover:underline">clear</a>
-</p>
-{% endif %}
-{% endif %}
-
-{# ── Feedback banners ── #}
-{% if request.query_params.get('msg') == 'branch_locked' %}
-<div class="mb-4 px-4 py-3 rounded-xl bg-amber-50 text-amber-700 text-sm border border-amber-100 flex items-center gap-2">
-  <i class="fa-solid fa-triangle-exclamation"></i>
-  You have items in your cart — clear the cart before switching branches.
-</div>
-{% endif %}
-
-{# ── Toast + style block ── #}
+{# ═══════════════════════════════════════════════════════
+   PAGE-SPECIFIC STYLES
+═══════════════════════════════════════════════════════ #}
 <style>
-  .toast-stack {
-    position: fixed !important; bottom: 20px; right: 20px; z-index: 2147483647;
-    display: flex; flex-direction: column-reverse; gap: 10px;
-    max-width: 360px; width: calc(100% - 40px);
-    pointer-events: none;
-  }
-  .toast {
-    position: relative; overflow: hidden;
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px 12px 16px; border-radius: 12px;
-    font-size: 13px; font-weight: 500; line-height: 1.4;
-    box-shadow: 0 10px 30px rgba(0,0,0,.15), 0 2px 6px rgba(0,0,0,.08);
-    border-left: 4px solid;
-    pointer-events: auto;
-    opacity: 1;
-    animation: toastIn .35s cubic-bezier(.21,1.02,.73,1) both;
-  }
-  @keyframes toastIn {
-    from { opacity: 0; transform: translateX(120%); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-  .toast.hiding { animation: toastOut .3s ease both; }
-  @keyframes toastOut {
-    from { opacity: 1; transform: translateX(0); }
-    to   { opacity: 0; transform: translateX(120%); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .toast          { animation: none !important; }
-    .toast.hiding   { animation: none !important; opacity: 0; }
-  }
-  .toast-green  { background: #ecfdf5; color: #065f46; border-left-color: #10b981; }
-  .toast-green  i { color: #10b981; font-size: 16px; flex-shrink: 0; }
-  .toast-red    { background: #fef2f2; color: #991b1b; border-left-color: #ef4444; }
-  .toast-red    i { color: #ef4444; font-size: 16px; flex-shrink: 0; }
-  .toast-amber  { background: #fffbeb; color: #92400e; border-left-color: #f59e0b; }
-  .toast-amber  i { color: #f59e0b; font-size: 16px; flex-shrink: 0; }
-  .toast-text   { flex: 1; word-break: break-word; }
-  .toast-close  {
-    width: 26px; height: 26px; border: none; background: transparent;
-    color: inherit; opacity: .55; cursor: pointer; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; transition: .15s; flex-shrink: 0;
-  }
-  .toast-close:hover { opacity: 1; background: rgba(0,0,0,.06); }
-  .toast::after {
-    content:""; position: absolute; bottom: 0; left: 0;
-    height: 3px; width: 100%; background: currentColor;
-    opacity: .25; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
-    transform-origin: left; animation: toastProgress 4s linear forwards;
-  }
-  @keyframes toastProgress { from{transform:scaleX(1)} to{transform:scaleX(0)} }
+    .cs-shop-hero{
+        position:relative;overflow:hidden;
+        background:linear-gradient(120deg,var(--green-deep) 0%,var(--green) 55%,var(--green-mid) 100%);
+        color:#fff;border-radius:var(--radius-lg);
+        padding:26px 28px;margin-bottom:22px;
+        box-shadow:var(--shadow);
+        isolation:isolate;
+    }
+    .cs-shop-hero::before{
+        content:'';position:absolute;inset:0;
+        background:
+            radial-gradient(420px 220px at 100% 0%,rgba(241,123,13,.32),transparent 60%),
+            radial-gradient(320px 220px at 0% 100%,rgba(20,184,166,.22),transparent 60%);
+        pointer-events:none;z-index:-1;
+    }
+    .cs-shop-hero h1{font-size:26px;font-weight:800;letter-spacing:-.01em;}
+    .cs-shop-hero p{color:rgba(255,255,255,.78);font-size:13.5px;margin-top:4px;}
 
-  @keyframes cartPulse {
-    0%   { transform: scale(1); }
-    40%  { transform: scale(1.35); }
-    100% { transform: scale(1); }
-  }
-  .cart-badge.pulse { animation: cartPulse .45s ease; }
+    .cs-toolbar{
+        display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+        background:#fff;border:1px solid #eef2f1;border-radius:var(--radius);
+        padding:12px 14px;margin-bottom:16px;
+        box-shadow:var(--shadow-sm);
+    }
+    .cs-search{
+        flex:1 1 240px;min-width:220px;
+        display:flex;align-items:center;gap:8px;
+        background:#f5f7fa;border:1px solid #e5e7eb;border-radius:10px;
+        padding:8px 12px;transition:.15s;
+    }
+    .cs-search:focus-within{border-color:var(--green-mid);background:#fff;box-shadow:0 0 0 3px rgba(10,107,79,.10);}
+    .cs-search input{
+        flex:1;border:none;outline:none;background:transparent;
+        font-size:13.5px;color:var(--dark);
+    }
+    .cs-search i{color:#94a3b8;font-size:14px;}
 
-  /* product card hover */
-  .product-card { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
-  .product-card:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(4,70,53,.12); border-color:#cfeee3; }
-  .product-card .product-img-wrap { overflow:hidden; }
-  .product-card:hover .product-img-wrap img { transform: scale(1.06); }
-  .product-card .product-img-wrap img { transition: transform .35s ease; }
+    /* ── Branch pill (toolbar) ───────────────────────────────
+       The branch is no longer a <select onchange=submit>.  It's now a
+       button-pill that opens the same modal-style picker that the
+       storefront.html uses.  This keeps a single source of truth —
+       /customer/cart/set-branch — for both pages. */
+    .cs-branch-pill{
+        display:inline-flex;align-items:center;gap:8px;
+        background:#fff;border:1px solid #e5e7eb;border-radius:10px;
+        padding:8px 12px;font:inherit;font-size:13px;color:var(--dark);
+        cursor:pointer;transition:.15s;
+        box-shadow:var(--shadow-sm);
+    }
+    .cs-branch-pill:hover{border-color:var(--green-mid);background:#f7faf7;}
+    .cs-branch-pill:focus-visible{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(10,107,79,.18);}
+    .cs-branch-pill .cs-bp-loc{color:var(--orange);font-size:14px;}
+    .cs-branch-pill .cs-bp-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;}
+    .cs-branch-pill .cs-bp-cap{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;}
+    .cs-branch-pill .cs-bp-name{font-weight:700;color:var(--dark);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .cs-branch-pill .cs-bp-caret{color:#94a3b8;font-size:11px;margin-left:2px;transition:transform .15s;}
+    .cs-branch-pill.is-locked{cursor:not-allowed;opacity:.85;background:#f8fafc;border-color:#e2e8f0;}
+    .cs-branch-pill.is-locked:hover{border-color:#e2e8f0;background:#f8fafc;}
+    .cs-branch-pill.is-locked .cs-bp-caret{display:none;}
+    .cs-branch-pill.is-locked .cs-bp-lock{color:#94a3b8;font-size:12px;}
 
-  /* qty stepper */
-  .qty-stepper { display:inline-flex; align-items:center; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; background:#fff; }
-  .qty-stepper button { width:30px; height:30px; display:flex; align-items:center; justify-content:center; color:#475569; font-size:13px; transition:.15s; }
-  .qty-stepper button:hover:not(:disabled) { background:#f1f5f9; color:#044635; }
-  .qty-stepper button:disabled { color:#cbd5e1; cursor:not-allowed; }
-  .qty-stepper input { width:42px; height:30px; border:none; outline:none; text-align:center; font-size:13px; font-weight:600; color:#0f172a; background:transparent; -moz-appearance:textfield; }
-  .qty-stepper input::-webkit-outer-spin-button,
-  .qty-stepper input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    .cs-chip-row{
+        display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;
+    }
+    .cs-chip{
+        display:inline-flex;align-items:center;gap:7px;
+        padding:8px 14px;border-radius:999px;
+        background:#fff;border:1px solid #e5e7eb;
+        color:#475569;font-size:12.5px;font-weight:600;
+        transition:.15s;cursor:pointer;
+    }
+    .cs-chip:hover{border-color:var(--green-mid);color:var(--green);transform:translateY(-1px);}
+    .cs-chip.active{
+        background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);
+        color:#fff;border-color:transparent;
+        box-shadow:0 6px 14px rgba(4,70,53,.22);
+    }
+    .cs-chip .cs-chip-count{
+        font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 7px;border-radius:999px;
+    }
+    .cs-chip.active .cs-chip-count{background:rgba(255,255,255,.18);color:#fff;}
 
-  /* ribbon */
-  .ribbon { position:absolute; top:10px; left:10px; padding:3px 8px; border-radius:6px; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
-  .ribbon-disc { background:#ef4444; color:#fff; box-shadow:0 4px 10px rgba(239,68,68,.3); }
+    /* PRODUCT GRID — small, dense cards that fit 5–6 per row */
+    .cs-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+        gap:14px;
+    }
+    @media (max-width:1100px){ .cs-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));} }
+    @media (max-width:760px) { .cs-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));} }
+    .cs-card{
+        position:relative;display:flex;flex-direction:column;
+        background:#fff;border:1px solid #eef2f1;border-radius:12px;
+        overflow:hidden;box-shadow:var(--shadow-sm);
+        transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;
+        animation:csCardIn .45s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes csCardIn{
+        from{opacity:0;transform:translateY(10px) scale(.985);}
+        to  {opacity:1;transform:translateY(0) scale(1);}
+    }
+    .cs-card:hover{
+        transform:translateY(-4px);
+        box-shadow:var(--shadow-lg);
+        border-color:#d4e0d9;
+    }
+
+    .cs-card-media{
+        position:relative;aspect-ratio:1/1;background:#f8fafc;
+        display:flex;align-items:center;justify-content:center;
+        overflow:hidden;
+    }
+    .cs-card-media img{
+        width:100%;height:100%;object-fit:contain;
+        transition:transform .35s ease;
+    }
+    .cs-card:hover .cs-card-media img{transform:scale(1.06);}
+
+    .cs-badge-discount{
+        position:absolute;top:8px;left:8px;
+        background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
+        color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.02em;
+        padding:3px 7px;border-radius:999px;
+        box-shadow:0 4px 10px rgba(241,123,13,.4);
+    }
+    .cs-badge-low{
+        position:absolute;top:8px;right:8px;
+        background:linear-gradient(135deg,#f59e0b 0%,#b45309 100%);
+        color:#fff;font-size:9px;font-weight:700;letter-spacing:.04em;
+        padding:3px 7px;border-radius:999px;
+        display:inline-flex;align-items:center;gap:4px;
+        box-shadow:0 4px 10px rgba(245,158,11,.35);
+    }
+
+    .cs-card-body{
+        display:flex;flex-direction:column;gap:4px;
+        padding:10px 12px 12px;flex:1;
+    }
+    .cs-card-brand{
+        font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+        color:#94a3b8;font-weight:700;line-height:1.2;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .cs-card-title{
+        font-size:12.5px;font-weight:700;color:#0f172a;line-height:1.3;
+        display:-webkit-box;
+        -webkit-line-clamp:2;
+        line-clamp:2;
+        -webkit-box-orient:vertical;
+        overflow:hidden;min-height:33px;
+    }
+    .cs-card-foot{
+        display:flex;flex-direction:column;gap:6px;
+        margin-top:auto;padding-top:6px;
+    }
+    .cs-price-row{
+        display:flex;align-items:baseline;gap:6px;min-width:0;
+        flex-wrap:nowrap;
+    }
+    .cs-price-now{
+        font-size:14px;font-weight:800;color:var(--green);
+        line-height:1.1;white-space:nowrap;
+    }
+    .cs-price-unit{
+        font-size:10px;color:#64748b;font-weight:600;
+        white-space:nowrap;
+    }
+    .cs-price-was{
+        font-size:10px;color:#94a3b8;text-decoration:line-through;
+        margin-left:auto;white-space:nowrap;
+    }
+    .cs-action-row{
+        display:flex;align-items:center;gap:6px;
+        width:100%;
+    }
+    .cs-action-row .cs-qty-mini{flex:1 1 auto;min-width:0;justify-content:space-between;}
+    .cs-cart-icon{flex:0 0 auto;}
+
+    /* ── per-branch available-stock pill ── */
+    .cs-stock-pill{
+        display:inline-flex;align-items:center;gap:5px;
+        font-size:10.5px;font-weight:600;line-height:1;
+        padding:4px 8px;border-radius:999px;
+        margin:0 0 6px 0;align-self:flex-start;
+        max-width:100%;overflow:hidden;
+    }
+    .cs-stock-pill i{font-size:10px;}
+    .cs-stock-pill .cs-stock-branch{
+        color:inherit;opacity:.75;font-weight:500;
+        max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .cs-stock-pill.cs-stock-ok{
+        background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;
+    }
+    .cs-stock-pill.cs-stock-ok i{color:#059669;}
+    .cs-stock-pill.cs-stock-low{
+        background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;
+    }
+    .cs-stock-pill.cs-stock-low i{color:#ea580c;}
+
+    /* ── in-card qty stepper (− qty-input +) + cart icon ── */
+    .cs-qty-mini{
+        display:inline-flex;align-items:center;
+        background:linear-gradient(135deg,var(--green) 0%,var(--green-deep) 100%);
+        color:#fff;border-radius:10px;overflow:hidden;
+        box-shadow:0 6px 14px rgba(4,70,53,.30),inset 0 1px 0 rgba(255,255,255,.18);
+        height:32px;flex-shrink:0;
+    }
+    .cs-qty-mini button{
+        width:24px;height:32px;border:none;background:transparent;
+        color:#fff;cursor:pointer;font-size:12px;
+        display:flex;align-items:center;justify-content:center;
+        transition:background .15s ease;
+    }
+    .cs-qty-mini button:hover:not([disabled]){background:rgba(255,255,255,.18);}
+    .cs-qty-mini button[disabled]{opacity:.45;cursor:not-allowed;}
+    .cs-qty-mini .cs-qty-input{
+        height:32px;width:38px;
+        border:none;background:transparent;color:#fff;
+        font:inherit;font-size:13px;font-weight:800;
+        text-align:center;
+        outline:none;padding:0 2px;
+        -webkit-appearance:none;-moz-appearance:none;appearance:textfield;
+    }
+    .cs-qty-mini .cs-qty-input::-webkit-outer-spin-button,
+    .cs-qty-mini .cs-qty-input::-webkit-inner-spin-button{
+        -webkit-appearance:none;margin:0;
+    }
+
+    /* ── standalone cart icon button ── */
+    .cs-cart-icon{
+        width:34px;height:32px;border:none;border-radius:10px;flex-shrink:0;
+        background:#ffffff;color:var(--orange-deep);
+        border:1.5px solid rgba(241,123,13,.55);
+        display:inline-flex;align-items:center;justify-content:center;
+        font-size:14px;cursor:pointer;
+        box-shadow:0 4px 10px rgba(241,123,13,.18);
+        transition:transform .15s ease,box-shadow .15s ease,background .15s ease,color .15s ease;
+    }
+    .cs-cart-icon:hover:not([disabled]){
+        background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
+        color:#fff;transform:translateY(-1px);
+        box-shadow:0 8px 16px rgba(241,123,13,.32);
+    }
+    .cs-cart-icon:active{transform:translateY(0) scale(.95);}
+    .cs-cart-icon[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;}
+    .cs-cart-icon.is-loading{pointer-events:none;color:rgba(241,123,13,.35);}
+    .cs-cart-icon.is-loading::after{
+        content:'';width:12px;height:12px;border-radius:50%;
+        border:2px solid rgba(241,123,13,.35);border-top-color:var(--orange-deep);
+        animation:csSpin .7s linear infinite;
+    }
+    @keyframes csSpin{to{transform:rotate(360deg);}}
+
+    /* CART-LOCKED NOTICE — single-line pill */
+    .cs-locked{
+        display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+        background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);
+        border:1px solid #fed7aa;color:#9a3412;
+        padding:10px 14px;border-radius:12px;
+        margin-bottom:14px;font-size:13px;line-height:1.3;
+    }
+    .cs-locked .cs-locked-icon{
+        width:30px;height:30px;flex:0 0 30px;border-radius:8px;
+        background:#fff;color:#ea580c;
+        display:inline-flex;align-items:center;justify-content:center;
+        font-size:14px;
+    }
+    .cs-locked .cs-locked-text{
+        flex:1 1 auto;min-width:180px;color:#7c2d12;
+        display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    }
+    .cs-locked .cs-locked-text b{color:#7c2d12;font-weight:800;}
+    .cs-locked .cs-locked-text .cs-sep{color:#fed7aa;}
+    .cs-locked .cs-locked-text .cs-locked-branch{
+        display:inline-flex;align-items:center;gap:4px;
+        background:rgba(234,88,12,.12);color:#9a3412;
+        padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;
+    }
+    .cs-locked .cs-locked-unlock{
+        display:inline-flex;align-items:center;gap:5px;
+        background:#fff;color:#7c2d12;border:1px solid #fed7aa;
+        font-size:12px;font-weight:700;
+        padding:6px 10px;border-radius:8px;cursor:pointer;
+        transition:.15s;
+    }
+    .cs-locked .cs-locked-unlock:hover{background:#fff7ed;border-color:#fdba74;}
+
+    /* ── Branch modal (matches storefront.html .branch-modal-*) ── */
+    .cs-bm-backdrop{
+        position:fixed;inset:0;
+        background:rgba(2,36,27,.55);backdrop-filter:blur(6px);
+        display:none;align-items:center;justify-content:center;
+        padding:20px;z-index:400;animation:bmFade .25s ease both;
+    }
+    .cs-bm-backdrop.open{display:flex;}
+    @keyframes bmFade{from{opacity:0}to{opacity:1}}
+    .cs-bm-modal{
+        width:100%;max-width:420px;background:#fff;border-radius:18px;
+        box-shadow:0 32px 70px rgba(2,36,27,.45);overflow:hidden;
+        animation:bmPop .35s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes bmPop{
+        from{opacity:0;transform:translateY(14px) scale(.96);}
+        to  {opacity:1;transform:translateY(0) scale(1);}
+    }
+    .cs-bm-head{
+        padding:22px 22px 14px;
+        background:linear-gradient(135deg,var(--green-deep) 0%,var(--green) 60%,var(--green-mid) 100%);
+        color:#fff;position:relative;
+    }
+    .cs-bm-head .cs-bm-badge{
+        display:inline-flex;align-items:center;gap:6px;
+        font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+        background:rgba(0,0,0,.28);border:1px solid rgba(255,179,92,.35);
+        color:#ffd8b1;padding:4px 10px;border-radius:999px;margin-bottom:10px;
+    }
+    .cs-bm-head h3{
+        font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;
+        font-weight:800;margin:0 0 4px;letter-spacing:-.01em;
+    }
+    .cs-bm-head p{font-size:12.5px;color:rgba(255,255,255,.78);line-height:1.45;margin:0;}
+    .cs-bm-close{
+        position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:8px;
+        border:none;background:rgba(255,255,255,.10);color:#fff;cursor:pointer;font-size:14px;
+        display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease;
+    }
+    .cs-bm-close:hover{background:rgba(255,255,255,.20);}
+    .cs-bm-body{padding:18px 22px 8px;}
+    .cs-bm-body label.cs-bm-label{
+        display:block;font-size:12px;font-weight:700;color:var(--green);
+        text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;
+    }
+    .cs-bm-select{
+        width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid #e5e7eb;
+        background:#fffaf2;font-family:inherit;font-size:14px;font-weight:600;color:var(--dark);
+        cursor:pointer;appearance:none;-webkit-appearance:none;
+        background-image:
+          linear-gradient(45deg, transparent 50%, var(--orange-deep) 50%),
+          linear-gradient(135deg, var(--orange-deep) 50%, transparent 50%);
+        background-position:calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+        background-size:5px 5px, 5px 5px;background-repeat:no-repeat;
+        transition:border-color .15s ease,box-shadow .15s ease;
+    }
+    .cs-bm-select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 4px rgba(241,123,13,.18);}
+    .cs-bm-hint{
+        margin-top:8px;font-size:11.5px;color:#64748b;
+        display:flex;align-items:center;gap:6px;
+    }
+    .cs-bm-hint i{color:var(--orange);}
+    .cs-bm-foot{
+        padding:14px 22px 20px;display:flex;gap:10px;align-items:center;justify-content:flex-end;
+    }
+    .cs-bm-btn{
+        padding:11px 18px;border-radius:12px;font-family:inherit;font-size:13px;font-weight:700;
+        cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,filter .15s ease,background .15s ease;
+        border:1.5px solid transparent;
+    }
+    .cs-bm-btn-ghost{background:#f1f5f4;color:var(--dark);}
+    .cs-bm-btn-ghost:hover{background:#e3eae7;}
+    .cs-bm-btn-primary{
+        background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
+        color:#fff;box-shadow:0 10px 22px rgba(241,123,13,.32),inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .cs-bm-btn-primary:hover{
+        transform:translateY(-1px);
+        box-shadow:0 14px 28px rgba(241,123,13,.40);
+        filter:brightness(1.05);
+    }
+    .cs-bm-btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+
+    /* EMPTY STATE */
+    .cs-empty{
+        text-align:center;padding:60px 20px;
+        background:#fff;border:1px dashed #e5e7eb;border-radius:var(--radius-lg);
+        color:#64748b;
+    }
+    .cs-empty i{font-size:42px;color:#cbd5e1;margin-bottom:12px;}
+    .cs-empty h3{font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px;}
+
+    .cs-page-foot{
+        margin-top:20px;display:flex;justify-content:space-between;align-items:center;
+        font-size:12px;color:#94a3b8;
+    }
+    .cs-page-foot b{color:#475569;font-weight:800;}
+
+    /* tiny "added" stamp that briefly appears on a card */
+    @keyframes csStamp{
+        0%{transform:scale(.6);opacity:0;}
+        30%{transform:scale(1.05);opacity:1;}
+        100%{transform:scale(1);opacity:0;}
+    }
+    .cs-card.just-added::after{
+        content:'✓ Added';
+        position:absolute;inset:auto auto 50% 50%;
+        transform:translate(-50%,-50%);
+        background:rgba(4,70,53,.92);color:#fff;
+        font-size:12px;font-weight:800;
+        padding:7px 14px;border-radius:999px;
+        pointer-events:none;animation:csStamp .9s ease both;
+        box-shadow:0 6px 16px rgba(4,70,53,.32);
+    }
+
+    /* ── Pagination (prev / 1 2 3 / next) ── */
+    .cs-pager{
+        display:flex;align-items:center;justify-content:center;
+        gap:6px;flex-wrap:wrap;
+        margin:22px 0 4px;
+    }
+    .cs-pg-btn{
+        min-width:36px;height:36px;padding:0 10px;
+        border-radius:10px;border:1px solid #e5e7eb;
+        background:#fff;color:#475569;
+        font:inherit;font-size:13px;font-weight:700;
+        display:inline-flex;align-items:center;justify-content:center;gap:6px;
+        cursor:pointer;transition:.15s;
+        text-decoration:none;
+    }
+    .cs-pg-btn:hover:not(.is-active):not([disabled]){
+        border-color:var(--green-mid);color:var(--green);
+        transform:translateY(-1px);
+        box-shadow:0 6px 14px rgba(4,70,53,.10);
+    }
+    .cs-pg-btn.is-active{
+        background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);
+        color:#fff;border-color:transparent;
+        box-shadow:0 6px 14px rgba(4,70,53,.22);
+        cursor:default;
+    }
+    .cs-pg-btn[disabled]{
+        opacity:.45;cursor:not-allowed;background:#f8fafc;color:#94a3b8;
+    }
+    .cs-pg-ellipsis{
+        min-width:24px;height:36px;
+        display:inline-flex;align-items:center;justify-content:center;
+        color:#94a3b8;font-weight:700;font-size:13px;
+        user-select:none;
+    }
+    .cs-pg-jump{
+        display:inline-flex;align-items:center;gap:6px;
+        margin-left:8px;color:#94a3b8;font-size:12px;font-weight:600;
+    }
+    .cs-pg-jump input{
+        width:54px;height:34px;border:1px solid #e5e7eb;border-radius:8px;
+        background:#fff;text-align:center;
+        font:inherit;font-size:13px;font-weight:700;color:var(--dark);
+        outline:none;padding:0 6px;
+        transition:border-color .15s,box-shadow .15s;
+    }
+    .cs-pg-jump input:focus{
+        border-color:var(--green-mid);
+        box-shadow:0 0 0 3px rgba(10,107,79,.12);
+    }
+    .cs-pg-jump button{
+        height:34px;padding:0 12px;border-radius:8px;border:none;
+        background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);
+        color:#fff;font:inherit;font-size:12px;font-weight:700;
+        cursor:pointer;box-shadow:0 4px 10px rgba(4,70,53,.18);
+        transition:transform .15s,filter .15s;
+    }
+    .cs-pg-jump button:hover{transform:translateY(-1px);filter:brightness(1.05);}
 </style>
 
-{# ── Product grid ── #}
-{% if not products %}
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-14 text-center">
-  <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4">
-    <i class="fa-solid fa-box-open text-2xl text-gray-400"></i>
-  </div>
-  <h3 class="font-bold text-gray-700">No products available</h3>
-  <p class="text-sm text-gray-400 mt-1">Try switching to another branch or check back later.</p>
+{# ═══════════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════════ #}
+<div class="cs-shop-hero">
+    <h1>Shop</h1>
+    <p>
+        Browse <b>{{ products|length }}</b> item{{ '' if products|length == 1 else 's' }}
+        available at
+        <b>{{ selected_branch.branch_name if selected_branch else 'your branch' }}</b>.
+    </p>
 </div>
-{% else %}
-<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="productGrid">
-  {% for p in products %}
-  {% set pn = p.product_name|lower %}
-  {% set p_emoji = (
-       '🥛' if 'milk'        in pn else
-       '🍦' if 'yogurt'      in pn else
-       '🧈' if 'butter'      in pn else
-       '🍞' if 'bread'       in pn else
-       '🍪' if 'biscuit'     in pn or 'digestive' in pn else
-       '🥔' if 'chip'        in pn else
-       '🍿' if 'chanachur'   in pn or 'namkeen'   in pn else
-       '🧃' if 'juice'       in pn else
-       '🍵' if 'tea'         in pn else
-       '🥤' if 'soft drink'  in pn or 'soda'      in pn else
-       '🍚' if 'rice'        in pn else
-       '🫙' if 'oil'         in pn else
-       '🍬' if 'sugar'       in pn else
-       '🧼' if 'soap'        in pn else
-       '🧴' if 'shampoo'     in pn else
-       '🪥' if 'toothpaste'  in pn else
-       '🔌' if 'charger'     in pn else
-       '🎧' if 'earphone'    in pn else
-       '👕' if 't-shirt'     in pn or 'shirt'     in pn else
-       '🫙' if 'jam'         in pn else
-       '🛍️'
-     ) %}
-  <article class="product-card bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col"
-           data-name="{{ p.product_name|lower }} {{ (p.brand or '')|lower }}"
-           data-emoji="{{ p_emoji }}">
-    <div class="product-img-wrap relative h-36 sm:h-40 flex items-center justify-center
-                bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#fef3e8]">
-      {% if p.image_url %}
-        <img class="w-full h-full object-contain p-3 js-product-img"
-             src="{{ p.image_url }}"
-             alt="{{ p.product_name }}"
-             loading="lazy" />
-      {% else %}
-        <span class="text-5xl leading-none js-product-emoji">{{ p_emoji }}</span>
-      {% endif %}
 
-      {% if p.disc_label %}
-      <span class="ribbon ribbon-disc">{{ p.disc_label }}</span>
-      {% endif %}
-    </div>
-
-    <div class="p-3.5 flex-1 flex flex-col">
-      <h3 class="font-semibold text-gray-800 text-sm leading-snug line-clamp-2 min-h-[2.6em]" title="{{ p.product_name }}">
-        {{ p.product_name }}
-      </h3>
-      <p class="text-[11px] text-gray-400 mt-1 truncate">{{ p.brand or 'No brand' }}</p>
-
-      <div class="mt-2.5">
-        {% if p.disc_label %}
-          <span class="text-[11px] line-through text-gray-400">৳{{ "%.2f"|format(p.unit_price) }}</span>
-          <p class="text-base font-extrabold text-[#044635]">
-            ৳{{ "%.2f"|format(p.disc_price) }}
-            <span class="text-[10px] text-gray-400 font-normal">/ {{ p.unit }}</span>
-          </p>
-        {% else %}
-          <p class="text-base font-extrabold text-[#044635]">
-            ৳{{ "%.2f"|format(p.unit_price) }}
-            <span class="text-[10px] text-gray-400 font-normal">/ {{ p.unit }}</span>
-          </p>
-        {% endif %}
-      </div>
-    </div>
-
-    <form action="/customer/cart/add" method="post"
-          class="js-add-to-cart px-3.5 pb-3.5 flex items-center gap-2">
-      <input type="hidden" name="product_id" value="{{ p.product_id }}">
-      <div class="qty-stepper" data-stepper>
-        <button type="button" data-step="dec" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
-        <input type="number" name="quantity" value="1" min="1" max="99" data-qty>
-        <button type="button" data-step="inc" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
-      </div>
-      <button type="submit"
-              class="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#044635] hover:bg-[#033828] text-white text-[12.5px] font-semibold py-2 rounded-xl transition shadow-sm hover:shadow">
-        <i class="fa-solid fa-cart-plus text-[12px]"></i>
-        Add
-      </button>
+{% if cart_locked %}
+<div class="cs-locked">
+    <span class="cs-locked-icon"><i class="fa-solid fa-lock"></i></span>
+    <span class="cs-locked-text">
+        <i class="fa-solid fa-store" style="font-size:12px;color:#ea580c"></i>
+        Cart locked to
+        <span class="cs-locked-branch">{{ locked_branch_name or 'this branch' }}</span>
+        <span class="cs-sep">·</span>
+        <b>{{ locked_cart_items }}</b> item{{ '' if locked_cart_items == 1 else 's' }}
+        <span class="cs-sep">·</span>
+        ৳{{ '%.2f'|format(locked_cart_total or 0) }}
+    </span>
+    <a href="/customer/cart" class="cs-locked-unlock" title="Open your cart">
+        <i class="fa-solid fa-cart-shopping"></i> View cart
+    </a>
+    <form method="post" action="/customer/cart/clear" style="display:inline">
+        <button type="submit" class="cs-locked-unlock"
+                title="Clear cart to switch branch"
+                onclick="return confirm('Clear all items from your cart?');">
+            <i class="fa-solid fa-unlock"></i> Clear cart
+        </button>
     </form>
-  </article>
-  {% endfor %}
 </div>
 {% endif %}
 
+{# ═══════════════════════════════════════════════════════
+   TOOLBAR (live search + branch pill)
+   The search input is JS-driven (filters cards client-side).
+   The branch pill no longer submits a GET form — it opens a modal
+   that POSTs to /customer/cart/set-branch, the same endpoint the
+   storefront uses.  This guarantees there's only one place that
+   writes `request.session["selected_branch"]`.
+══════════════════════════════════════════════════════ #}
+<div class="cs-toolbar">
+    <div class="cs-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" name="q" id="csSearchInput"
+               placeholder="Search products by name or brand…"
+               value="{{ request.query_params.get('q','') }}"
+               autocomplete="off">
+    </div>
+
+    {% if branches and branches|length > 1 %}
+    <button type="button" id="csBranchPill"
+            class="cs-branch-pill {% if cart_locked %}is-locked{% endif %}"
+            {% if cart_locked %}disabled aria-disabled="true" title="Cart has items — clear cart to switch branch"{% else %}aria-haspopup="dialog"{% endif %}>
+        <i class="fa-solid fa-location-dot cs-bp-loc"></i>
+        <span class="cs-bp-text">
+            <span class="cs-bp-cap">Branch</span>
+            <span class="cs-bp-name">{{ selected_branch.branch_name if selected_branch else 'Pick a branch' }}</span>
+        </span>
+        {% if cart_locked %}
+        <i class="fa-solid fa-lock cs-bp-lock" title="Cart is locked to this branch"></i>
+        {% else %}
+        <i class="fa-solid fa-chevron-down cs-bp-caret"></i>
+        {% endif %}
+    </button>
+    {% endif %}
+</div>
+
+{# ── BRANCH-PICKER MODAL ─────────────────────────────────────
+     Identical pattern to storefront.html's #branchModal.  The
+     single source of truth is POST /customer/cart/set-branch.  #}
+{% if branches and branches|length > 1 %}
+<div class="cs-bm-backdrop" id="csBranchModal" role="dialog" aria-modal="true"
+     aria-labelledby="csBranchModalTitle" aria-hidden="true">
+  <div class="cs-bm-modal">
+    <div class="cs-bm-head">
+      <span class="cs-bm-badge"><i class="fas fa-location-dot"></i> Pickup &amp; delivery</span>
+      <button type="button" class="cs-bm-close" id="csBranchModalClose"
+              aria-label="Cancel"><i class="fas fa-xmark"></i></button>
+      <h3 id="csBranchModalTitle">Choose your branch</h3>
+      <p><strong>Pick the branch</strong> you'd like stock, pricing &amp; delivery to come from.</p>
+    </div>
+    <div class="cs-bm-body">
+      <label class="cs-bm-label" for="csBranchModalSelect">Branch</label>
+      <select id="csBranchModalSelect" class="cs-bm-select">
+        {% for b in branches %}
+          <option value="{{ b.branch_id }}"
+            {% if selected_branch and selected_branch.branch_id == b.branch_id %}selected{% endif %}>
+            {{ b.branch_name }}
+          </option>
+        {% endfor %}
+      </select>
+      <p class="cs-bm-hint">
+        <i class="fas fa-circle-info"></i>
+        We'll remember your choice for the rest of this session.
+      </p>
+    </div>
+    <div class="cs-bm-foot">
+      <button type="button" class="cs-bm-btn cs-bm-btn-ghost" id="csBranchModalCancel">Cancel</button>
+      <button type="button" class="cs-bm-btn cs-bm-btn-primary" id="csBranchModalConfirm">
+        <i class="fas fa-check"></i>&nbsp; Use this branch
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ═══════════════════════════════════════════════════════
+   CATEGORY CHIPS
+═══════════════════════════════════════════════════════ #}
+<div class="cs-chip-row" id="csChipRow">
+    <a href="{{ cs_url() }}"
+       class="cs-chip {{ 'active' if not selected_cat_id }}">
+        <i class="fa-solid fa-grip"></i> All
+    </a>
+    {% for c in categories %}
+        {% if c.parent_cat_id is none %}
+        <a href="/customer/shop?cat={{ c.cat_id }}{% if request.query_params.get('q') %}&q={{ request.query_params.get('q') }}{% endif %}"
+           class="cs-chip {{ 'active' if selected_cat_id == c.cat_id }}">
+            {{ c.cat_name }}
+        </a>
+        {% endif %}
+    {% endfor %}
+</div>
+
+{# ═══════════════════════════════════════════════════════
+   PRODUCT GRID
+═══════════════════════════════════════════════════════ #}
+{% if products %}
+<div class="cs-grid" id="csProductGrid">
+    {% for p in products %}
+    <article class="cs-card" data-product-id="{{ p.product_id }}"
+             data-name="{{ p.product_name|e }}"
+             data-brand="{{ (p.brand or '')|e }}"
+             data-price="{{ p.disc_price if p.disc_price is not none else p.unit_price }}"
+             data-unit="{{ p.unit or 'pc' }}"
+             data-was="{{ p.unit_price if p.disc_price is not none else '' }}"
+             data-stock="{{ p.stock_status }}"
+             data-qty="{{ p.quantity }}"
+             data-img="{{ p.image_url or '' }}">
+
+        <div class="cs-card-media">
+            {% if p.image_url %}
+                <img src="{{ p.image_url }}" alt="{{ p.product_name }}" loading="lazy">
+            {% else %}
+                <i class="fa-solid fa-box" style="font-size:48px;color:#cbd5e1"></i>
+            {% endif %}
+
+            {% if p.disc_label %}
+                <span class="cs-badge-discount">{{ p.disc_label }}</span>
+            {% endif %}
+            {% if p.stock_status == 'LOW' %}
+                <span class="cs-badge-low"><i class="fa-solid fa-fire"></i> Low</span>
+            {% endif %}
+        </div>
+
+        <div class="cs-card-body">
+            {% if p.brand %}
+                <div class="cs-card-brand">{{ p.brand }}</div>
+            {% else %}
+                <div class="cs-card-brand">&nbsp;</div>
+            {% endif %}
+            <div class="cs-card-title">{{ p.product_name }}</div>
+
+            <div class="cs-stock-pill
+                {%- if p.stock_status == 'LOW' %} cs-stock-low{% else %} cs-stock-ok{% endif %}"
+                title="Available stock at {{ selected_branch.branch_name if selected_branch else 'this branch' }}">
+                <i class="fa-solid fa-cubes-stacked"></i>
+                <span><b>{{ p.quantity|int }}</b> in stock</span>
+                
+            </div>
+
+            <div class="cs-card-foot">
+                <div class="cs-price-row">
+                    {% if p.disc_price is not none and p.disc_price < p.unit_price %}
+                        <span class="cs-price-now">৳{{ '%.2f'|format(p.disc_price) }}</span>
+                        <span class="cs-price-unit">/{{ p.unit or 'pc' }}</span>
+                        <span class="cs-price-was">৳{{ '%.2f'|format(p.unit_price) }}</span>
+                    {% else %}
+                        <span class="cs-price-now">৳{{ '%.2f'|format(p.unit_price) }}</span>
+                        <span class="cs-price-unit">/{{ p.unit or 'pc' }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="cs-action-row">
+                    <div class="cs-qty-mini" role="group" aria-label="Quantity">
+                        <button type="button"
+                                aria-label="Decrease"
+                                onclick="csCardQtyStep(this, -1)"
+                                {% if p.stock_status == 'OUT' %}disabled{% endif %}>−</button>
+                        <input type="number"
+                               class="cs-qty-input"
+                               data-qty-input
+                               data-qty-max="{{ (p.quantity|int) if p.stock_status != 'OUT' else 1 }}"
+                               aria-label="Quantity"
+                               min="1"
+                               max="{{ (p.quantity|int) if p.stock_status != 'OUT' else 1 }}"
+                               value="1"
+                               oninput="csCardQtyClamp(this)"
+                               onclick="csCardQtySet(this)"
+                               onkeyup="csCardQtySet(this)"
+                               {% if p.stock_status == 'OUT' %}disabled{% endif %}>
+                        <button type="button"
+                                aria-label="Increase"
+                                onclick="csCardQtyStep(this, 1)"
+                                {% if p.stock_status == 'OUT' %}disabled{% endif %}>+</button>
+                    </div>
+
+                    <button type="button"
+                            class="cs-cart-icon"
+                            data-cart-btn
+                            aria-label="Add to cart"
+                            title="Add to cart"
+                            {% if p.stock_status == 'OUT' %}disabled{% endif %}
+                            onclick="csCardAdd(this.closest('.cs-card'))">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+
+<div class="cs-page-foot">
+    <span>
+        Showing <b id="csFootRange">{{ ((current_page - 1) * page_size) + 1 }}–{{ ((current_page - 1) * page_size) + products|length }}</b>
+        of <b>{{ total_products }}</b> product{{ '' if total_products == 1 else 's' }}
+    </span>
+    <span>{{ selected_branch.branch_name if selected_branch else '' }}</span>
+</div>
+
+{# ── Pagination — only renders when there is more than one page ── #}
+{% if total_pages > 1 %}
+{# Build a compact window of page numbers around the current page. #}
+{% set window = 2 %}
+{% set first_num = [1, current_page - window]|max %}
+{% set last_num  = [total_pages, current_page + window]|min %}
+<div class="cs-pager" role="navigation" aria-label="Pagination">
+    {# Prev #}
+    {% if current_page > 1 %}
+        <a class="cs-pg-btn" href="{{ cs_url(current_page - 1) }}" rel="prev" aria-label="Previous page">
+            <i class="fa-solid fa-chevron-left"></i>
+            <span class="hidden sm:inline">Prev</span>
+        </a>
+    {% else %}
+        <span class="cs-pg-btn" aria-disabled="true">
+            <i class="fa-solid fa-chevron-left"></i>
+            <span class="hidden sm:inline">Prev</span>
+        </span>
+    {% endif %}
+
+    {# Leading ellipsis #}
+    {% if first_num > 1 %}
+        <a class="cs-pg-btn" href="{{ cs_url(1) }}">1</a>
+        {% if first_num > 2 %}<span class="cs-pg-ellipsis">…</span>{% endif %}
+    {% endif %}
+
+    {# Page window #}
+    {% for n in range(first_num, last_num + 1) %}
+        {% if n == current_page %}
+            <span class="cs-pg-btn is-active" aria-current="page">{{ n }}</span>
+        {% else %}
+            <a class="cs-pg-btn" href="{{ cs_url(n) }}">{{ n }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {# Trailing ellipsis #}
+    {% if last_num < total_pages %}
+        {% if last_num < total_pages - 1 %}<span class="cs-pg-ellipsis">…</span>{% endif %}
+        <a class="cs-pg-btn" href="{{ cs_url(total_pages) }}">{{ total_pages }}</a>
+    {% endif %}
+
+    {# Next #}
+    {% if current_page < total_pages %}
+        <a class="cs-pg-btn" href="{{ cs_url(current_page + 1) }}" rel="next" aria-label="Next page">
+            <span class="hidden sm:inline">Next</span>
+            <i class="fa-solid fa-chevron-right"></i>
+        </a>
+    {% else %}
+        <span class="cs-pg-btn" aria-disabled="true">
+            <span class="hidden sm:inline">Next</span>
+            <i class="fa-solid fa-chevron-right"></i>
+        </span>
+    {% endif %}
+
+    {# Quick-jump input (e.g. "12 / 47").  Uses the same `cs_url` macro
+       via JS so cat/q are preserved.  Submit on Enter or click. #}
+    <form class="cs-pg-jump" id="csPagerJump" onsubmit="return csPagerJump(event)">
+        <label for="csPagerJumpInput" class="sr-only">Jump to page</label>
+        <span>Page</span>
+        <input type="number" id="csPagerJumpInput" min="1" max="{{ total_pages }}"
+               value="{{ current_page }}" aria-label="Jump to page">
+        <span>of {{ total_pages }}</span>
+        <button type="submit">Go</button>
+    </form>
+</div>
+{% endif %}
+
+{% else %}
+<div class="cs-empty">
+    <i class="fa-solid fa-basket-shopping"></i>
+    <h3>No products found</h3>
+    <p>Try clearing the filters or switching branches.</p>
+</div>
+{% endif %}
+
+
+{# ═══════════════════════════════════════════════════════
+   PAGE LOGIC
+═══════════════════════════════════════════════════════ #}
 <script>
-  /* ── live search ─────────────────────────────────────────────────── */
-  const searchBox = document.getElementById('searchBox');
-  const resultCount = document.getElementById('resultCount');
-  if (searchBox) {
-    searchBox.addEventListener('input', function () {
-      const term = this.value.toLowerCase().trim();
-      let visible = 0;
-      document.querySelectorAll('#productGrid > article').forEach(card => {
-        const matches = !term || card.dataset.name.includes(term);
-        card.style.display = matches ? '' : 'none';
-        if (matches) visible++;
-      });
-      if (resultCount) resultCount.textContent = visible;
-    });
-  }
-
-  /* ── qty steppers ────────────────────────────────────────────────── */
-  document.querySelectorAll('[data-stepper]').forEach(stepper => {
-    const input = stepper.querySelector('[data-qty]');
-    stepper.querySelector('[data-step="inc"]').addEventListener('click', () => {
-      const v = Math.min(99, (parseInt(input.value, 10) || 1) + 1);
-      input.value = v;
-    });
-    stepper.querySelector('[data-step="dec"]').addEventListener('click', () => {
-      const v = Math.max(1, (parseInt(input.value, 10) || 1) - 1);
-      input.value = v;
-    });
-  });
-
-  /* ── image fallback (broken <img> → emoji) ─────────────────────── */
-  document.querySelectorAll('.js-product-img').forEach(img => {
-    img.addEventListener('error', function () {
-      const card = this.closest('[data-emoji]');
-      const emoji = card ? (card.dataset.emoji || '🛍️') : '🛍️';
-      const span = document.createElement('span');
-      span.className = 'text-5xl leading-none js-product-emoji';
-      span.textContent = emoji;
-      this.replaceWith(span);
-    });
-  });
-
-  /* ── toast helpers ──────────────────────────────────────────────── */
-  function getToastStack() {
-    let stack = document.getElementById('toastStack');
-    if (stack) return stack;
-    stack = document.createElement('div');
-    stack.id = 'toastStack';
-    stack.className = 'toast-stack';
-    stack.setAttribute('aria-live', 'polite');
-    stack.setAttribute('aria-atomic', 'true');
-    document.body.appendChild(stack);
-    return stack;
-  }
-
-  function showToast(message, type = 'green') {
-    const stack = getToastStack();
-    const t = document.createElement('div');
-    t.className = 'toast toast-' + type;
-    const icon = type === 'red' ? 'fa-exclamation-circle'
-               : type === 'amber' ? 'fa-exclamation-triangle'
-               : 'fa-check-circle';
-    t.innerHTML = `
-      <i class="fas ${icon}"></i>
-      <span class="toast-text"></span>
-      <button class="toast-close" aria-label="Dismiss">
-        <i class="fas fa-times"></i>
-      </button>`;
-    t.querySelector('.toast-text').textContent = message;
-    t.querySelector('.toast-close').addEventListener('click', () => dismissToast(t));
-    stack.appendChild(t);
-    requestAnimationFrame(() => t.classList.add('show'));
-    setTimeout(() => dismissToast(t), 4000);
-  }
-  function dismissToast(t) {
-    if (!t || t.classList.contains('hiding')) return;
-    t.classList.remove('show');
-    t.classList.add('hiding');
-    t.addEventListener('transitionend', () => t.remove(), { once: true });
-  }
-
-  /* ── navbar cart badge helper ──────────────────────────────────── */
-  function updateCartBadge(count) {
-    const badge = document.querySelector('.cs-cart-badge');
-    if (!badge) return;
-    badge.textContent = count;
-    if (count > 0) {
-      badge.hidden = false;
-      badge.classList.remove('pulse');
-      void badge.offsetWidth;
-      badge.classList.add('pulse');
-    } else {
-      badge.hidden = true;
-      badge.classList.remove('pulse');
-    }
-  }
-
-  /* ── AJAX add-to-cart ──────────────────────────────────────────── */
-  document.querySelectorAll('form.js-add-to-cart').forEach(form => {
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      const btn      = form.querySelector('button[type="submit"]');
-      const card     = form.closest('[data-emoji]');
-      const name     = card ? card.querySelector('h3')?.textContent.trim() : 'Item';
-      const productId = form.querySelector('input[name="product_id"]').value;
-      const quantity  = parseInt(form.querySelector('input[name="quantity"]').value, 10) || 1;
-
-      const originalText = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[12px]"></i>';
-
-      try {
-        const res = await fetch('/customer/cart/add', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body:    JSON.stringify({ product_id: productId, quantity: quantity }),
+(function () {
+    // ── Live search: filter cards on each keystroke ───────────────────────
+    const search = document.getElementById('csSearchInput');
+    const grid   = document.getElementById('csProductGrid');
+    const chips  = document.getElementById('csChipRow');
+    if (search && grid) {
+      search.addEventListener('input', function () {
+        const q = this.value.trim().toLowerCase();
+        let visible = 0;
+        grid.querySelectorAll('.cs-card').forEach(card => {
+          const name  = (card.dataset.name  || '').toLowerCase();
+          const brand = (card.dataset.brand || '').toLowerCase();
+          const show  = !q || name.includes(q) || brand.includes(q);
+          card.style.display = show ? '' : 'none';
+          if (show) visible++;
         });
-        const data = await res.json().catch(() => ({}));
-
-        if (res.ok && data.ok) {
-          showToast(`${name} added to cart (×${data.qty})`, 'green');
-          updateCartBadge(data.cart_count);
-        } else {
-          showToast(data.error || 'Could not add to cart', 'red');
+        // empty-state hint inside the grid if everything filtered out
+        let empty = document.getElementById('csInlineEmpty');
+        if (visible === 0 && q) {
+          if (!empty) {
+            empty = document.createElement('div');
+            empty.id = 'csInlineEmpty';
+            empty.className = 'cs-empty';
+            empty.style.gridColumn = '1 / -1';
+            empty.innerHTML =
+              '<i class="fa-solid fa-magnifying-glass"></i>' +
+              '<h3>No matches</h3><p>Nothing in stock matches “' +
+              search.value.replace(/[<>&"]/g, '') + '”.</p>';
+            grid.appendChild(empty);
+          }
+        } else if (empty) {
+          empty.remove();
         }
+        // Update the "Showing X–Y" range in the page foot so it reflects
+        // the count of visible cards on the current page after filtering.
+        const footRange = document.getElementById('csFootRange');
+        if (footRange) {
+          footRange.textContent = visible === 0 ? '0–0' : '1–' + visible;
+        }
+      });
+    }
+
+    // ── Click sound / lock state after cart_locked toggles server-side ───
+    document.querySelectorAll('.cs-qty-mini button[disabled], .cs-cart-icon[disabled]').forEach(b => {
+      b.title = 'Finish or clear your current cart before switching branches';
+    });
+})();
+
+// ── Quick-jump: "Go" button / Enter inside the pager.  Builds a URL
+//     that preserves ?cat= and ?q= using the same params that the
+//     server-side cs_url macro would produce. ────────────────────────
+function csPagerJump(ev){
+  ev.preventDefault();
+  const inp = document.getElementById('csPagerJumpInput');
+  if (!inp) return false;
+  const n = parseInt(inp.value, 10);
+  if (!n || n < 1) return false;
+  const max = parseInt(inp.max, 10) || 1;
+  const target = Math.min(n, max);
+
+  const params = new URLSearchParams();
+  const cat = (document.querySelector('.cs-chip.active') || {}).href || '';
+  // Pull cat/q from the URL we're already on — same source of truth
+  // as the macro, no duplication.
+  const here = new URL(window.location.href);
+  if (here.searchParams.get('cat')) params.set('cat', here.searchParams.get('cat'));
+  if (here.searchParams.get('q'))   params.set('q',   here.searchParams.get('q'));
+  params.set('page', target);
+  window.location.assign('/customer/shop?' + params.toString());
+  return false;
+}
+
+// ────────────── Quantity input helpers (number input, capped at stock) ─────
+function csCardQtyInput(card){
+  return card ? card.querySelector('.cs-qty-mini [data-qty-input]') : null;
+}
+
+function csCardQty(card){
+  const inp = csCardQtyInput(card);
+  if (!inp) return 1;
+  const max = parseInt(inp.dataset.qtyMax || '1', 10) || 1;
+  const raw = parseInt(inp.value || '1', 10) || 1;
+  return Math.max(1, Math.min(max, raw));
+}
+
+// Clamp typed value to the [1, max] range — never exceed stock.
+function csCardQtyClamp(inp){
+  const max = parseInt(inp.dataset.qtyMax || '1', 10) || 1;
+  let v = parseInt(inp.value || '1', 10);
+  if (isNaN(v)) v = 1;
+  v = Math.max(1, Math.min(max, v));
+  // only push back if it actually changed, to avoid losing the cursor
+  if (String(v) !== inp.value) inp.value = v;
+}
+
+// − / +  buttons around the input
+function csCardQtyStep(btn, delta){
+  const card = btn.closest('.cs-card');
+  if (!card) return;
+  const inp = csCardQtyInput(card);
+  if (!inp) return;
+  const max = parseInt(inp.dataset.qtyMax || '1', 10) || 1;
+  const cur = csCardQty(card);
+  const next = Math.max(1, Math.min(max, cur + delta));
+  inp.value = next;
+  csCardQtyClamp(inp);
+}
+
+// Cosmetic hook (called on click/keyup of the input).
+function csCardQtySet(inp){ /* reserved for future analytics */ }
+
+// ────────────── Add-to-cart (AJAX) from a card ──────────────
+async function csCardAdd(card){
+  if (!card) return;
+  const productId = card.dataset.productId;
+  if (!productId) return;
+
+  const inp    = csCardQtyInput(card);
+  const addBtn = card.querySelector('.cs-cart-icon');
+  csCardQtyClamp(inp);                      // final safety
+  const qty    = csCardQty(card);
+
+  const originalIcon = addBtn.innerHTML;
+  addBtn.classList.add('is-loading');
+  addBtn.innerHTML  = '';
+  addBtn.disabled   = true;
+  card.querySelectorAll('.cs-qty-mini button, .cs-qty-mini input').forEach(el => { el.disabled = true; });
+
+  try {
+    const res = await fetch('/customer/cart/add', {
+      method  : 'POST',
+      headers : { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body    : JSON.stringify({ product_id: productId, quantity: qty })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (data.ok) {
+      if (typeof window.csUpdateCartBadge === 'function') {
+        window.csUpdateCartBadge(data.cart_count || 0);
+      }
+      window.csToast(data.product_name + ' (×' + qty + ') added to cart', 'ok');
+      card.classList.add('just-added');
+      setTimeout(() => card.classList.remove('just-added'), 900);
+      // reset counter for next add
+      if (inp) inp.value = 1;
+    } else {
+      window.csToast(data.error || 'Could not add to cart', 'err');
+    }
+  } catch (err) {
+    window.csToast('Network error — please try again', 'err');
+  } finally {
+    addBtn.classList.remove('is-loading');
+    addBtn.innerHTML  = originalIcon;
+    addBtn.disabled   = false;
+    card.querySelectorAll('.cs-qty-mini button, .cs-qty-mini input').forEach(el => {
+      if (!el.hasAttribute('data-locked')) el.disabled = false;
+    });
+  }
+}
+
+// ── Branch picker (toolbar pill → modal → POST /cart/set-branch)
+//     Mirrors storefront.html's #branchModal flow so both pages
+//     share ONE source of truth: the same endpoint, the same
+//     session key, the same cart-lock semantics.  Wired at script
+//     load — NOT inside csCardAdd — so it works on a fresh page
+//     before any product has been added.
+(function setupBranchPicker(){
+  const pill       = document.getElementById('csBranchPill');
+  const modal      = document.getElementById('csBranchModal');
+  const modalSel   = document.getElementById('csBranchModalSelect');
+  const modalX     = document.getElementById('csBranchModalClose');
+  const modalCnc   = document.getElementById('csBranchModalCancel');
+  const modalOk    = document.getElementById('csBranchModalConfirm');
+  if (!pill || !modal) return;
+
+  // ── Promote the modal to <body> so no ancestor with `transform`,
+  //     `filter`, `overflow` or its own stacking context can clip
+  //     or sit above it.  The modal is `position: fixed` and
+  //     `inset:0`, so once it's a direct child of <body> it covers
+  //     the whole viewport — not just the shop section. ───────────
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
+  function csOpenBranchModal(){
+    if (pill.disabled) return;                       // cart-locked: no-op
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    // Lock body scroll while the modal is open so the page behind
+    // doesn't slide around.
+    const scrollY = window.scrollY || 0;
+    document.body.dataset.csScrollY = String(scrollY);
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + scrollY + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    setTimeout(function(){
+      if (modalSel) modalSel.focus();
+    }, 50);
+  }
+  // Expose so other UI (e.g. a banner CTA) can re-open it if needed.
+  window.csOpenBranchModal = csOpenBranchModal;
+
+  function csCloseBranchModal(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    // Restore scroll position that we captured on open.
+    const y = parseInt(document.body.dataset.csScrollY || '0', 10) || 0;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    delete document.body.dataset.csScrollY;
+    window.scrollTo(0, y);
+  }
+
+  async function csShopSetBranch(branchId){
+    const res = await fetch('/customer/cart/set-branch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ branch_id: branchId })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    return res.json().catch(function(){ return {}; });
+  }
+
+  if (!pill.disabled) {
+    pill.addEventListener('click', csOpenBranchModal);
+  }
+  if (modalX)     modalX.addEventListener('click', csCloseBranchModal);
+  if (modalCnc)   modalCnc.addEventListener('click', csCloseBranchModal);
+  modal.addEventListener('click', function(e){
+    if (e.target === modal) csCloseBranchModal();   // backdrop click
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && modal.classList.contains('open')) {
+      csCloseBranchModal();
+    }
+  });
+  if (modalOk) {
+    modalOk.addEventListener('click', async function(){
+      if (!modalSel) return;
+      const branchId = modalSel.value;
+      if (!branchId) {
+        if (window.csToast) window.csToast('Please pick a branch first', 'warn');
+        return;
+      }
+      const original = modalOk.innerHTML;
+      modalOk.disabled = true;
+      modalOk.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; Saving…';
+      try {
+        await csShopSetBranch(branchId);
+        // Server is now the source of truth — reload so the toolbar
+        // pill, locked-banner (if any), and product grid all reflect
+        // the new branch's stock & pricing.
+        window.location.reload();
       } catch (err) {
-        showToast('Network error — retrying…', 'amber');
-        form.submit();
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        modalOk.disabled = false;
+        modalOk.innerHTML = original;
+        if (window.csToast) window.csToast('Could not save branch — try again', 'err');
       }
     });
-  });
+  }
+})();
 </script>
+
 {% endblock %}

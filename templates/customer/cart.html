@@ -60,6 +60,27 @@
   .remove-btn:hover { background:#fee2e2; color:#b91c1c; }
 
   .badge-discount { background:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%); color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:6px; letter-spacing:.03em; }
+
+  /* ── in-place row updates (no full reload) ── */
+  @keyframes cartRowOut{
+    from{opacity:1;transform:translateX(0);max-height:200px;}
+    to  {opacity:0;transform:translateX(20px);max-height:0;padding-top:0;padding-bottom:0;margin:0;}
+  }
+  @keyframes cartRowIn{
+    from{opacity:0;transform:translateY(-4px);}
+    to  {opacity:1;transform:translateY(0);}
+  }
+  .cart-row.is-removing{
+    animation:cartRowOut .35s cubic-bezier(.4,0,.2,1) forwards;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .cart-row.is-updated{animation:cartRowIn .25s ease;}
+
+  /* When the user taps `+` while a request is in flight, dim the row
+     briefly so they know something is happening — same visual cue
+     used elsewhere in the app. */
+  .cart-row.is-busy{opacity:.6;pointer-events:none;}
 </style>
 
 {# ── Page header ── #}
@@ -70,9 +91,10 @@
       <span>Step 1 of 3</span>
     </div>
     <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-800 mt-1">Your Shopping Cart</h1>
-    <p class="text-sm text-gray-400 mt-0.5">
+    <p class="text-sm text-gray-400 mt-0.5" data-cart-header-text>
       {% if items %}
-        {{ items|length }} item{{ '' if items|length == 1 else 's' }} ready for checkout
+        <span data-cart-count-header>{{ items|length }}</span> item<span data-cart-plural-header
+              {% if items|length == 1 %}data-one="item"data-other="items"{% endif %}>{{ 'item' if items|length == 1 else 'items' }}</span> ready for checkout
       {% else %}
         Review your items before checkout
       {% endif %}
@@ -85,10 +107,14 @@
   </a>
 </div>
 
+{# Both branches of the cart UI live in this container so the JS can
+   swap them in place when the cart goes from 1 → 0 or 0 → 1 items. #}
+<div id="csCartRoot">
+
 {% if not items %}
 
   {# ── Empty state ── #}
-  <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-12 sm:p-16 text-center">
+  <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-12 sm:p-16 text-center" id="csCartEmpty" data-cart-empty>
     <div class="w-24 h-24 rounded-full bg-gradient-to-br from-[#f0f9f4] to-[#fff7ec] flex items-center justify-center mx-auto mb-5">
       <i class="fa-solid fa-cart-arrow-down text-4xl text-[#F17B0D]"></i>
     </div>
@@ -105,7 +131,7 @@
 
 {% else %}
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="csCartFilled">
 
     {# ── Left: cart items list ── #}
     <div class="lg:col-span-2 space-y-3">
@@ -115,8 +141,10 @@
             <i class="fa-solid fa-bag-shopping text-[#044635]"></i>
             <h2 class="font-bold text-gray-800">Cart Items</h2>
           </div>
-          <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
-            {{ items|length }} item{{ '' if items|length == 1 else 's' }}
+          <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full"
+                data-cart-chip>
+            <span data-cart-count-chip>{{ items|length }}</span> item<span data-cart-plural-chip
+                  {% if items|length == 1 %}data-one="item"data-other="items"{% endif %}>{{ 'item' if items|length == 1 else 'items' }}</span>
           </span>
         </div>
 
@@ -145,7 +173,12 @@
               '👕' if 't-shirt'     in iname or 'shirt' in iname else
               '🛍️'
             ) %}
-          <li class="cart-row p-4 sm:p-5 flex items-start gap-4">
+          {% set row_max = item.stock if item.stock is not none and item.stock > 0 else 99 %}
+          <li class="cart-row p-4 sm:p-5 flex items-start gap-4"
+              data-cart-row
+              data-product-id="{{ item.product_id }}"
+              data-disc-price="{{ '%.4f'|format(item.disc_price or 0) }}"
+              data-stock="{{ item.stock if item.stock is not none else '' }}">
             <div class="cart-thumb">
               {% if item.image_url %}
                 <img src="{{ item.image_url }}" alt="{{ item.product_name }}" loading="lazy">
@@ -165,26 +198,40 @@
                   <span class="badge-discount inline-block mt-1">{{ item.disc_label }}</span>
                   {% endif %}
                 </div>
-                <form action="/customer/cart/remove" method="post" class="flex-shrink-0">
-                  <input type="hidden" name="product_id" value="{{ item.product_id }}">
-                  <button type="submit" class="remove-btn" title="Remove item"
-                          onclick="return confirm('Remove this item from your cart?');">
-                    <i class="fa-solid fa-trash-can text-sm"></i>
-                  </button>
-                </form>
+                {# No form submit / no confirm() — the button calls the
+                   AJAX handler in the page script.  Fallback still works
+                   because the empty <form> below would submit normally
+                   if JS is disabled. #}
+                <button type="button" class="remove-btn flex-shrink-0"
+                        title="Remove item"
+                        data-cart-remove="{{ item.product_id }}">
+                  <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
               </div>
 
               <div class="mt-3 flex items-center justify-between flex-wrap gap-3">
-                <form action="/customer/cart/update" method="post" class="qty-stepper">
-                  <input type="hidden" name="product_id" value="{{ item.product_id }}">
-                  <button type="button" data-step="dec" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
-                  <input type="number" name="quantity" value="{{ item.quantity }}" min="0" max="99" data-qty>
-                  <button type="button" data-step="inc" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
-                </form>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <form action="/customer/cart/update" method="post" class="qty-stepper"
+                        data-cart-update="{{ item.product_id }}">
+                    <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                    <button type="button" data-step="dec" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                    <input type="number" name="quantity" value="{{ item.quantity }}"
+                           min="0" max="{{ row_max }}" step="1" inputmode="numeric"
+                           pattern="[0-9]*" data-qty>
+                    <button type="button" data-step="inc" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+                  </form>
+                  {% if item.stock is not none and item.stock > 0 %}
+                  <span class="text-[11px] text-gray-400">
+                    <i class="fa-solid fa-boxes-stacked text-[10px]"></i>
+                    <span data-cart-stock-hint>{{ item.stock }}</span> in stock
+                  </span>
+                  {% endif %}
+                </div>
 
                 <div class="text-right">
                   <p class="text-[11px] uppercase tracking-wider text-gray-400">Subtotal</p>
-                  <p class="font-extrabold text-[#044635] text-base">৳{{ "%.2f"|format(item.line_total) }}</p>
+                  <p class="font-extrabold text-[#044635] text-base"
+                     data-cart-line-total>৳{{ "%.2f"|format(item.line_total) }}</p>
                 </div>
               </div>
             </div>
@@ -206,11 +253,20 @@
         <div class="flex items-center gap-2 mb-4">
           <i class="fa-solid fa-receipt text-[#F17B0D]"></i>
           <h2 class="font-bold text-gray-800">Order Summary</h2>
+          <button type="button"
+                  class="ml-auto text-xs font-semibold text-gray-400 hover:text-red-500 transition inline-flex items-center gap-1"
+                  data-cart-clear
+                  title="Remove every item from your cart">
+            <i class="fa-solid fa-trash-can-arrow-up text-[11px]"></i>
+            Clear cart
+          </button>
         </div>
 
         <div class="summary-row">
-          <span>Subtotal ({{ items|length }} item{{ '' if items|length == 1 else 's' }})</span>
-          <span class="font-semibold text-gray-800">৳{{ "%.2f"|format(grand_total) }}</span>
+          <span>Subtotal (<span data-cart-count>{{ items|length }}</span> item<span data-cart-plural
+                {% if items|length == 1 %}data-one="item"data-other="items"{% endif %}>{{ 'item' if items|length == 1 else 'items' }}</span>)</span>
+          <span class="font-semibold text-gray-800"
+                data-cart-grand>৳{{ "%.2f"|format(grand_total) }}</span>
         </div>
         <div class="summary-row">
           <span>Delivery fee</span>
@@ -224,7 +280,8 @@
 
         <div class="summary-row total">
           <span>Total</span>
-          <span class="amount">৳{{ "%.2f"|format(grand_total) }}</span>
+          <span class="amount"
+                data-cart-grand-total>৳{{ "%.2f"|format(grand_total) }}</span>
         </div>
 
         <a href="/customer/checkout" class="checkout-btn mt-5">
@@ -243,24 +300,445 @@
 
 {% endif %}
 
+</div>{# /csCartRoot #}
+
 <script>
-  /* ── qty steppers (auto-submit on change) ─────────────────────── */
-  document.querySelectorAll('form.qty-stepper').forEach(form => {
-    const input = form.querySelector('[data-qty]');
-    const dec   = form.querySelector('[data-step="dec"]');
-    const inc   = form.querySelector('[data-step="inc"]');
+  /* ═════════════════════════════════════════════════════════════════
+     cartApp() — drives the cart page without page reloads.
 
-    function clamp(v){ return Math.max(0, Math.min(99, v)); }
+     Responsibilities
+     ────────────────
+       1.  `+` / `−` / direct input on a qty stepper → POST JSON to
+           /customer/cart/update, then patch line total + summary.
+           Typing is hardened: non-digits are stripped, values are
+           clamped to [0, max(stock,99)], and the user gets inline
+           feedback when they exceed stock.
+       2.  Trash button → confirm dialog (csConfirm) → animate slide-
+           out → POST JSON to /customer/cart/remove → remove the row
+           from the DOM.
+       3.  "Clear cart" link in the summary header → confirm dialog →
+           POST to /customer/cart/clear → swap to empty state.
+       4.  If the server replies with empty=true, swap the filled
+           layout for the empty-state card (no reload) and rewrite
+           the header copy.
+       5.  Keep the navbar cart badge in sync via csUpdateCartBadge.
 
-    dec.addEventListener('click', () => {
-      input.value = clamp((parseInt(input.value,10) || 1) - 1);
-      form.submit();
-    });
-    inc.addEventListener('click', () => {
-      input.value = clamp((parseInt(input.value,10) || 1) + 1);
-      form.submit();
-    });
-  });
+     Add-to-cart (the flow on the shop page) already fires a success
+     toast in csCardAdd(); that path is unchanged.
+     ═════════════════════════════════════════════════════════════════ */
+  (function cartApp(){
+    const root      = document.getElementById('csCartRoot');
+    if (!root) return;                       // page rendered empty initially
+
+    const UPDATE_URL = '/customer/cart/update';
+    const REMOVE_URL = '/customer/cart/remove';
+
+    /* ── helpers ───────────────────────────────────────────────── */
+    const $  = (sel, ctx = document) => ctx.querySelector(sel);
+    const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+
+    const fmt = (n) => '৳' + Number(n || 0).toFixed(2);
+
+    function readPlural(el) {
+      // returns the current text content stripped of the count
+      if (!el) return '';
+      return el.dataset.one && el.dataset.other
+        ? (Number(el.previousElementSibling?.textContent || 0) === 1
+            ? el.dataset.one : el.dataset.other)
+        : el.textContent;
+    }
+
+    function setCount(el, n) {
+      if (!el) return;
+      el.textContent = String(n);
+    }
+
+    function setPlural(el, n) {
+      if (!el) return;
+      if (el.dataset.one && el.dataset.other) {
+        el.textContent = (n === 1) ? el.dataset.one : el.dataset.other;
+      }
+    }
+
+    function flashRow(row) {
+      if (!row) return;
+      row.classList.remove('is-updated');
+      // force reflow so the animation restarts
+      // eslint-disable-next-line no-unused-expressions
+      void row.offsetWidth;
+      row.classList.add('is-updated');
+    }
+
+    async function postJSON(url, body) {
+      const r = await fetch(url, {
+        method : 'POST',
+        headers: {
+          'Content-Type' : 'application/json',
+          'X-Requested-With': 'fetch'
+        },
+        body: JSON.stringify(body || {})
+      });
+      let data = null;
+      try { data = await r.json(); } catch (_) { data = null; }
+      return { ok: r.ok, status: r.status, data };
+    }
+
+    /* ── apply a server summary payload to every summary node ────── */
+    function applySummary(data) {
+      const n        = Number(data.cart_count || 0);
+      const total    = fmt(data.grand_total);
+      const isEmpty  = !!data.empty || n === 0;
+
+      $$('[data-cart-count]')        .forEach(el => setCount(el, n));
+      $$('[data-cart-count-header]') .forEach(el => setCount(el, n));
+      $$('[data-cart-count-chip]')   .forEach(el => setCount(el, n));
+      $$('[data-cart-plural]')       .forEach(el => setPlural(el, n));
+      $$('[data-cart-plural-header]').forEach(el => setPlural(el, n));
+      $$('[data-cart-plural-chip]')  .forEach(el => setPlural(el, n));
+
+      $$('[data-cart-grand]')        .forEach(el => el.textContent = total);
+      $$('[data-cart-grand-total]')  .forEach(el => el.textContent = total);
+
+      if (typeof window.csUpdateCartBadge === 'function') {
+        window.csUpdateCartBadge(n);
+      }
+
+      // Header copy toggle
+      const headerText = $('[data-cart-header-text]');
+      if (headerText) {
+        if (isEmpty) {
+          headerText.innerHTML = 'Review your items before checkout';
+        } else if (!headerText.querySelector('[data-cart-count-header]')) {
+          // rebuild the count+plural nodes
+          headerText.innerHTML =
+            '<span data-cart-count-header>' + n + '</span> item' +
+            '<span data-cart-plural-header data-one="item" data-other="items">' +
+              (n === 1 ? 'item' : 'items') +
+            '</span> ready for checkout';
+        }
+      }
+    }
+
+    /* ── empty-state in-place swap ──────────────────────────────── */
+    function swapToEmpty() {
+      const emptyHTML = `
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-12 sm:p-16 text-center"
+             id="csCartEmpty" data-cart-empty>
+          <div class="w-24 h-24 rounded-full bg-gradient-to-br from-[#f0f9f4] to-[#fff7ec] flex items-center justify-center mx-auto mb-5">
+            <i class="fa-solid fa-cart-arrow-down text-4xl text-[#F17B0D]"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-800">Your cart is empty</h2>
+          <p class="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+            Looks like you haven't added anything yet. Let's find some great deals for you.
+          </p>
+          <a href="/customer/shop"
+             class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl bg-[#044635] hover:bg-[#033828] text-white font-semibold text-sm transition shadow-md hover:shadow-lg">
+            <i class="fa-solid fa-store"></i>
+            Start Shopping
+          </a>
+        </div>`;
+      root.innerHTML = emptyHTML;
+    }
+
+    /* ── qty stepper handlers ───────────────────────────────────── */
+    function clampQty(raw, stockMax) {
+      let v = parseInt(raw, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      const hi = (stockMax && stockMax > 0) ? stockMax : 99;
+      if (v > hi) v = hi;
+      return v;
+    }
+
+    function showQtyError(input, msg) {
+      input.classList.add('is-invalid');
+      input.title = msg;
+      // inline red ring without Tailwind JIT compile-time classes
+      input.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, .55)';
+      input.style.borderColor = '#ef4444';
+    }
+    function clearQtyError(input) {
+      input.classList.remove('is-invalid');
+      input.title = '';
+      input.style.boxShadow = '';
+      input.style.borderColor = '';
+    }
+
+    function wireQtyForm(form) {
+      const pid     = form.dataset.cartUpdate;
+      const input   = form.querySelector('[data-qty]');
+      const dec     = form.querySelector('[data-step="dec"]');
+      const inc     = form.querySelector('[data-step="inc"]');
+      const row     = form.closest('[data-cart-row]');
+      const stockEl = row?.querySelector('[data-cart-stock-hint]');
+      const stock   = parseInt(row?.dataset.stock || '', 10);
+      const stockCap = (stock && stock > 0) ? stock : 99;
+      const prodName = (row?.querySelector('h3')?.textContent || 'item').trim();
+
+      // Throttle success toasts so rapid + / − clicks don't pile up
+      // a stack of identical toasts.  We still fire on the FIRST
+      // change and on any subsequent change after a quiet beat.
+      let lastToastAt = 0;
+      let lastToastQty = -1;
+      function notify(qty) {
+        const now = Date.now();
+        if (qty === lastToastQty && (now - lastToastAt) < 900) return;
+        lastToastAt  = now;
+        lastToastQty = qty;
+        if (typeof window.csToast === 'function') {
+          window.csToast(prodName + ' quantity: ' + qty, 'ok');
+        }
+      }
+
+      // block any non-digit chars the user types / pastes, and stop
+      // the spinner from over-shooting the stock cap.  We don't
+      // commit the new value yet — that happens on `change` (blur
+      // or Enter) so the user can still keep typing.
+      function sanitizeLive() {
+        const before = input.value;
+        const cleaned = before.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+        if (cleaned !== before) input.value = cleaned;
+
+        const n = parseInt(cleaned, 10);
+        if (!isNaN(n) && n > stockCap) {
+          showQtyError(input, 'Only ' + stockCap + ' in stock');
+        } else {
+          clearQtyError(input);
+        }
+      }
+
+      async function send(qty) {
+        if (!pid) return;
+
+        // last-mile clamp in JS — server clamps too but this avoids
+        // a wasted round-trip when the user clearly typed too much
+        if (qty > stockCap) {
+          qty = stockCap;
+          input.value = qty;
+          showQtyError(input, 'Only ' + stockCap + ' in stock');
+          if (typeof window.csToast === 'function') {
+            window.csToast('Only ' + stockCap + ' in stock', 'warn');
+          }
+        }
+
+        form.classList.add('is-busy');
+
+        // product_id is a string like "P0000001" — keep it as-is so the
+        // server's (payload.get("product_id") or "").strip() guard is
+        // happy.  Number("P0000001") → NaN → JSON null → 400.
+        const { ok, data } = await postJSON(UPDATE_URL, {
+          product_id: String(pid),
+          quantity  : qty
+        });
+        form.classList.remove('is-busy');
+
+        if (!ok || !data || data.ok === false) {
+          // revert input to whatever the server thinks it is now
+          if (data && typeof data.quantity === 'number') {
+            input.value = data.quantity;
+          }
+          if (typeof window.csToast === 'function') {
+            window.csToast(data?.error || 'Could not update quantity', 'err');
+          }
+          return;
+        }
+
+        if (data.empty || Number(data.cart_count || 0) === 0) {
+          applySummary(data);
+          swapToEmpty();
+          return;
+        }
+
+        // server may have clamped the qty
+        if (typeof data.quantity === 'number' && data.quantity !== qty) {
+          input.value = data.quantity;
+        }
+        clearQtyError(input);
+
+        // patch line total on this row
+        const lineEl = row?.querySelector('[data-cart-line-total]');
+        if (lineEl && data.line_total != null) {
+          lineEl.textContent = fmt(data.line_total);
+        } else if (lineEl && data.items) {
+          const it = data.items.find(x => String(x.product_id) === String(pid));
+          if (it) lineEl.textContent = fmt(it.line_total);
+        }
+
+        applySummary(data);
+        flashRow(row);
+        notify(Number(data.quantity ?? qty));
+
+        if (qty === 0) {
+          // server-side removed on qty=0 → mirror the remove animation
+          if (row) {
+            row.classList.add('is-removing');
+            setTimeout(() => row.remove(), 350);
+            // re-check empty state after removal
+            const remaining = $$('[data-cart-row]').length;
+            if (remaining === 0) swapToEmpty();
+          }
+        }
+      }
+
+      dec?.addEventListener('click', () => {
+        const next = clampQty((parseInt(input.value, 10) || 1) - 1, stock);
+        input.value = next;
+        clearQtyError(input);
+        send(next);
+      });
+      inc?.addEventListener('click', () => {
+        const next = clampQty((parseInt(input.value, 10) || 1) + 1, stock);
+        input.value = next;
+        clearQtyError(input);
+        send(next);
+      });
+
+      // typing — sanitize as the user types so the field never holds
+      // a non-numeric / over-stock value visually
+      input?.addEventListener('input',  sanitizeLive);
+      input?.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          input.blur();
+        }
+      });
+      // commit on blur — run the same clamp + server sync as the buttons
+      input?.addEventListener('change', () => {
+        const next = clampQty(input.value, stock);
+        input.value = next;
+        send(next);
+      });
+
+      // expose the current stock so the clear-cart helper can refresh it
+      // (kept inside the closure to avoid leaking globals)
+      form.__stockCap = stockCap;
+    }
+
+    /* ── remove button handlers ─────────────────────────────────── */
+    function wireRemoveBtn(btn) {
+      const pid = btn.dataset.cartRemove;
+      const row = btn.closest('[data-cart-row]');
+      if (!pid || !row) return;
+
+      // Try to pick up the product name for the dialog copy
+      const name = (row.querySelector('h3')?.textContent || 'this item').trim();
+
+      btn.addEventListener('click', async () => {
+        if (row.classList.contains('is-removing')) return; // double-click guard
+        if (row.classList.contains('is-confirming'))  return;
+
+        let ok = true;
+        if (typeof window.csConfirm === 'function') {
+          row.classList.add('is-confirming');
+          ok = await window.csConfirm({
+            title       : 'Remove ' + name + '?',
+            message     : 'This item will be removed from your cart.',
+            confirmLabel: 'Remove',
+            cancelLabel : 'Keep',
+            danger      : true
+          });
+          row.classList.remove('is-confirming');
+        }
+
+        if (!ok) return;
+
+        row.classList.add('is-removing');
+
+        const { ok: okResp, data } = await postJSON(REMOVE_URL, {
+          product_id: String(pid)
+        });
+
+        if (!okResp || !data || data.ok === false) {
+          row.classList.remove('is-removing');
+          if (typeof window.csToast === 'function') {
+            window.csToast(data?.error || 'Could not remove item', 'err');
+          }
+          return;
+        }
+
+        // wait for the slide-out animation, then yank the row
+        setTimeout(() => {
+          row.remove();
+          if (data.empty || Number(data.cart_count || 0) === 0) {
+            applySummary(data);
+            swapToEmpty();
+          } else {
+            applySummary(data);
+          }
+        }, 320);
+      });
+    }
+
+    /* ── clear-cart handler ─────────────────────────────────────── */
+    function wireClearBtn(btn) {
+      btn.addEventListener('click', async () => {
+        const totalQty = $$('[data-cart-row]').length;
+        if (totalQty === 0) {
+          if (typeof window.csToast === 'function') {
+            window.csToast('Your cart is already empty', 'warn');
+          }
+          return;
+        }
+
+        let ok = true;
+        if (typeof window.csConfirm === 'function') {
+          ok = await window.csConfirm({
+            title       : 'Clear your cart?',
+            message     : 'All ' + totalQty + ' item' +
+                          (totalQty === 1 ? '' : 's') +
+                          ' will be removed from your cart.',
+            confirmLabel: 'Clear cart',
+            cancelLabel : 'Keep items',
+            danger      : true
+          });
+        }
+        if (!ok) return;
+
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[11px]"></i> Clearing…';
+
+        try {
+          const r = await fetch('/customer/cart/clear', {
+            method : 'POST',
+            headers: {
+              'Content-Type'  : 'application/json',
+              'X-Requested-With': 'fetch'
+            },
+            body: JSON.stringify({ all: true })
+          });
+          let data = null;
+          try { data = await r.json(); } catch (_) { data = null; }
+
+          if (!r.ok || !data || data.ok === false) {
+            if (typeof window.csToast === 'function') {
+              window.csToast(data?.error || 'Could not clear cart', 'err');
+            }
+            btn.disabled = false;
+            btn.innerHTML = original;
+            return;
+          }
+
+          // jump to the empty state without a reload
+          applySummary({ ...data, empty: true, cart_count: 0, grand_total: 0 });
+          swapToEmpty();
+          if (typeof window.csToast === 'function') {
+            window.csToast('Cart cleared', 'ok');
+          }
+        } catch (err) {
+          if (typeof window.csToast === 'function') {
+            window.csToast('Network error — please try again', 'err');
+          }
+          btn.disabled = false;
+          btn.innerHTML = original;
+        }
+      });
+    }
+
+    /* ── bootstrap ──────────────────────────────────────────────── */
+    $$('form[data-cart-update]') .forEach(wireQtyForm);
+    $$('button[data-cart-remove]').forEach(wireRemoveBtn);
+    $$('button[data-cart-clear]') .forEach(wireClearBtn);
+  })();
 </script>
 
 {% endblock %}

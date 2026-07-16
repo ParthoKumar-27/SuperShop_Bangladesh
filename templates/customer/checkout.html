@@ -46,6 +46,32 @@
   .pay-card.selected .pay-check { background:#044635; border-color:#044635; }
   .pay-card.selected .pay-check i { opacity:1; }
 
+  /* ── disabled / coming-soon state ─────────────────────────── */
+  .pay-card.is-disabled {
+    cursor:not-allowed;
+    background:#f8fafc;
+    border-style:dashed;
+    border-color:#cbd5e1;
+    opacity:.78;
+  }
+  .pay-card.is-disabled:hover {
+    transform:none;
+    border-color:#cbd5e1;
+    box-shadow:none;
+    background:#f8fafc;
+  }
+  .pay-card.is-disabled .pay-logo { filter:grayscale(.6) brightness(.95); }
+  .pay-card.is-disabled .pay-name { color:#475569; }
+  .pay-card .soon-badge {
+    position:absolute; top:8px; right:10px;
+    background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
+    color:#fff; font-size:9.5px; font-weight:800;
+    padding:3px 7px; border-radius:999px;
+    letter-spacing:.06em; text-transform:uppercase;
+    box-shadow:0 4px 10px rgba(245,158,11,.35);
+    pointer-events:none;
+  }
+
   /* ── generic ── */
   .field-label { display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
   .field-label i { color:#F17B0D; font-size:11px; }
@@ -160,6 +186,9 @@
         <div>
           <label class="field-label"><i class="fa-solid fa-phone"></i> Contact Phone</label>
           <input type="tel" name="phone" placeholder="01XXXXXXXXX"
+                 pattern="01[3-9][0-9]{8}"
+                 title="BD mobile number, e.g. 01712345678"
+                 value="{{ default_phone or '' }}"
                  class="field-input">
         </div>
 
@@ -167,7 +196,7 @@
           <label class="field-label"><i class="fa-solid fa-map-pin"></i> Pickup / Delivery Address</label>
           <textarea name="delivery_address" required rows="2"
                     placeholder="House, road, area or pickup note"
-                    class="field-input"></textarea>
+                    class="field-input">{{ default_address or '' }}</textarea>
         </div>
       </div>
     </section>
@@ -193,7 +222,9 @@
           ('CARD',    'pay-card-bank','Visa / MasterCard','Debit or credit card',  '৳'),
           ('CASH',    'pay-cash',    'Cash on Delivery','Pay when you receive',    '৳'),
         ] %}
-        {% for code, klass, name, sub, _ in methods %}
+        {# CASH is rendered separately below as a disabled card.
+           Loop only the 5 active methods here. #}
+        {% for code, klass, name, sub, _ in methods if code != 'CASH' %}
         <label class="pay-card" data-pay="{{ code }}">
           <input type="radio" name="payment_method" value="{{ code }}"
                  {% if loop.first %}checked{% endif %} required>
@@ -207,11 +238,24 @@
           <span class="pay-check"><i class="fa-solid fa-check"></i></span>
         </label>
         {% endfor %}
+
+        {# ── Cash on Delivery: disabled, "Coming soon" ── #}
+        <div class="pay-card is-disabled" data-pay="CASH"
+             aria-disabled="true" role="group"
+             title="Cash on Delivery is coming soon. Please choose one of the online methods above.">
+          <span class="soon-badge">Coming soon</span>
+          <span class="pay-logo pay-cash">COD</span>
+          <span class="pay-meta">
+            <span class="pay-name">Cash on Delivery</span>
+            <span class="pay-sub">Pay when you receive · not yet available</span>
+          </span>
+          <span class="pay-check"><i class="fa-solid fa-lock text-[10px]"></i></span>
+        </div>
       </div>
 
       <div id="payHint" class="info-pill mt-4">
         <i class="fa-solid fa-circle-info"></i>
-        <span>Cash on Delivery — you'll pay the rider when your order arrives.</span>
+        <span>Cash on Delivery is currently unavailable — please use one of the online payment methods above.</span>
       </div>
     </section>
   </div>
@@ -294,23 +338,41 @@
     ROCKET: 'Rocket — DBBL mobile banking. You\'ll get payment instructions after placing the order.',
     UPAY:   'Upay — UCB mobile payment. You\'ll get payment instructions after placing the order.',
     CARD:   'Card — you\'ll be redirected to a secure card payment page after placing the order.',
-    CASH:   'Cash on Delivery — pay the rider when your order arrives at your door.',
   };
+  const defaultHint = 'Cash on Delivery is currently unavailable — please use one of the online payment methods above.';
 
   function refreshPayCards() {
-    document.querySelectorAll('.pay-card').forEach(card => {
+    // active cards (have a radio)
+    document.querySelectorAll('.pay-card:not(.is-disabled)').forEach(card => {
       const radio = card.querySelector('input[type="radio"]');
+      if (!radio) return;
       card.classList.toggle('selected', radio.checked);
       if (radio.checked) {
         const code = card.dataset.pay;
         payHint.innerHTML = '<i class="fa-solid fa-circle-info"></i> <span>' + (hints[code] || '') + '</span>';
       }
     });
+
+    // disabled cards just keep the default hint visible
+    if (!document.querySelector('.pay-card.selected:not(.is-disabled)')) {
+      payHint.innerHTML = '<i class="fa-solid fa-circle-info"></i> <span>' + defaultHint + '</span>';
+    }
   }
   document.querySelectorAll('.pay-card input[type="radio"]').forEach(r => {
     r.addEventListener('change', refreshPayCards);
     r.addEventListener('focus', refreshPayCards);
   });
+
+  // Block clicks on the disabled card from doing anything (e.g.
+  // toggling the cursor, selecting text, etc).  No keyboard
+  // activation possible since there's no radio to focus.
+  document.querySelectorAll('.pay-card.is-disabled').forEach(card => {
+    card.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
+
   refreshPayCards();
 
   /* ── submit guard: prevent double-submit, show loading state ── */

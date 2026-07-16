@@ -75,6 +75,27 @@
         }
         @keyframes csSheen{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
 
+        /* ══════════════════ ANNOUNCE BAR — rolling offers (matches storefront) ══════════════════ */
+        .cs-announce{
+            background:linear-gradient(90deg,var(--green-deep) 0%,var(--green) 50%,var(--green-mid) 100%);
+            color:rgba(255,255,255,.92);
+            font-size:12px;font-weight:600;
+            overflow:hidden;white-space:nowrap;
+            border-bottom:1px solid rgba(0,0,0,.18);
+        }
+        .cs-announce-track{
+            display:inline-flex;gap:48px;
+            padding:9px 0;
+            animation:csMarquee 28s linear infinite;
+        }
+        .cs-announce-track span{display:inline-flex;align-items:center;gap:8px;}
+        .cs-announce-track i{color:var(--orange-soft);}
+        .cs-announce-track .cs-sep{color:rgba(255,255,255,.35);}
+        @keyframes csMarquee{
+            0%  {transform:translateX(0);}
+            100%{transform:translateX(-50%);}
+        }
+
         .cs-logo-badge{
             width:48px;height:48px;border-radius:14px;
             background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
@@ -157,15 +178,14 @@
         /* ══════════════════ SIDEBAR ══════════════════ */
         .cs-side{
             width:100%;
-            flex-shrink:0;
         }
         .cs-side-card{
             position:relative;
-            background:#ffffff;
-            border:1px solid #eef2f1;
+            background:linear-gradient(160deg,#ffffff 0%,#fff7ec 45%,#ffe7cf 100%);
+            border:1px solid rgba(241,123,13,.18);
             border-radius:var(--radius-lg);
-            box-shadow:0 8px 24px rgba(4,70,53,.06);
-            padding:20px 16px 16px;
+            box-shadow:0 18px 42px rgba(255,146,4,.18),0 4px 14px rgba(4,70,53,.05);
+            padding:18px 14px 14px;
             animation:csSlideIn .45s cubic-bezier(.2,.8,.2,1) both;
             overflow:hidden;
         }
@@ -174,9 +194,11 @@
             position:absolute;inset:0;
             background:
                 linear-gradient(180deg,rgba(4,70,53,.04) 0%,transparent 220px),
-                radial-gradient(360px 180px at 100% 0%,rgba(241,123,13,.05),transparent 70%);
+                radial-gradient(360px 180px at 100% 0%,rgba(241,123,13,.10),transparent 70%);
             pointer-events:none;
         }
+        .cs-side-card::-webkit-scrollbar{width:4px;}
+        .cs-side-card::-webkit-scrollbar-thumb{background:rgba(241,123,13,.25);border-radius:4px;}
         @keyframes csSlideIn{
             from{opacity:0;transform:translateX(-8px);}
             to  {opacity:1;transform:translateX(0);}
@@ -264,26 +286,30 @@
         .cs-danger-btn:hover{background:#fef2f2;color:#b91c1c;}
         .cs-danger-btn i{width:18px;text-align:center;}
 
-        /* ══════════════════ FOOTER ══════════════════ */
+        /* ══════════════════ FOOTER — matches storefront one-line style ══════════════════ */
         .cs-footer{
             background:linear-gradient(105deg,var(--green-deep),var(--green) 55%,var(--green-mid));
-            color:rgba(255,255,255,.7);
-            margin-top:40px;
+            color:rgba(255,255,255,.65);
+            margin-top:36px;
+            padding:26px 18px;
+            font-size:12px;
+            text-align:center;
             position:relative;overflow:hidden;
         }
         .cs-footer::before{
             content:'';position:absolute;inset:0;
-            background:radial-gradient(800px 200px at 50% -50%,rgba(241,123,13,.28),transparent 60%);
+            background:radial-gradient(800px 200px at 50% -50%,rgba(241,123,13,.25),transparent 60%);
             pointer-events:none;
         }
         .cs-footer-inner{
             position:relative;z-index:1;
             max-width:1280px;margin:0 auto;
-            padding:28px 24px;
-            text-align:center;
+            display:flex;flex-direction:column;align-items:center;gap:6px;
         }
-        .cs-footer h3{color:#fff;font-size:18px;font-weight:800;letter-spacing:-.01em;}
-        .cs-footer .cs-footer-tag{color:var(--orange-soft);font-weight:700;}
+        .cs-footer-title{color:#fff;font-weight:800;letter-spacing:-.01em;font-size:14px;}
+        .cs-footer-line{color:rgba(255,255,255,.65);}
+        .cs-footer-line b{color:var(--orange-soft);font-weight:700;}
+        .cs-footer-tag{color:var(--orange-soft);font-weight:700;}
 
         /* ══════════════════ UTILITY ══════════════════ */
         .cs-link-emerald{
@@ -299,10 +325,171 @@
             from{opacity:0;transform:translateY(8px);}
             to  {opacity:1;transform:translateY(0);}
         }
+
+        /* ══════════════════ GLOBAL TOAST (used by every customer page) ══════════════════ */
+        .cs-toast-stack{
+            position:fixed; bottom:24px; right:24px;
+            display:flex; flex-direction:column-reverse; gap:10px;
+            z-index:2147483647; max-width:360px; width:calc(100% - 40px);
+            pointer-events:none;
+        }
+        .cs-toast{
+            position:relative; overflow:hidden;
+            display:flex; align-items:center; gap:10px;
+            padding:12px 14px 12px 16px; border-radius:12px;
+            font-size:13px; font-weight:600; line-height:1.4;
+            background:#fff; color:var(--dark);
+            box-shadow:0 18px 38px rgba(4,70,53,.20), 0 2px 6px rgba(0,0,0,.08);
+            border-left:4px solid var(--orange);
+            pointer-events:auto;
+            animation:csToastIn .35s cubic-bezier(.2,.8,.2,1) both;
+        }
+        @keyframes csToastIn{
+            from{opacity:0; transform:translateX(120%);}
+            to  {opacity:1; transform:translateX(0);}
+        }
+        .cs-toast.cs-hiding{animation:csToastOut .3s ease both;}
+        @keyframes csToastOut{
+            from{opacity:1; transform:translateX(0);}
+            to  {opacity:0; transform:translateX(120%);}
+        }
+        @media (prefers-reduced-motion: reduce){
+            .cs-toast{animation:none !important;}
+            .cs-toast.cs-hiding{animation:none !important; opacity:0;}
+        }
+        .cs-toast i{font-size:16px; flex-shrink:0; color:var(--orange);}
+        .cs-toast-ok    {border-left-color:#10b981;} .cs-toast-ok    i{color:#10b981;}
+        .cs-toast-err   {border-left-color:#ef4444;} .cs-toast-err   i{color:#ef4444;}
+        .cs-toast-warn  {border-left-color:#f59e0b;} .cs-toast-warn  i{color:#f59e0b;}
+        .cs-toast-text  {flex:1; word-break:break-word;}
+        .cs-toast-close{
+            width:26px; height:26px; border:none; background:transparent;
+            color:inherit; opacity:.55; cursor:pointer; border-radius:6px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:11px; transition:.15s; flex-shrink:0;
+        }
+        .cs-toast-close:hover{opacity:1; background:rgba(0,0,0,.06);}
+        .cs-toast::after{
+            content:""; position:absolute; bottom:0; left:0;
+            height:3px; width:100%; background:currentColor;
+            opacity:.25; border-bottom-left-radius:12px; border-bottom-right-radius:12px;
+            transform-origin:left; animation:csToastProgress 4s linear forwards;
+        }
+        @keyframes csToastProgress{from{transform:scaleX(1);} to{transform:scaleX(0);}}
+
+        @keyframes csCartPulse{
+            0%   {transform:scale(1);}
+            40%  {transform:scale(1.35);}
+            100% {transform:scale(1);}
+        }
+        .cs-cart-badge.pulse{animation:csCartPulse .45s ease;}
+
+        /* ══════════════════ Confirm modal ══════════════════ */
+        .cs-modal-backdrop{
+            position:fixed; inset:0;
+            background:rgba(4, 70, 53, .35);
+            backdrop-filter:blur(2px);
+            z-index:9998;
+            animation:csModalFade .18s ease both;
+        }
+        @keyframes csModalFade{from{opacity:0;} to{opacity:1;}}
+        .cs-modal{
+            position:fixed; top:50%; left:50%;
+            transform:translate(-50%, -50%);
+            width:min(420px, calc(100% - 32px));
+            background:#fff; border-radius:20px;
+            box-shadow:0 25px 60px -10px rgba(0,0,0,.25);
+            z-index:9999;
+            padding:28px 26px 22px;
+            animation:csModalPop .22s cubic-bezier(.2,.9,.3,1.3) both;
+            text-align:center;
+            font-family:inherit;
+        }
+        @keyframes csModalPop{
+            from{opacity:0; transform:translate(-50%, -42%) scale(.92);}
+            to  {opacity:1; transform:translate(-50%, -50%) scale(1);}
+        }
+        .cs-modal.hiding{animation:csModalOut .16s ease both;}
+        @keyframes csModalOut{
+            to{opacity:0; transform:translate(-50%, -50%) scale(.96);}
+        }
+        .cs-modal-x{
+            position:absolute; top:12px; right:12px;
+            width:30px; height:30px; border-radius:50%;
+            border:none; background:transparent; color:#9ca3af;
+            cursor:pointer; display:grid; place-items:center;
+            transition:background .15s ease, color .15s ease;
+        }
+        .cs-modal-x:hover{background:#f3f4f6; color:#374151;}
+        .cs-modal-icon{
+            width:64px; height:64px; border-radius:50%;
+            margin:0 auto 14px;
+            display:grid; place-items:center;
+            background:linear-gradient(135deg, #fef3e6, #fde2cf);
+            color:#F17B0D; font-size:26px;
+        }
+        .cs-modal-icon.is-danger{
+            background:linear-gradient(135deg, #fee2e2, #fecaca);
+            color:#dc2626;
+        }
+        .cs-modal-title{
+            font-size:18px; font-weight:800; color:#1f2937;
+            margin:0 0 6px;
+        }
+        .cs-modal-msg{
+            font-size:13.5px; color:#6b7280; line-height:1.5;
+            margin:0 0 18px;
+        }
+        .cs-modal-actions{
+            display:flex; gap:10px; justify-content:center;
+        }
+        .cs-modal-btn{
+            border:none; cursor:pointer;
+            padding:10px 22px; border-radius:12px;
+            font:inherit; font-weight:600; font-size:13.5px;
+            transition:transform .12s ease, box-shadow .15s ease, background .15s ease;
+        }
+        .cs-modal-btn:active{transform:translateY(1px);}
+        .cs-modal-btn-cancel{
+            background:#f3f4f6; color:#374151;
+        }
+        .cs-modal-btn-cancel:hover{background:#e5e7eb;}
+        .cs-modal-btn-confirm{
+            background:#044635; color:#fff;
+            box-shadow:0 6px 14px -4px rgba(4, 70, 53, .45);
+        }
+        .cs-modal-btn-confirm:hover{background:#033828;}
+        .cs-modal-btn-confirm.is-danger{
+            background:#dc2626;
+            box-shadow:0 6px 14px -4px rgba(220, 38, 38, .45);
+        }
+        .cs-modal-btn-confirm.is-danger:hover{background:#b91c1c;}
+        body.cs-modal-locked{overflow:hidden;}
     </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
+
+<!-- ANNOUNCEMENT MARQUEE (mirrors storefront) -->
+<div class="cs-announce" aria-label="Site announcements">
+    <div class="cs-announce-track">
+        <span><i class="fas fa-truck-fast"></i> Free delivery on orders above &#2547;500</span>
+        <span class="cs-sep">&#8226;</span>
+        <span><i class="fas fa-percent"></i> Use code <b>FRESH25</b> &amp; save &#2547;200 on first order</span>
+        <span class="cs-sep">&#8226;</span>
+        <span><i class="fas fa-store"></i> Now serving multiple branches across Bangladesh</span>
+        <span class="cs-sep">&#8226;</span>
+        <span><i class="fas fa-mobile-screen"></i> Pay with bKash &#183; Nagad &#183; Rocket &#183; Card &#183; Cash</span>
+        <span class="cs-sep">&#8226;</span>
+        <span><i class="fas fa-truck-fast"></i> Free delivery on orders above &#2547;500</span>
+        <span class="cs-sep">&#8226;</span>
+        <span><i class="fas fa-percent"></i> Use code <b>FRESH25</b> &amp; save &#2547;200 on first order</span>
+        <span class="cs-sep">&#8226;</span>
+        <span><i class="fas fa-store"></i> Now serving multiple branches across Bangladesh</span>
+        <span class="cs-sep">&#8226;</span>
+        <span><i class="fas fa-mobile-screen"></i> Pay with bKash &#183; Nagad &#183; Rocket &#183; Card &#183; Cash</span>
+    </div>
+</div>
 
 <!-- NAVBAR -->
 <nav class="cs-navbar">
@@ -325,7 +512,9 @@
 
             {% if role == "CUSTOMER" %}
                 {% set cart = request.session.get('cart', {}) %}
-                {% set cart_count = cart.values() | sum if cart else 0 %}
+                {# Cart entries may be legacy {pid: qty} or new {pid: {qty, branch_id}};
+                   sum qtys only, ignoring dict-shaped entries so the badge stays an int. #}
+                {% set cart_count = cart | sum_cart_qty if cart else 0 %}
                 <a href="/customer/cart" title="Cart" class="cs-cart-btn">
                     <i class="fa-solid fa-cart-shopping"></i>
                     {# Always render the badge slot so JS/AJAX can update
@@ -368,13 +557,13 @@
 </nav>
 
 <!-- PAGE BODY -->
-<main class="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
-<div class="flex flex-col lg:flex-row gap-6">
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+<div class="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full">
 
     {% if role == "CUSTOMER" %}
     <!-- ══ PERSISTENT CUSTOMER SIDEBAR ══ -->
-    <aside class="cs-side lg:w-72">
-        <div class="cs-side-card lg:sticky lg:top-28">
+    <aside class="cs-side lg:w-72 lg:flex-shrink-0">
+        <div class="cs-side-card lg:sticky lg:top-24">
 
             <!-- Profile -->
             <div class="flex items-center gap-3 mb-2 relative z-[1]">
@@ -429,7 +618,7 @@
     {% endif %}
 
     <!-- ══ PAGE-SPECIFIC CONTENT ══ -->
-    <div class="flex-1 min-w-0 cs-content">
+    <div class="flex-1 min-w-0 w-full cs-content">
         {% block content %}{% endblock %}
     </div>
 
@@ -439,11 +628,41 @@
 <!-- FOOTER -->
 <footer class="cs-footer">
 <div class="cs-footer-inner">
-    <h3>SuperShop Bangladesh</h3>
-    <p class="text-gray-300 mt-2 text-sm">Multi-Branch Retail Management System</p>
-    <p class="text-green-200/70 text-xs mt-3">© 2025 SuperShop Bangladesh | University Project · <span class="cs-footer-tag">Powered by FastAPI + PostgreSQL</span></p>
+    <div class="cs-footer-title">SuperShop Bangladesh</div>
+    <div class="cs-footer-line">
+        CSE-2201 &nbsp;&#183;&nbsp; University of Dhaka 2025 &nbsp;&#183;&nbsp;
+        <span class="cs-footer-tag">Powered by FastAPI + PostgreSQL</span>
+    </div>
 </div>
 </footer>
+
+<!-- Global toast container — any page can call window.csToast(msg, type) -->
+<div class="cs-toast-stack" id="csToastStack" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ══════════════════ Global confirm modal ══════════════════
+     window.csConfirm({ title, message, confirmLabel, cancelLabel, danger })
+       → Promise<boolean>  (true = confirm pressed)
+
+     Styled to match the cart page (same green/orange palette)
+     instead of the OS-level confirm() which breaks the flow and
+     isn't themable.  Mounted lazily on first use. -->
+<template id="csConfirmTpl">
+  <div class="cs-modal-backdrop" data-cs-modal-bd></div>
+  <div class="cs-modal" role="dialog" aria-modal="true" aria-labelledby="csConfirmTitle" data-cs-modal>
+    <button type="button" class="cs-modal-x" aria-label="Close" data-cs-modal-x>
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div class="cs-modal-icon" data-cs-modal-icon>
+      <i class="fa-solid fa-trash-can"></i>
+    </div>
+    <h3 id="csConfirmTitle" class="cs-modal-title" data-cs-modal-title>Are you sure?</h3>
+    <p class="cs-modal-msg" data-cs-modal-msg>This action cannot be undone.</p>
+    <div class="cs-modal-actions">
+      <button type="button" class="cs-modal-btn cs-modal-btn-cancel" data-cs-modal-cancel>Cancel</button>
+      <button type="button" class="cs-modal-btn cs-modal-btn-confirm" data-cs-modal-confirm>Confirm</button>
+    </div>
+  </div>
+</template>
 
 <script>
   // If the page is restored from the browser's bfcache (e.g. after
@@ -452,6 +671,138 @@
   window.addEventListener('pageshow', function (e) {
     if (e.persisted) { window.location.reload(); }
   });
+
+  // ══════════════════ Global toast helper ══════════════════
+  // Usage: window.csToast('Item added to cart', 'ok')
+  //        types: 'ok' | 'err' | 'warn'
+  (function () {
+    function getStack() {
+      let s = document.getElementById('csToastStack');
+      if (!s) {
+        s = document.createElement('div');
+        s.id = 'csToastStack';
+        s.className = 'cs-toast-stack';
+        s.setAttribute('aria-live', 'polite');
+        s.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(s);
+      }
+      return s;
+    }
+    function dismiss(t) {
+      if (!t || t.classList.contains('cs-hiding')) return;
+      t.classList.add('cs-hiding');
+      t.addEventListener('animationend', () => t.remove(), { once: true });
+    }
+    window.csToast = function (message, type) {
+      type = type || 'ok';
+      const t = document.createElement('div');
+      t.className = 'cs-toast cs-toast-' + type;
+      const icon = type === 'err'  ? 'fa-exclamation-circle'
+                 : type === 'warn' ? 'fa-exclamation-triangle'
+                 :                   'fa-check-circle';
+      t.innerHTML =
+        '<i class="fas ' + icon + '"></i>' +
+        '<span class="cs-toast-text"></span>' +
+        '<button class="cs-toast-close" type="button" aria-label="Dismiss">' +
+          '<i class="fas fa-times"></i>' +
+        '</button>';
+      t.querySelector('.cs-toast-text').textContent = message;
+      t.querySelector('.cs-toast-close').addEventListener('click', () => dismiss(t));
+      getStack().appendChild(t);
+      setTimeout(() => dismiss(t), 4000);
+    };
+
+    // Convenience: also expose updateCartBadge to keep navbar in sync after AJAX add
+    window.csUpdateCartBadge = function (count) {
+      const badge = document.querySelector('.cs-cart-badge');
+      if (!badge) return;
+      badge.textContent = count;
+      if (count > 0) {
+        badge.hidden = false;
+        badge.classList.remove('pulse');
+        void badge.offsetWidth;
+        badge.classList.add('pulse');
+      } else {
+        badge.hidden = true;
+        badge.classList.remove('pulse');
+      }
+    };
+  })();
+
+  // ══════════════════ Global confirm helper ══════════════════
+  // Usage:  const ok = await window.csConfirm({
+  //           title: 'Remove this item?',
+  //           message: 'It will be removed from your cart.',
+  //           confirmLabel: 'Remove',
+  //           danger: true
+  //         });
+  //
+  // Returns Promise<boolean>. Resolves false on cancel / Esc / backdrop.
+  // If the user's browser blocks JS or this helper fails, the calling
+  // site should still degrade gracefully (e.g. show a toast).
+  (function () {
+    window.csConfirm = function (opts) {
+      opts = opts || {};
+      return new Promise(function (resolve) {
+        const tpl = document.getElementById('csConfirmTpl');
+        if (!tpl) { resolve(window.confirm(opts.message || opts.title || 'Are you sure?')); return; }
+
+        const bd  = tpl.content.querySelector('[data-cs-modal-bd]').cloneNode(true);
+        const box = tpl.content.querySelector('[data-cs-modal]').cloneNode(true);
+
+        // populate
+        box.querySelector('[data-cs-modal-title]').textContent =
+          opts.title || 'Are you sure?';
+        box.querySelector('[data-cs-modal-msg]').textContent =
+          opts.message || 'This action cannot be undone.';
+
+        const icon = box.querySelector('[data-cs-modal-icon]');
+        const iconHTML = opts.danger
+          ? '<i class="fa-solid fa-trash-can"></i>'
+          : (opts.iconHTML || '<i class="fa-solid fa-circle-question"></i>');
+        icon.innerHTML = iconHTML;
+        if (opts.danger) icon.classList.add('is-danger');
+
+        const confirmBtn = box.querySelector('[data-cs-modal-confirm]');
+        confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+        if (opts.danger) confirmBtn.classList.add('is-danger');
+
+        const cancelBtn  = box.querySelector('[data-cs-modal-cancel]');
+        if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
+
+        // mount
+        document.body.appendChild(bd);
+        document.body.appendChild(box);
+        document.body.classList.add('cs-modal-locked');
+        // focus the cancel button by default — safer for destructive ops
+        setTimeout(() => (opts.danger ? cancelBtn : confirmBtn).focus(), 0);
+
+        let settled = false;
+        function settle(result) {
+          if (settled) return;
+          settled = true;
+          document.body.classList.remove('cs-modal-locked');
+          box.classList.add('hiding');
+          bd.remove();
+          setTimeout(() => { box.remove(); resolve(result); }, 160);
+        }
+
+        confirmBtn.addEventListener('click', () => settle(true));
+        cancelBtn .addEventListener('click', () => settle(false));
+        bd        .addEventListener('click', () => settle(false));
+        box.querySelector('[data-cs-modal-x]').addEventListener('click', () => settle(false));
+
+        function key(ev) {
+          if (ev.key === 'Escape')      { settle(false); }
+          else if (ev.key === 'Enter')  { settle(true);  }
+        }
+        document.addEventListener('keydown', key);
+        // remember to drop the listener when we finish
+        const _settle = settle;
+        settle = function (r) { document.removeEventListener('keydown', key); _settle(r); };
+      });
+    };
+  })();
 </script>
 
 </body>

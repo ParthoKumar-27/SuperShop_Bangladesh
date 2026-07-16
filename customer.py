@@ -16,6 +16,7 @@ from datetime import date
 
 customer_router = APIRouter(prefix="/customer", tags=["Customer"])
 templates = Jinja2Templates(directory="templates")
+templates.env.filters["sum_cart_qty"] = lambda c: _cart_qty_sum(c or {})
 from supabase_client import BUCKET as _BUCKET, SUPABASE_URL as _SUPABASE_URL
 
 def _normalize_image_url(raw):
@@ -129,6 +130,179 @@ def _customer_context(request: Request, session) -> dict:
         "loyalty_points": session.get("loyalty_points"),
     }
 
+
+def _cart_total(cart: dict) -> float:
+    """Sum of (qty × discounted unit_price) across all items in the cart.
+    Uses the same discount table as the cart/checkout pages so the locked
+    banner on /shop shows a number that matches what checkout would charge.
+
+    Handles BOTH the legacy flat shape {pid: qty} and the new shape
+    {pid: {"qty": n, "branch_id": bid}}, so older sessions survive."""
+    if not cart:
+        return 0.0
+    rows = query(
+        "SELECT product_id, unit_price, cat_id FROM product "
+        "WHERE product_id = ANY(%s)",
+        (list(cart.keys()),),
+    )
+    by_product, by_cat = _get_active_discounts()
+    total = 0.0
+    for r in rows:
+        pid = r["product_id"]
+        entry = cart.get(pid)
+        if entry is None:
+            continue
+        qty = entry["qty"] if isinstance(entry, dict) else entry
+        if not qty:
+            continue
+        disc_price, _ = _apply_discount(
+            r["unit_price"], pid, r["cat_id"], by_product, by_cat,
+        )
+        total += disc_price * qty
+    return round(total, 2)
+
+
+def _cart_locked_branch(cart: dict) -> str | None:
+    """Return the branch_id the cart is locked to, or None when empty.
+
+    The cart is the single source of truth for the locked branch — each
+    cart entry stores the branch the item came from.  This makes it
+    impossible for the page to display one branch while rendering
+    products from another, because the cart always wins.
+
+    Handles BOTH the legacy flat shape {pid: qty} and the new shape
+    {pid: {"qty": n, "branch_id": bid}}."""
+    if not cart:
+        return None
+    for entry in cart.values():
+        if isinstance(entry, dict) and entry.get("branch_id"):
+            return entry["branch_id"]
+    # Legacy shape — no branch_id on entries.
+    return None
+
+
+def _cart_iter(cart: dict):
+    """Iterate over a cart yielding (product_id, qty, branch_id) tuples.
+    Works for both the legacy {pid: qty} and the new {pid: {qty, branch_id}}
+    shapes, so the rest of the codebase keeps reading naturally."""
+    for pid, entry in cart.items():
+        if isinstance(entry, dict):
+            yield pid, int(entry.get("qty", 0)), entry.get("branch_id")
+        else:
+            yield pid, int(entry or 0), None
+
+
+def _cart_qty(cart: dict, pid: str) -> int:
+    entry = cart.get(pid)
+    if entry is None:
+        return 0
+    if isinstance(entry, dict):
+        return int(entry.get("qty", 0))
+    return int(entry or 0)
+
+
+def _cart_qty_sum(cart: dict) -> int:
+    """Shape-aware cart-count used by the topbar badge.
+
+    Sums quantities for every entry. Legacy entries {pid: qty} contribute their
+    int directly; new entries {pid: {qty, branch_id}} contribute `qty`. Safe
+    for both shapes so badge counts never blow up on a value that's actually a
+    dict.
+    """
+    if not cart:
+        return 0
+    total = 0
+    for entry in cart.values():
+        if isinstance(entry, dict):
+            total += int(entry.get("qty", 0) or 0)
+        else:
+            total += int(entry or 0)
+    return total
+
+
+def _cart_summary_json(cart: dict, touched_pid=None) -> dict:
+    """Build the JSON payload returned by cart/update and cart/remove.
+
+    Includes:
+      • `ok` / `cart_count` — for the topbar badge.
+      • `empty`             — `True` when the last item was just removed.
+      • `grand_total`       — discount-aware, mirrors what the page's
+                             summary card shows.
+      • `product_id` / `quantity` / `line_total`
+                           — convenience echo of the row that was just
+                             touched. Optional: skips when the client
+                             doesn't need to patch a single row
+                             (e.g. right after a full page load).
+      • `items`             — one entry per remaining product so the
+                             client can rerender each row's subtotal
+                             and the "+/−" max without re-fetching.
+
+    Handle both cart shapes: legacy {pid: qty} and
+    {pid: {"qty": n, "branch_id": bid}}.
+    """
+    cart_count = _cart_qty_sum(cart)
+    grand_total = 0.0
+    items_out = []
+
+    if not cart:
+        return {
+            "ok": True,
+            "empty": True,
+            "cart_count": 0,
+            "grand_total": 0.0,
+            "items": [],
+        }
+
+    rows = query(
+        "SELECT product_id, unit_price, cat_id FROM product "
+        "WHERE product_id = ANY(%s)",
+        (list(cart.keys()),),
+    )
+    by_product, by_cat = _get_active_discounts()
+    unit_prices = {r["product_id"]: float(r["unit_price"]) for r in rows}
+
+    touched_line = None
+
+    for pid, entry in cart.items():
+        qty = entry["qty"] if isinstance(entry, dict) else int(entry or 0)
+        if not qty:
+            continue
+        unit = unit_prices.get(pid)
+        if unit is None:
+            # Product disappeared (deleted/deactivated) — keep the cart
+            # consistent by dropping the orphan entry, don't bill a phantom.
+            continue
+        cat_id = next((r["cat_id"] for r in rows if r["product_id"] == pid), None)
+        disc_price, _ = _apply_discount(unit, pid, cat_id, by_product, by_cat)
+        line_total = disc_price * qty
+        grand_total += line_total
+        items_out.append({
+            "product_id": pid,
+            "quantity": qty,
+            "unit_price": unit,
+            "disc_price": disc_price,
+            "line_total": line_total,
+        })
+        if touched_pid is not None and str(pid) == str(touched_pid):
+            touched_line = {
+                "product_id": pid,
+                "quantity": qty,
+                "line_total": line_total,
+            }
+
+    payload = {
+        "ok": True,
+        "empty": False,
+        "cart_count": cart_count,
+        "grand_total": grand_total,
+        "items": items_out,
+    }
+    if touched_line is not None:
+        payload["product_id"] = touched_line["product_id"]
+        payload["quantity"]   = touched_line["quantity"]
+        payload["line_total"] = touched_line["line_total"]
+    return payload
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER SHOP, CART & CHECKOUT
 # ══════════════════════════════════════════════════════════════════════════════
@@ -166,7 +340,7 @@ def place_order(
     discount_amt = 0.0
     for p in products:
         pid = p["product_id"]
-        qty = cart.get(pid, 0)
+        qty = _cart_qty(cart, pid)
         if not qty:
             continue
         
@@ -374,12 +548,59 @@ def select_branch(
 def customer_shop(request: Request, session=Depends(require_customer)):
     branches = query("SELECT branch_id, branch_name FROM branch WHERE is_active = 'Y' ORDER BY branch_name")
 
+    cart = request.session.get("cart", {})
+    # A cart "has items" only when at least one entry actually has a
+    # positive qty.  Stale dicts with qty=0 (from cancel/update flows
+    # or partial migrations) MUST NOT lock the page, otherwise the
+    # branch pill stays disabled even when the cart is functionally
+    # empty and the customer is stuck on a branch.
+    cart_has_items = any(q > 0 for _, q, _ in _cart_iter(cart))
+    # ── Single source of truth ─────────────────────────────
+    # The cart is the ground truth for which branch the customer is
+    # shopping.  Each cart entry stores the branch the product came
+    # from, so even if the session["selected_branch"] key drifts or
+    # was never set, the page below will render the EXACT branch the
+    # cart was built against (banner ↔ pill ↔ products agree).
+    cart_branch_id = _cart_locked_branch(cart)
+
     default_branch = next((b for b in branches if "dhanmondi" in b["branch_name"].lower()), branches[0] if branches else None)
-    selected_branch_id = request.session.get("selected_branch")
-    if not selected_branch_id and default_branch:
-        selected_branch_id = default_branch["branch_id"]
-        request.session["selected_branch"] = selected_branch_id
+    session_branch_id = request.session.get("selected_branch")
+    if not session_branch_id and default_branch:
+        session_branch_id = default_branch["branch_id"]
+        request.session["selected_branch"] = session_branch_id
+
+    # Pick the branch in this priority order:
+    #   1. cart-derived branch (when cart has items)
+    #   2. session["selected_branch"] (when cart is empty)
+    #   3. fallback to the active default
+    if cart_has_items and cart_branch_id:
+        selected_branch_id = cart_branch_id
+        # Re-sync the session key so future POSTs (e.g. add-to-cart from
+        # this page) use the locked branch, not a stale one.
+        if session_branch_id != cart_branch_id:
+            request.session["selected_branch"] = cart_branch_id
+    else:
+        selected_branch_id = session_branch_id
+
     selected_branch = next((b for b in branches if b["branch_id"] == selected_branch_id), None)
+
+    # ── Single source of truth ─────────────────────────────────
+    # The branch dropdown posts to /customer/cart/set-branch (same as
+    # storefront.html).  But a user could still hit
+    # /customer/shop?branch=X directly to try to bypass the cart-lock
+    # guard.  If the cart is non-empty, ignore the query string and
+    # force the page to use whatever branch the cart was already
+    # locked to.  The locked-banner on the page will explain why.
+    if cart_has_items and selected_branch_id:
+        # Lock the page to the cart's branch, regardless of ?branch=
+        pass  # selected_branch_id already comes from cart/session above
+    elif request.query_params.get("branch") and not cart_has_items:
+        # Only honour the query-string when the cart is empty.
+        candidate = request.query_params["branch"].strip()
+        if any(b["branch_id"] == candidate for b in branches):
+            request.session["selected_branch"] = candidate
+            selected_branch_id = candidate
+            selected_branch = next((b for b in branches if b["branch_id"] == candidate), None)
 
     # ── Categories (for the chip filter row) ────────────────────────────
     categories = query("""
@@ -416,7 +637,7 @@ def customer_shop(request: Request, session=Depends(require_customer)):
     """, (selected_branch_id,))
 
     by_product, by_cat = _get_active_discounts()
-    products = []
+    filtered_products = []
     for p in raw_products:
         if selected_cat_id is not None:
             in_filter = (p["cat_id"] and p["cat_id"].upper() == selected_cat_id.upper()) \
@@ -425,7 +646,24 @@ def customer_shop(request: Request, session=Depends(require_customer)):
                 continue
         disc_price, disc_label = _apply_discount(p["unit_price"], p["product_id"], p["cat_id"], by_product, by_cat)
         p["image_url"] = _normalize_image_url(p.get("image_url"))
-        products.append({**p, "disc_price": disc_price, "disc_label": disc_label})
+        filtered_products.append({**p, "disc_price": disc_price, "disc_label": disc_label})
+
+    # ── Pagination ────────────────────────────────────────────────
+    # 20 cards per page; preserves ?cat=, ?q=, ?branch= across pages
+    # by appending/rewriting only the `page` query param.
+    PAGE_SIZE = 20
+    total_products = len(filtered_products)
+    total_pages   = max(1, (total_products + PAGE_SIZE - 1) // PAGE_SIZE)
+
+    try:
+        current_page = int(request.query_params.get("page", "1"))
+    except (TypeError, ValueError):
+        current_page = 1
+    current_page = max(1, min(current_page, total_pages))
+
+    start = (current_page - 1) * PAGE_SIZE
+    end   = start + PAGE_SIZE
+    products = filtered_products[start:end]
 
     return templates.TemplateResponse(request, "customer/shop.html", {
         "products": products,
@@ -434,7 +672,16 @@ def customer_shop(request: Request, session=Depends(require_customer)):
         "categories": categories,
         "selected_cat_id": selected_cat_id,
         "selected_cat_name": selected_cat_name,
-        "cart_locked": len(request.session.get("cart", {})) > 0,
+        "cart_locked": cart_has_items,
+        # ── Locked-cart banner context (cart-as-truth) ─────────────
+        "locked_branch_name": selected_branch["branch_name"] if selected_branch else None,
+        "locked_cart_items": sum((e[1] for e in _cart_iter(cart))),
+        "locked_cart_total": _cart_total(cart),
+        # ── Pagination context ────────────────────────────────
+        "current_page":   current_page,
+        "total_pages":    total_pages,
+        "total_products": total_products,
+        "page_size":      PAGE_SIZE,
         **_customer_context(request, session),
     })
 
@@ -477,11 +724,27 @@ async def add_to_cart(request: Request, session=Depends(require_customer)):
     quantity = max(1, quantity)
 
     # ── Update the session cart ──────────────────────────────────────────
+    # Each cart entry is now {qty, branch_id} so the cart itself is the
+    # ground truth for which branch the customer is shopping.  This makes
+    # it impossible for the banner / pill / products query to disagree,
+    # because every read of the locked branch comes from the cart.
     cart = request.session.get("cart", {})
-    cart[product_id] = cart.get(product_id, 0) + quantity
+    add_branch_id = request.session.get("selected_branch")
+
+    existing = cart.get(product_id)
+    if isinstance(existing, dict):
+        prev_qty = int(existing.get("qty", 0))
+    elif isinstance(existing, (int, float)):
+        prev_qty = int(existing)        # legacy shape {pid: qty}
+    else:
+        prev_qty = 0
+    cart[product_id] = {
+        "qty": prev_qty + quantity,
+        "branch_id": add_branch_id,
+    }
     request.session["cart"] = cart
 
-    cart_count = sum(cart.values())
+    cart_count = sum((e[1] for e in _cart_iter(cart)))
 
     # ── Look up product name for the toast ───────────────────────────────
     row = query(
@@ -496,7 +759,7 @@ async def add_to_cart(request: Request, session=Depends(require_customer)):
             "ok": True,
             "product_id": product_id,
             "product_name": product_name,
-            "qty": cart[product_id],
+            "qty": cart[product_id]["qty"] if isinstance(cart[product_id], dict) else cart[product_id],
             "cart_count": cart_count,
         })
 
@@ -562,30 +825,62 @@ def view_cart(request: Request, session=Depends(require_customer)):
 
     if cart:
         raw_products = query("""
-            SELECT product_id, product_name, brand, unit_price, unit, cat_id
+            SELECT product_id, product_name, brand, unit_price, unit, cat_id, image_url
             FROM product
             WHERE product_id = ANY(%s)
         """, (list(cart.keys()),))
 
+        # Pull per-branch stock so the cart page can clamp its "+"
+        # buttons the same way the shop grid does.  We use the branch
+        # each cart line was actually created against (the cart's own
+        # branch_id) — falling back to the session's selected branch.
+        cart_branch_map = {}
+        for pid, entry in cart.items():
+            if isinstance(entry, dict):
+                cart_branch_map[pid] = entry.get("branch_id")
+        fallback_branch = request.session.get("selected_branch")
+
+        branch_ids = sorted({b for b in cart_branch_map.values() if b} | ({fallback_branch} if fallback_branch else set()))
+        stock_by_pid = {}
+        if branch_ids:
+            for pid in cart.keys():
+                bid = cart_branch_map.get(pid) or fallback_branch
+                if not bid:
+                    continue
+                row = query(
+                    "SELECT quantity FROM branch_inventory "
+                    "WHERE branch_id = %s AND product_id = %s",
+                    (bid, pid),
+                )
+                if row:
+                    stock_by_pid[pid] = int(row[0]["quantity"])
+
         by_product, by_cat = _get_active_discounts()
 
         for p in raw_products:
-            qty = cart.get(p["product_id"], 0)
+            qty = _cart_qty(cart, p["product_id"])
             disc_price, disc_label = _apply_discount(p["unit_price"], p["product_id"], p["cat_id"], by_product, by_cat)
-            
+
             line_total = disc_price * qty
             original_line = float(p["unit_price"]) * qty
-            
+
             total_savings += original_line - line_total
             grand_total += line_total
-            
+
             items.append({
-                **p, 
-                "quantity": qty, 
+                **p,
+                "quantity": qty,
                 "line_total": line_total,
-                "disc_price": disc_price, 
+                "disc_price": disc_price,
                 "disc_label": disc_label,
-                "original_price": float(p["unit_price"])
+                "original_price": float(p["unit_price"]),
+                # Same normalization the shop page uses so emoji fallback
+                # only kicks in when the product genuinely has no image.
+                "image_url": _normalize_image_url(p.get("image_url")),
+                # Available stock at the line's branch — `None` when the
+                # product isn't tracked there, in which case the cart UI
+                # falls back to a generous cap (99) instead of locking up.
+                "stock": stock_by_pid.get(p["product_id"]),
             })
 
     return templates.TemplateResponse(request, "customer/cart.html", {
@@ -598,33 +893,130 @@ def view_cart(request: Request, session=Depends(require_customer)):
 
 
 @customer_router.post("/cart/update")
-def update_cart(
+async def update_cart(
     request: Request,
-    product_id: str = Form(...),
-    quantity: int = Form(...),
     session=Depends(require_customer)
 ):
+    """Update a cart line's quantity.
+
+    Accepts either a regular form POST (no JS) or a JSON POST from
+    `fetch`.  The JSON response lets the cart page rerender the row
+    + summary + navbar badge in place instead of doing a full reload.
+    """
+    content_type = (request.headers.get("content-type") or "").lower()
+    wants_json = "application/json" in content_type or \
+                 request.headers.get("x-requested-with") == "fetch"
+
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        product_id = (payload.get("product_id") or "").strip()
+        try:
+            quantity = int(payload.get("quantity") or 0)
+        except (TypeError, ValueError):
+            quantity = 0
+    else:
+        form = await request.form()
+        product_id = (form.get("product_id") or "").strip()
+        try:
+            quantity = int(form.get("quantity") or 0)
+        except (TypeError, ValueError):
+            quantity = 0
+
+    if not product_id:
+        if wants_json:
+            return JSONResponse({"ok": False, "error": "Missing product_id"}, status_code=400)
+        return RedirectResponse("/customer/cart", status_code=302)
+
     cart = request.session.get("cart", {})
 
     if quantity <= 0:
         cart.pop(product_id, None)
     else:
-        cart[product_id] = quantity
+        existing = cart.get(product_id)
+        existing_branch = (
+            existing.get("branch_id")
+            if isinstance(existing, dict)
+            else (request.session.get("selected_branch") if existing is not None else None)
+        )
+        cart[product_id] = {"qty": int(quantity), "branch_id": existing_branch}
 
     request.session["cart"] = cart
+
+    if wants_json:
+        # Re-derive the totals so the client can rerender without a
+        # round-trip to GET /cart.  Keeps the badge / summary / row
+        # perfectly in sync with the session.
+        return JSONResponse(_cart_summary_json(cart, touched_pid=product_id))
     return RedirectResponse("/customer/cart", status_code=302)
 
 
 @customer_router.post("/cart/remove")
-def remove_from_cart(
+async def remove_from_cart(
     request: Request,
-    product_id: str = Form(...),
     session=Depends(require_customer)
 ):
+    """Remove a single line from the cart.  Same dual-mode contract as
+    `update_cart` so the page can do an in-place slide-out instead of a
+    full reload."""
+    content_type = (request.headers.get("content-type") or "").lower()
+    wants_json = "application/json" in content_type or \
+                 request.headers.get("x-requested-with") == "fetch"
+
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        product_id = (payload.get("product_id") or "").strip()
+    else:
+        form = await request.form()
+        product_id = (form.get("product_id") or "").strip()
+
+    if not product_id:
+        if wants_json:
+            return JSONResponse({"ok": False, "error": "Missing product_id"}, status_code=400)
+        return RedirectResponse("/customer/cart", status_code=302)
+
     cart = request.session.get("cart", {})
     cart.pop(product_id, None)
     request.session["cart"] = cart
+
+    if wants_json:
+        return JSONResponse(_cart_summary_json(cart))
     return RedirectResponse("/customer/cart", status_code=302)
+
+
+@customer_router.post("/cart/clear")
+async def clear_cart(
+    request: Request,
+    session=Depends(require_customer)
+):
+    """Empty the cart.  Dual-mode:
+
+      • JSON POST from the cart page → return JSON summary (empty).
+      • Anything else → redirect back to the referer (used by the
+        locked-branch banner elsewhere on the site).
+    """
+    content_type = (request.headers.get("content-type") or "").lower()
+    wants_json = "application/json" in content_type or \
+                 request.headers.get("x-requested-with") == "fetch"
+
+    request.session["cart"] = {}
+
+    if wants_json:
+        # Reuse the existing summary builder — returns the standard
+        # `empty: true, cart_count: 0, grand_total: 0, items: []`
+        # payload the client expects.
+        return JSONResponse(_cart_summary_json({}))
+
+    referer = request.headers.get("referer") or "/customer/cart"
+    # Stay on the same site — avoid open-redirect via crafted Referer
+    if not referer.startswith("/"):
+        referer = "/customer/cart"
+    return RedirectResponse(referer, status_code=302)
 
 
 
@@ -644,7 +1036,7 @@ def checkout_page(request: Request, session=Depends(require_customer)):
     subtotal = 0.0
     total_savings = 0.0
     for p in raw_products:
-        qty = cart.get(p["product_id"], 0)
+        qty = _cart_qty(cart, p["product_id"])
         disc_price, disc_label = _apply_discount(p["unit_price"], p["product_id"], p["cat_id"], by_product, by_cat)
         line_total = disc_price * qty
         original_line = float(p["unit_price"]) * qty
@@ -661,6 +1053,17 @@ def checkout_page(request: Request, session=Depends(require_customer)):
     tax_amt = round(subtotal * 0.04, 2)
     grand_total = round(subtotal + tax_amt, 2)
 
+    # Pull the customer's saved phone + address so the form can
+    # pre-fill them.  Phone is required for delivery dispatch and
+    # most customers don't want to type it again on every order.
+    cust_id = session.get("user_id")
+    cust_row = query(
+        "SELECT phone, address FROM customer WHERE cust_id = %s",
+        (cust_id,),
+    )
+    default_phone   = (cust_row[0].get("phone")   if cust_row else "") or ""
+    default_address = (cust_row[0].get("address") if cust_row else "") or ""
+
     return templates.TemplateResponse(request, "customer/checkout.html", {
         "items": items,
         "grand_total": grand_total,
@@ -671,6 +1074,8 @@ def checkout_page(request: Request, session=Depends(require_customer)):
         "selected_branch_id": selected_branch_id,
         "selected_branch": selected_branch,
         "today": date.today().isoformat(),  # HTML5 min date controller
+        "default_phone"  : default_phone,
+        "default_address": default_address,
         **_customer_context(request, session),
     })
 
