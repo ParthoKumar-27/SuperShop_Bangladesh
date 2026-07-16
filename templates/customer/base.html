@@ -465,6 +465,51 @@
         }
         .cs-modal-btn-confirm.is-danger:hover{background:#b91c1c;}
         body.cs-modal-locked{overflow:hidden;}
+
+        /* ══════════════════ Password-prompt modal extras ══════════════════ */
+        .cs-modal.cs-modal-wide{ width:min(440px, calc(100% - 32px)); text-align:left; }
+        .cs-modal-field{ margin:0 0 16px; }
+        .cs-modal-field .cs-pwd-err{
+            display:flex; align-items:center; gap:6px;
+            margin:8px 2px 0; font-size:12px; font-weight:600;
+            color:#dc2626;
+        }
+        .cs-pwd-err i{ color:#dc2626; font-size:12px; }
+        .cs-pwd-wrap{
+            position:relative;
+            display:flex; align-items:center;
+        }
+        .cs-pwd-input{
+            width:100%;
+            padding:11px 42px 11px 14px;
+            font:inherit; font-size:13.5px; font-weight:500;
+            color:var(--dark);
+            background:#f9fafb;
+            border:1.5px solid #e5e7eb;
+            border-radius:11px;
+            transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
+        }
+        .cs-pwd-input::placeholder{ color:#9ca3af; font-weight:500; }
+        .cs-pwd-input:focus{
+            outline:none;
+            border-color:var(--green-mid);
+            background:#fff;
+            box-shadow:0 0 0 3px rgba(10,107,79,.12);
+        }
+        .cs-pwd-input.is-invalid{
+            border-color:#dc2626;
+            box-shadow:0 0 0 3px rgba(220,38,38,.10);
+        }
+        .cs-pwd-toggle{
+            position:absolute; right:6px; top:50%; transform:translateY(-50%);
+            width:32px; height:32px;
+            display:flex; align-items:center; justify-content:center;
+            border:none; background:transparent; cursor:pointer;
+            color:#94a3b8; border-radius:8px;
+            transition:background .15s ease, color .15s ease;
+        }
+        .cs-pwd-toggle:hover{ background:#f1f5f9; color:#475569; }
+        .cs-pwd-toggle i{ font-size:14px; }
     </style>
 </head>
 
@@ -606,9 +651,8 @@
 
             <!-- Danger zone -->
             <div class="cs-danger-zone">
-                <form action="/customer/delete-account" method="post"
-                      onsubmit="return confirm('Delete your account? You will lose access to this login, but your order history and points stay safe if you sign up again with the same phone number.');">
-                    <button type="submit" class="cs-danger-btn">
+                <form action="/customer/delete-account" method="post" id="csDeleteAccountForm">
+                    <button type="button" class="cs-danger-btn" id="csDeleteAccountBtn">
                         <i class="fa-solid fa-trash-can"></i> Delete account
                     </button>
                 </form>
@@ -660,6 +704,45 @@
     <div class="cs-modal-actions">
       <button type="button" class="cs-modal-btn cs-modal-btn-cancel" data-cs-modal-cancel>Cancel</button>
       <button type="button" class="cs-modal-btn cs-modal-btn-confirm" data-cs-modal-confirm>Confirm</button>
+    </div>
+  </div>
+</template>
+
+<!-- ══════════════════ Global password prompt ══════════════════
+     window.csPromptPassword({ title, message, confirmLabel })
+       → Promise<string|null>  (string = password, null = cancelled)
+
+     Used for sensitive actions (delete account, future admin ops)
+     where we need to re-confirm the user's identity with their
+     password before the destructive call is sent. -->
+<template id="csPwdPromptTpl">
+  <div class="cs-modal-backdrop" data-cs-pwd-bd></div>
+  <div class="cs-modal cs-modal-wide" role="dialog" aria-modal="true"
+       aria-labelledby="csPwdPromptTitle" data-cs-pwd>
+    <button type="button" class="cs-modal-x" aria-label="Close" data-cs-pwd-x>
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div class="cs-modal-icon" data-cs-pwd-icon>
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+    <h3 id="csPwdPromptTitle" class="cs-modal-title" data-cs-pwd-title>Confirm your password</h3>
+    <p class="cs-modal-msg" data-cs-pwd-msg>For your security, please re-enter your password to continue.</p>
+    <div class="cs-modal-field">
+      <div class="cs-pwd-wrap">
+        <input type="password" class="cs-pwd-input" data-cs-pwd-input
+               autocomplete="current-password" placeholder="••••••••">
+        <button type="button" class="cs-pwd-toggle" data-cs-pwd-toggle aria-label="Show password">
+          <i class="fa-regular fa-eye"></i>
+        </button>
+      </div>
+      <p class="cs-pwd-err" data-cs-pwd-err style="display:none">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Password is required.</span>
+      </p>
+    </div>
+    <div class="cs-modal-actions">
+      <button type="button" class="cs-modal-btn cs-modal-btn-cancel" data-cs-pwd-cancel>Cancel</button>
+      <button type="button" class="cs-modal-btn cs-modal-btn-confirm" data-cs-pwd-confirm>Continue</button>
     </div>
   </div>
 </template>
@@ -802,6 +885,164 @@
         settle = function (r) { document.removeEventListener('keydown', key); _settle(r); };
       });
     };
+  })();
+
+  // ══════════════════ Global password prompt ══════════════════
+  // Usage:  const pwd = await window.csPromptPassword({
+  //           title: 'Delete your account?',
+  //           message: 'Enter your password to confirm.',
+  //           confirmLabel: 'Delete',
+  //           danger: true
+  //         });
+  //   → string password on success, null if cancelled / closed.
+  //
+  // Includes show/hide toggle, ESC-to-cancel, Enter-to-confirm,
+  // and a "Password is required" inline error.
+  (function () {
+    window.csPromptPassword = function (opts) {
+      opts = opts || {};
+      return new Promise(function (resolve) {
+        const tpl = document.getElementById('csPwdPromptTpl');
+        if (!tpl) { resolve(window.prompt(opts.message || 'Enter your password')); return; }
+
+        const bd   = tpl.content.querySelector('[data-cs-pwd-bd]').cloneNode(true);
+        const box  = tpl.content.querySelector('[data-cs-pwd]').cloneNode(true);
+        const inp  = box.querySelector('[data-cs-pwd-input]');
+        const err  = box.querySelector('[data-cs-pwd-err]');
+        const tog  = box.querySelector('[data-cs-pwd-toggle]');
+        const togI = tog.querySelector('i');
+
+        box.querySelector('[data-cs-pwd-title]').textContent =
+          opts.title   || 'Confirm your password';
+        box.querySelector('[data-cs-pwd-msg]').textContent =
+          opts.message || 'For your security, please re-enter your password to continue.';
+
+        const icon = box.querySelector('[data-cs-pwd-icon]');
+        const iconHTML = opts.danger
+          ? '<i class="fa-solid fa-triangle-exclamation"></i>'
+          : '<i class="fa-solid fa-shield-halved"></i>';
+        icon.innerHTML = iconHTML;
+        if (opts.danger) icon.classList.add('is-danger');
+
+        const confirmBtn = box.querySelector('[data-cs-pwd-confirm]');
+        confirmBtn.textContent = opts.confirmLabel || 'Continue';
+        if (opts.danger) confirmBtn.classList.add('is-danger');
+
+        const cancelBtn = box.querySelector('[data-cs-pwd-cancel]');
+        if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
+
+        // mount
+        document.body.appendChild(bd);
+        document.body.appendChild(box);
+        document.body.classList.add('cs-modal-locked');
+        inp.value = '';
+        err.style.display = 'none';
+        inp.classList.remove('is-invalid');
+        setTimeout(() => inp.focus(), 0);
+
+        let settled = false;
+        function dismiss(result) {
+          if (settled) return;
+          settled = true;
+          document.body.classList.remove('cs-modal-locked');
+          box.classList.add('hiding');
+          bd.remove();
+          document.removeEventListener('keydown', onKey);
+          setTimeout(() => { box.remove(); resolve(result); }, 160);
+        }
+        function onKey(ev) {
+          if (ev.key === 'Escape') dismiss(null);
+          else if (ev.key === 'Enter') submit();
+        }
+        function submit() {
+          const v = inp.value;
+          if (!v) {
+            inp.classList.add('is-invalid');
+            err.style.display = 'flex';
+            inp.focus();
+            return;
+          }
+          dismiss(v);
+        }
+
+        confirmBtn.addEventListener('click', submit);
+        cancelBtn .addEventListener('click', () => dismiss(null));
+        bd        .addEventListener('click', () => dismiss(null));
+        box.querySelector('[data-cs-pwd-x]').addEventListener('click', () => dismiss(null));
+        tog.addEventListener('click', function () {
+          if (inp.type === 'password') { inp.type = 'text';     togI.className = 'fa-regular fa-eye-slash'; }
+          else                          { inp.type = 'password'; togI.className = 'fa-regular fa-eye';       }
+        });
+        inp.addEventListener('input', function () {
+          if (inp.value) {
+            inp.classList.remove('is-invalid');
+            err.style.display = 'none';
+          }
+        });
+        document.addEventListener('keydown', onKey);
+      });
+    };
+  })();
+
+  // ══════════════════ Sidebar: delete-account uses the themed modal ══════════════════
+  // Two-step flow:
+  //   1) csConfirm       — the user clicks "Delete" with a warning.
+  //   2) csPromptPassword — the user must re-enter their password.
+  // Only after both succeed do we POST /customer/delete-account.
+  // Falls back to native dialogs if either helper is unavailable, so
+  // the form is still operable in degraded environments.
+  (function () {
+    const btn  = document.getElementById('csDeleteAccountBtn');
+    const form = document.getElementById('csDeleteAccountForm');
+    if (!btn || !form) return;
+
+    async function askAndSubmit() {
+      /* step 1: warning modal */
+      let ok = false;
+      if (window.csConfirm) {
+        ok = await window.csConfirm({
+          title: 'Delete your account?',
+          message: 'You will lose access to this login. Your order history and points stay safe if you sign up again with the same phone number.',
+          confirmLabel: 'Continue',
+          cancelLabel:  'Keep account',
+          danger: true,
+        });
+      } else {
+        ok = window.confirm('Delete your account? You will lose access to this login, but your order history and points stay safe if you sign up again with the same phone number.');
+      }
+      if (!ok) return;
+
+      /* step 2: password re-confirmation */
+      let pwd = null;
+      if (window.csPromptPassword) {
+        pwd = await window.csPromptPassword({
+          title: 'Enter your password',
+          message: 'For your security, re-enter your current password to delete your account.',
+          confirmLabel: 'Delete account',
+          cancelLabel:  'Cancel',
+          danger: true,
+        });
+      } else {
+        pwd = window.prompt('Re-enter your password to confirm deletion:');
+      }
+      if (!pwd) return;
+
+      /* inject password into the form and submit */
+      let hidden = form.querySelector('input[name="current_password"]');
+      if (!hidden) {
+        hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'current_password';
+        form.appendChild(hidden);
+      }
+      hidden.value = pwd;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting…';
+      form.submit();
+    }
+
+    btn.addEventListener('click', askAndSubmit);
   })();
 </script>
 

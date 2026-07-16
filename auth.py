@@ -255,6 +255,60 @@ def customer_login(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  CUSTOMER LOOKUP BY PHONE
+#  ──────────────────────────────────────────────────────────────────────────
+#  Used by the registration modal to pre-fill known fields (name/email/
+#  address/gender) if the phone number already has a customer record.
+#
+#  Returns:
+#    {
+#      found               : bool,
+#      fully_registered    : bool,    ← True ⇔ app_user row also exists
+#      cust_name / email / address / gender
+#      loyalty_points / membership_type
+#    }
+# ══════════════════════════════════════════════════════════════════════════════
+
+@auth_router.get("/customer/lookup")
+def customer_lookup(phone: str = ""):
+    """Look up a customer record by phone (used by the registration modal)."""
+    phone = (phone or "").strip()
+    if not phone:
+        return {"found": False, "fully_registered": False}
+
+    rows = query(
+        "SELECT cust_id, cust_name, email, address, gender, "
+        "       loyalty_points, membership_type "
+        "FROM customer WHERE phone = %s",
+        (phone,),
+    )
+    if not rows:
+        return {"found": False, "fully_registered": False}
+
+    c = rows[0]
+
+    # Was this customer already registered (has an active login)?
+    user_row = query(
+        "SELECT is_active FROM app_user "
+        "WHERE phone = %s AND role = 'CUSTOMER'",
+        (phone,),
+    )
+    fully_registered = bool(user_row) and user_row[0]["is_active"] == "Y"
+
+    return {
+        "found"            : True,
+        "fully_registered" : fully_registered,
+        "cust_id"          : c["cust_id"],
+        "cust_name"        : c["cust_name"],
+        "email"            : c["email"] or "",
+        "address"          : c["address"] or "",
+        "gender"           : c["gender"] or "M",
+        "loyalty_points"   : int(c["loyalty_points"] or 0),
+        "membership_type"  : c["membership_type"] or "REGULAR",
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER REGISTRATION
 #
 #  Three cases handled:

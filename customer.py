@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 from httpcore import request
 from database import query, execute
-from auth import require_customer
+from auth import require_customer, _hash, _verify
 from fastapi import FastAPI, Request, Form, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -1189,19 +1189,36 @@ def customer_profile(request: Request, session=Depends(require_customer)):
 @customer_router.post("/profile")
 def customer_profile_update(
     request: Request,
-    cust_name: str = Form(...),
-    phone:     str = Form(...),
-    email:     str = Form(""),
-    address:   str = Form(""),
-    dob:       str = Form(""),
-    gender:    str = Form(""),
+    cust_name:    str = Form(...),
+    email:        str = Form(""),
+    address:      str = Form(""),
+    dob:          str = Form(""),
+    gender:       str = Form(""),
+    confirm_pwd:  str = Form(...),  # re-entered in the confirm-password modal
     session=Depends(require_customer),
 ):
     cust_id = session.get("user_id")
 
+    # ── 1) Verify the password the user re-typed in the modal ────
+    confirm_pwd = (confirm_pwd or "").strip()
+    if not confirm_pwd:
+        return RedirectResponse(
+            "/customer/profile?error=Please+enter+your+password+to+save+changes",
+            status_code=302,
+        )
+    pwd_row = query(
+        "SELECT password_hash FROM app_user WHERE role='CUSTOMER' AND ref_id=%s",
+        (cust_id,),
+    )
+    stored_hash = pwd_row[0]["password_hash"] if pwd_row else None
+    if not stored_hash or not _verify(confirm_pwd, stored_hash):
+        return RedirectResponse(
+            "/customer/profile?error=Incorrect+password",
+            status_code=302,
+        )
+
     # Normalize / validate
     cust_name = cust_name.strip()
-    phone     = phone.strip()
     email     = email.strip() or None
     address   = address.strip() or None
     dob       = dob.strip() or None
@@ -1209,9 +1226,9 @@ def customer_profile_update(
     if gender and gender not in ("M", "F"):
         gender = None
 
-    if not cust_name or not phone:
+    if not cust_name:
         return RedirectResponse(
-            f"/customer/profile?error=Name+and+phone+are+required",
+            "/customer/profile?error=Name+is+required",
             status_code=302,
         )
 
@@ -1228,27 +1245,16 @@ def customer_profile_update(
                 status_code=302,
             )
 
-    clash_phone = query(
-        "SELECT cust_id FROM customer WHERE phone = %s AND cust_id <> %s",
-        (phone, cust_id),
-    )
-    if clash_phone:
-        return RedirectResponse(
-            "/customer/profile?error=This+phone+number+is+already+used+by+another+account",
-            status_code=302,
-        )
-
     try:
         execute("""
             UPDATE customer
                SET cust_name = %s,
                    email     = %s,
-                   phone     = %s,
                    address   = %s,
                    dob       = %s,
                    gender    = %s
              WHERE cust_id = %s
-        """, (cust_name, email, phone, address, dob, gender, cust_id))
+        """, (cust_name, email, address, dob, gender, cust_id))
     except Exception as e:
         return RedirectResponse(
             f"/customer/profile?error=Could+not+update:+{quote(str(e))}",
@@ -1263,9 +1269,23 @@ def customer_profile_update(
 @customer_router.post("/delete-account")
 def delete_customer_account(
     request: Request,
+    current_password: str = Form(...),
     session=Depends(require_customer)
 ):
     cust_id = session.get("user_id")
+    current_password = (current_password or "").strip()
+
+    # Verify the user's password before allowing the destructive action.
+    pwd_row = query(
+        "SELECT password_hash FROM app_user WHERE role='CUSTOMER' AND ref_id=%s",
+        (cust_id,),
+    )
+    stored_hash = pwd_row[0]["password_hash"] if pwd_row else None
+    if not stored_hash or not _verify(current_password, stored_hash):
+        return RedirectResponse(
+            "/customer/profile?error=Password+incorrect.+Delete+was+cancelled",
+            status_code=302,
+        )
 
     # Removes login access only — customer row, loyalty points and
     # purchase history are fully preserved.
@@ -1278,6 +1298,69 @@ def delete_customer_account(
 
     request.session.clear()
     return RedirectResponse("/?msg=account_deleted", status_code=302)
+
+
+@customer_router.post("/profile/password")
+def customer_password_update(
+    request: Request,
+    current_password: str = Form(...),
+    new_password:     str = Form(...),
+    confirm_password: str = Form(...),
+    session=Depends(require_customer),
+):
+    """Self-service password change for logged-in customers."""
+    cust_id = session.get("user_id")
+
+    current_password = current_password.strip()
+    new_password     = new_password.strip()
+    confirm_password = confirm_password.strip()
+
+    # Match check
+    if new_password != confirm_password:
+        return RedirectResponse(
+            "/customer/profile?error=New+passwords+do+not+match",
+            status_code=302,
+        )
+
+    # Basic strength check — frontend also enforces this, but server
+    # is the source of truth.
+    if len(new_password) < 6:
+        return RedirectResponse(
+            "/customer/profile?error=Password+must+be+at+least+6+characters",
+            status_code=302,
+        )
+
+    if new_password == current_password:
+        return RedirectResponse(
+            "/customer/profile?error=New+password+must+differ+from+current",
+            status_code=302,
+        )
+
+    # Confirm current password is correct
+    pwd_row = query(
+        "SELECT password_hash FROM app_user WHERE role='CUSTOMER' AND ref_id=%s",
+        (cust_id,),
+    )
+    stored_hash = pwd_row[0]["password_hash"] if pwd_row else None
+    if not stored_hash or not _verify(current_password, stored_hash):
+        return RedirectResponse(
+            "/customer/profile?error=Current+password+is+incorrect",
+            status_code=302,
+        )
+
+    # Update password hash
+    try:
+        execute(
+            "UPDATE app_user SET password_hash=%s WHERE role='CUSTOMER' AND ref_id=%s",
+            (_hash(new_password), cust_id),
+        )
+    except Exception as e:
+        return RedirectResponse(
+            f"/customer/profile?error=Could+not+update+password:+{quote(str(e))}",
+            status_code=302,
+        )
+
+    return RedirectResponse("/customer/profile?msg=password_updated", status_code=302)
 
 
 

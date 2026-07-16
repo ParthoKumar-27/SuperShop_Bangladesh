@@ -44,6 +44,15 @@
 
   .field-label { display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:6px; }
   .field-label i { color:#F17B0D; font-size:11px; }
+  .field-wrap { position:relative; }
+  .field-wrap .toggle-pwd{
+      position:absolute; right:10px; top:50%; transform:translateY(-50%);
+      width:30px; height:30px; border:none; background:transparent;
+      color:#94a3b8; cursor:pointer; border-radius:8px;
+      display:inline-flex; align-items:center; justify-content:center;
+      transition:.15s;
+  }
+  .field-wrap .toggle-pwd:hover{ color:#F17B0D; background:#fff7ed; }
   .field-input {
     width:100%; padding:11px 14px;
     border:1.5px solid #e5e7eb; border-radius:12px;
@@ -51,8 +60,26 @@
     transition: border-color .15s, box-shadow .15s;
     outline:none;
   }
+  .field-wrap .field-input { padding-right:46px; }
   .field-input:focus { border-color:#044635; box-shadow: 0 0 0 4px rgba(4,70,53,.08); }
   .field-input:disabled { background:#f8fafc; color:#64748b; cursor:not-allowed; }
+  .field-input.is-invalid { border-color:#ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,.10); }
+  .field-hint { font-size:11px; color:#94a3b8; margin-top:6px; display:flex; align-items:center; gap:5px; }
+  .field-hint i { font-size:10px; }
+  .field-hint.is-error { color:#b91c1c; }
+
+  .pwd-strength{
+      margin-top:6px;height:6px;border-radius:999px;
+      background:#f1f5f9;overflow:hidden;position:relative;
+  }
+  .pwd-strength > i{
+      display:block;height:100%;width:0%;
+      background:#ef4444;transition:width .25s ease, background .25s ease;
+      border-radius:999px;
+  }
+  .pwd-strength.is-weak > i   { width:33%; background:#ef4444; }
+  .pwd-strength.is-ok    > i   { width:66%; background:#f59e0b; }
+  .pwd-strength.is-strong > i   { width:100%; background:#10b981; }
 
   .save-btn {
     display:inline-flex; align-items:center; gap:8px;
@@ -63,7 +90,8 @@
     transition:.15s;
   }
   .save-btn:hover { transform:translateY(-1px); box-shadow:0 14px 28px rgba(241,123,13,.42); }
-  .save-btn:disabled { opacity:.7; cursor:not-allowed; }
+  .save-btn:disabled { opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; background:#9ca3af; }
+  .save-btn:disabled:hover { transform:none; box-shadow:none; }
 
   .ghost-btn {
     padding:12px 18px; border-radius:12px;
@@ -81,6 +109,71 @@
   }
   .flash-success { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
   .flash-error   { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+
+  /* ── Confirm-password modal (full-viewport sheet, mirrors dashboard invoice modal) ── */
+  .cs-im-backdrop{
+      position:fixed;inset:0;
+      background:rgba(2,36,27,.55);backdrop-filter:blur(6px);
+      display:none;align-items:center;justify-content:center;
+      padding:20px;z-index:400;animation:csImFade .25s ease both;
+  }
+  .cs-im-backdrop.open{display:flex;}
+  @keyframes csImFade{from{opacity:0}to{opacity:1}}
+  .cs-im-modal{
+      width:100%;max-width:440px;background:#fff;border-radius:18px;
+      box-shadow:0 32px 70px rgba(2,36,27,.45);overflow:hidden;
+      animation:csImPop .35s cubic-bezier(.2,.8,.2,1) both;
+      display:flex;flex-direction:column;max-height:94vh;
+  }
+  @keyframes csImPop{
+      from{opacity:0;transform:translateY(14px) scale(.96);}
+      to  {opacity:1;transform:translateY(0) scale(1);}
+  }
+  .cs-im-head{
+      padding:22px 22px 14px;
+      background:linear-gradient(135deg,#044635 0%,#0a6b4f 60%,#0a6b4f 100%);
+      color:#fff;position:relative;
+  }
+  .cs-im-head .cs-im-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+      background:rgba(0,0,0,.28);border:1px solid rgba(255,179,92,.35);
+      color:#ffd8b1;padding:4px 10px;border-radius:999px;margin-bottom:10px;
+  }
+  .cs-im-head h3{ font-size:19px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em; }
+  .cs-im-head p{ font-size:12.5px;color:rgba(255,255,255,.78);line-height:1.45;margin:0; }
+  .cs-im-close{
+      position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:8px;
+      border:none;background:rgba(255,255,255,.10);color:#fff;cursor:pointer;font-size:14px;
+      display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease;
+  }
+  .cs-im-close:hover{background:rgba(255,255,255,.20);}
+  .cs-im-body{padding:18px 22px 8px;overflow-y:auto;flex:1 1 auto;}
+  .cs-im-foot{
+      padding:14px 22px 20px;display:flex;gap:10px;align-items:center;justify-content:flex-end;
+      border-top:1px solid #f1f5f9;background:#fafbfa;
+  }
+  .cs-im-btn{
+      padding:11px 18px;border-radius:12px;font-family:inherit;font-size:13px;font-weight:700;
+      cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,filter .15s ease,background .15s ease;
+      border:1.5px solid transparent;
+  }
+  .cs-im-btn-ghost{background:#f1f5f4;color:#464646;}
+  .cs-im-btn-ghost:hover{background:#e3eae7;}
+  .cs-im-btn-primary{
+      background:linear-gradient(135deg,#F17B0D 0%,#c45f00 100%);
+      color:#fff;box-shadow:0 10px 22px rgba(241,123,13,.32),inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .cs-im-btn-primary:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 28px rgba(241,123,13,.40);
+      filter:brightness(1.05);
+  }
+  .cs-im-btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+  @media (max-width:640px){
+      .cs-im-backdrop{align-items:flex-end !important;padding:0;}
+      .cs-im-modal{border-bottom-left-radius:0 !important;border-bottom-right-radius:0 !important;max-width:100%;max-height:96vh;}
+  }
 </style>
 
 {# ── Breadcrumb ── #}
@@ -150,13 +243,11 @@
   </div>
 </div>
 
-{# ── Flash messages ── #}
-{% if msg == 'profile_updated' %}
-  <div class="flash flash-success">
-    <i class="fa-solid fa-circle-check"></i>
-    Profile updated successfully.
-  </div>
-{% elif error %}
+{# ── Flash messages ──
+   Success messages are surfaced via the bottom-right toast (window.csToast)
+   at the bottom of this file, so we don't duplicate them up here.
+   Errors still render inline because they are critical and longer-lived. #}
+{% if error %}
   <div class="flash flash-error">
     <i class="fa-solid fa-triangle-exclamation"></i>
     {{ error }}
@@ -184,8 +275,13 @@
 
     <div>
       <label class="field-label"><i class="fa-solid fa-phone"></i> Phone</label>
-      <input type="text" name="phone" required maxlength="15"
-             value="{{ profile.phone or '' }}" class="field-input">
+      <input type="text" name="phone" maxlength="15" disabled
+             value="{{ profile.phone or '' }}" class="field-input"
+             title="Phone number is your login ID — contact support to change it">
+      <p class="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-info text-[10px]"></i>
+        Phone is your login ID and can't be changed from here.
+      </p>
     </div>
 
     <div>
@@ -219,20 +315,386 @@
   </div>
 
   <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
-    <a href="/customer/dashboard" class="ghost-btn">Cancel</a>
-    <button type="submit" class="save-btn" id="saveBtn">
+    <button type="reset" class="ghost-btn" id="clearBtn">
+      <i class="fa-solid fa-rotate-left"></i>
+      Clear
+    </button>
+    <button type="submit" class="save-btn" id="saveBtn" disabled>
       <i class="fa-solid fa-floppy-disk"></i>
       Save changes
     </button>
   </div>
 </form>
 
+{# ── Change-password card ── #}
+<form action="/customer/profile/password" method="post" id="pwdForm"
+      class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 mt-6">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h2 class="font-bold text-gray-800 text-base flex items-center gap-2">
+        <i class="fa-solid fa-key text-[#F17B0D]"></i>
+        Change Password
+      </h2>
+      <p class="text-xs text-gray-400 mt-0.5">Use at least 6 characters. We never store plaintext.</p>
+    </div>
+    <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider hidden sm:inline">
+      <i class="fa-solid fa-shield-halved text-[10px] mr-1"></i> Secure
+    </span>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div>
+      <label class="field-label"><i class="fa-solid fa-lock"></i> Current password</label>
+      <div class="field-wrap">
+        <input type="password" name="current_password" required minlength="1" maxlength="128"
+               class="field-input" autocomplete="current-password" placeholder="••••••••">
+        <button type="button" class="toggle-pwd" aria-label="Show password">
+          <i class="fa-regular fa-eye"></i>
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <label class="field-label"><i class="fa-solid fa-key"></i> New password</label>
+      <div class="field-wrap">
+        <input type="password" name="new_password" id="newPwd" required minlength="6" maxlength="128"
+               class="field-input" autocomplete="new-password" placeholder="At least 6 characters">
+        <button type="button" class="toggle-pwd" aria-label="Show password">
+          <i class="fa-regular fa-eye"></i>
+        </button>
+      </div>
+      <div class="pwd-strength" id="pwdStrength"><i></i></div>
+      <p class="field-hint" id="pwdHint">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Min. 6 characters</span>
+      </p>
+    </div>
+
+    <div>
+      <label class="field-label"><i class="fa-solid fa-check-double"></i> Confirm new password</label>
+      <div class="field-wrap">
+        <input type="password" name="confirm_password" id="confirmPwd" required minlength="6" maxlength="128"
+               class="field-input" autocomplete="new-password" placeholder="Re-type new password">
+        <button type="button" class="toggle-pwd" aria-label="Show password">
+          <i class="fa-regular fa-eye"></i>
+        </button>
+      </div>
+      <p class="field-hint" id="matchHint">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Re-type to confirm</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
+    <button type="reset" class="ghost-btn">
+      <i class="fa-solid fa-rotate-left mr-1"></i> Clear
+    </button>
+    <button type="submit" class="save-btn" id="savePwdBtn">
+      <i class="fa-solid fa-key"></i>
+      Update password
+    </button>
+  </div>
+</form>
+
+{# ── Confirm-password modal (intercepted before profile save) ── #}
+<div class="cs-im-backdrop" id="confirmPwdModal" role="dialog" aria-modal="true"
+     aria-labelledby="confirmPwdTitle" aria-hidden="true">
+  <div class="cs-im-modal">
+    <div class="cs-im-head">
+      <span class="cs-im-badge"><i class="fa-solid fa-shield-halved"></i> Confirm it's you</span>
+      <button type="button" class="cs-im-close" id="confirmPwdClose"
+              aria-label="Cancel"><i class="fa-solid fa-xmark"></i></button>
+      <h3 id="confirmPwdTitle">Enter your password</h3>
+      <p>For your security, please re-enter your current password to save profile changes.</p>
+    </div>
+    <div class="cs-im-body">
+      <label class="field-label"><i class="fa-solid fa-lock"></i> Current password</label>
+      <div class="field-wrap">
+        <input type="password" id="confirmPwdInput" class="field-input"
+               autocomplete="current-password" placeholder="••••••••">
+        <button type="button" class="toggle-pwd" aria-label="Show password">
+          <i class="fa-regular fa-eye"></i>
+        </button>
+      </div>
+      <p class="field-hint" id="confirmPwdErr" style="display:none">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Incorrect password. Try again.</span>
+      </p>
+    </div>
+    <div class="cs-im-foot">
+      <button type="button" class="cs-im-btn cs-im-btn-ghost" id="confirmPwdCancel">Cancel</button>
+      <button type="button" class="cs-im-btn cs-im-btn-primary" id="confirmPwdOk">
+        <i class="fa-solid fa-check"></i>&nbsp; Save changes
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const form = document.getElementById('profileForm');
-  const btn  = document.getElementById('saveBtn');
-  form.addEventListener('submit', function () {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+/* ─────────────────────────────────────────────────────────────────
+   Personal-info form: gate "Save changes" behind a password confirm
+   ──────────────────────────────────────────────────────────────── */
+const profileForm = document.getElementById('profileForm');
+const saveBtn     = document.getElementById('saveBtn');
+const clearBtn    = document.getElementById('clearBtn');
+
+/* ── Dirty-tracking ───────────────────────────────────────────────
+   Save is disabled until at least one tracked field has changed.
+   The native `reset` event (triggered by the Clear button) restores
+   the pristine state and re-disables Save.
+   ──────────────────────────────────────────────────────────────── */
+const trackedFields = profileForm
+  ? Array.from(profileForm.querySelectorAll('input:not([type=hidden]):not([disabled]), select, textarea'))
+  : [];
+
+function snapshotForm() {
+  return trackedFields.map(function (el) {
+    return el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value;
   });
+}
+
+const _pristine = profileForm ? snapshotForm() : [];
+
+function isDirty() {
+  const cur = snapshotForm();
+  for (let i = 0; i < cur.length; i++) {
+    if (cur[i] !== _pristine[i]) return true;
+  }
+  return false;
+}
+
+function refreshSaveBtn() {
+  if (!saveBtn) return;
+  saveBtn.disabled = !isDirty();
+}
+
+if (profileForm) {
+  trackedFields.forEach(function (el) {
+    el.addEventListener('input',  refreshSaveBtn);
+    el.addEventListener('change', refreshSaveBtn);
+  });
+
+  /* Clear button = native reset, then re-baseline & lock Save. */
+  profileForm.addEventListener('reset', function () {
+    /* give the browser a tick to actually clear the inputs */
+    setTimeout(function () {
+      for (let i = 0; i < trackedFields.length; i++) {
+        const orig = _pristine[i];
+        const el   = trackedFields[i];
+        if (el.type === 'checkbox' || el.type === 'radio') {
+          el.checked = orig;
+        } else {
+          el.value = orig;
+        }
+      }
+      refreshSaveBtn();
+      if (window.csToast) window.csToast('Changes cleared', 'warn');
+    }, 0);
+  });
+
+  refreshSaveBtn();   /* initial state */
+
+  profileForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!isDirty()) return;        /* nothing to save — silent no-op */
+    openConfirmPwd().then(function (pwd) {
+      if (!pwd) return;            // user cancelled
+      // Inject the re-entered password and submit normally.  The
+      // server validates it before applying the profile update.
+      let hidden = profileForm.querySelector('input[name="confirm_pwd"]');
+      if (!hidden) {
+        hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'confirm_pwd';
+        profileForm.appendChild(hidden);
+      }
+      hidden.value = pwd;
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+      profileForm.submit();
+    });
+  });
+}
+
+/* ── Toast for server-side success/error flashes ────────────────
+   After a redirect back to /customer/profile?msg=profile_updated
+   (or ?msg=password_updated / ?error=...) the flash markup is
+   already on the page, but a toast also gives instant feedback in
+   the bottom-right. base.html's window.csToast is defined in a
+   script that runs AFTER this block, so we wait for it. The flag
+   below guarantees we fire the toast EXACTLY once per page load —
+   even if base.html's pageshow handler or our polling loop races
+   with our initial attempt.
+   ──────────────────────────────────────────────────────────────── */
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const msg    = params.get('msg');
+  const err    = params.get('error');
+  if (!msg && !err) return;
+
+  let fired = false;
+  function fire() {
+    if (fired) return true;
+    if (!window.csToast) return false;
+    fired = true;
+    if (msg === 'profile_updated')      window.csToast('Profile updated successfully', 'ok');
+    else if (msg === 'password_updated') window.csToast('Password updated successfully', 'ok');
+    else if (err)                        window.csToast(err.replace(/\+/g, ' '), 'err');
+    return true;
+  }
+
+  if (fire()) return;
+
+  /* csToast not ready yet — wait for the base.html script to load. */
+  window.addEventListener('pageshow', function once() {
+    if (fire()) {
+      window.removeEventListener('pageshow', once);
+      clearInterval(t);
+    }
+  });
+  /* Hard backstop: poll briefly in case pageshow already fired. */
+  let n = 0, t = setInterval(function () {
+    if (fire() || ++n > 40) clearInterval(t);   /* ~4s max */
+  }, 100);
+})();
+
+/* ─────────────────────────────────────────────────────────────────
+   Confirm-password modal
+   ──────────────────────────────────────────────────────────────── */
+const confirmPwdModal = document.getElementById('confirmPwdModal');
+const confirmPwdInput = document.getElementById('confirmPwdInput');
+const confirmPwdOk    = document.getElementById('confirmPwdOk');
+const confirmPwdCancel= document.getElementById('confirmPwdCancel');
+const confirmPwdClose = document.getElementById('confirmPwdClose');
+const confirmPwdErr   = document.getElementById('confirmPwdErr');
+let _cpResolver = null;
+let _cpLastFocus = null;
+
+function openConfirmPwd() {
+  return new Promise(function (resolve) {
+    _cpResolver = resolve;
+    _cpLastFocus = document.activeElement;
+    confirmPwdInput.value = '';
+    confirmPwdErr.style.display = 'none';
+    confirmPwdInput.classList.remove('is-invalid');
+    confirmPwdOk.disabled = false;
+    confirmPwdModal.classList.add('open');
+    confirmPwdModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setTimeout(function () { confirmPwdInput.focus(); }, 30);
+  });
+}
+function closeConfirmPwd(value) {
+  if (!confirmPwdModal.classList.contains('open')) return;
+  confirmPwdModal.classList.remove('open');
+  confirmPwdModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  if (_cpLastFocus && _cpLastFocus.focus) _cpLastFocus.focus();
+  const r = _cpResolver; _cpResolver = null;
+  if (r) r(value);
+}
+confirmPwdOk    .addEventListener('click', function () {
+  const v = confirmPwdInput.value.trim();
+  if (!v) { confirmPwdInput.classList.add('is-invalid'); return; }
+  closeConfirmPwd(v);
+});
+confirmPwdCancel.addEventListener('click', function () { closeConfirmPwd(null); });
+confirmPwdClose .addEventListener('click', function () { closeConfirmPwd(null); });
+confirmPwdModal .addEventListener('click', function (e) {
+  if (e.target === confirmPwdModal) closeConfirmPwd(null);
+});
+document.addEventListener('keydown', function (e) {
+  if (!confirmPwdModal.classList.contains('open')) return;
+  if (e.key === 'Escape')     closeConfirmPwd(null);
+  else if (e.key === 'Enter') confirmPwdOk.click();
+});
+confirmPwdInput.addEventListener('input', function () {
+  if (confirmPwdInput.value) confirmPwdInput.classList.remove('is-invalid');
+});
+
+/* ─────────────────────────────────────────────────────────────────
+   Password form: live validation, show/hide toggles, submit guard
+   ──────────────────────────────────────────────────────────────── */
+const pwdForm       = document.getElementById('pwdForm');
+const newPwd        = document.getElementById('newPwd');
+const confirmPwd    = document.getElementById('confirmPwd');
+const pwdStrength   = document.getElementById('pwdStrength');
+const pwdHint       = document.getElementById('pwdHint');
+const matchHint     = document.getElementById('matchHint');
+const savePwdBtn    = document.getElementById('savePwdBtn');
+
+function scorePassword(p) {
+  if (!p) return 0;
+  let s = 0;
+  if (p.length >= 6)             s++;
+  if (p.length >= 10)            s++;
+  if (/[A-Z]/.test(p))           s++;
+  if (/[0-9]/.test(p))           s++;
+  if (/[^A-Za-z0-9]/.test(p))    s++;
+  return s;
+}
+function refreshPwdStrength() {
+  const v = newPwd.value;
+  const s = scorePassword(v);
+  pwdStrength.classList.remove('is-weak', 'is-ok', 'is-strong');
+  if (!v)        { pwdHint.querySelector('span').textContent = 'Min. 6 characters'; }
+  else if (s <= 2){ pwdStrength.classList.add('is-weak');   pwdHint.querySelector('span').textContent = 'Weak — add length, numbers or symbols'; }
+  else if (s <= 3){ pwdStrength.classList.add('is-ok');     pwdHint.querySelector('span').textContent = 'Okay — could be stronger'; }
+  else            { pwdStrength.classList.add('is-strong'); pwdHint.querySelector('span').textContent = 'Strong'; }
+  refreshMatch();
+}
+function refreshMatch() {
+  const v = newPwd.value, c = confirmPwd.value;
+  confirmPwd.classList.remove('is-invalid');
+  if (!c)        { matchHint.querySelector('span').textContent = 'Re-type to confirm'; matchHint.classList.remove('is-error'); return; }
+  if (v === c)   { matchHint.querySelector('span').textContent = 'Passwords match';    matchHint.classList.remove('is-error'); }
+  else           { matchHint.querySelector('span').textContent = 'Passwords do not match'; matchHint.classList.add('is-error'); confirmPwd.classList.add('is-invalid'); }
+}
+if (newPwd) {
+  newPwd.addEventListener('input', refreshPwdStrength);
+  confirmPwd.addEventListener('input', refreshMatch);
+  pwdForm.addEventListener('submit', function () {
+    savePwdBtn.disabled = true;
+    savePwdBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating…';
+  });
+  /* Also disable the password submit until all three fields look ready */
+  function refreshPwdSubmit() {
+    if (!savePwdBtn) return;
+    const cur = pwdForm.querySelector('input[name=current_password]').value.trim();
+    const n   = newPwd.value;
+    const c   = confirmPwd.value;
+    const ok  = cur && n.length >= 6 && n === c;
+    savePwdBtn.disabled = !ok;
+  }
+  pwdForm.querySelectorAll('input').forEach(function (i) {
+    i.addEventListener('input', refreshPwdSubmit);
+  });
+  refreshPwdSubmit();
+}
+
+/* Show/hide toggle for any password field (the confirm modal too) */
+document.querySelectorAll('.toggle-pwd').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    const inp = btn.parentElement.querySelector('input');
+    if (!inp) return;
+    const icon = btn.querySelector('i');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      icon.className = 'fa-regular fa-eye-slash';
+    } else {
+      inp.type = 'password';
+      icon.className = 'fa-regular fa-eye';
+    }
+  });
+});
+
+/* ─────────────────────────────────────────────────────────────────
+   Portal: lift the confirm modal out of .cs-content so the
+   backdrop covers the navbar + sidebar (same fix as dashboard.html)
+   ──────────────────────────────────────────────────────────────── */
+if (confirmPwdModal && confirmPwdModal.parentElement !== document.body) {
+  document.body.appendChild(confirmPwdModal);
+}
 </script>
 {% endblock %}

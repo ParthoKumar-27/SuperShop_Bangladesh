@@ -658,6 +658,24 @@
     .pw-match-hint.is-match    { color: var(--green-mid); }
     .pw-match-hint.is-mismatch { color: #e34b3c; }
 
+    /* ── Registration lookup hint (existing-customer pre-fill) ── */
+    .input-hint.is-existing    { color: var(--green-mid); font-weight: 600; }
+    .input-hint.is-existing::before {
+      content: '✓ ';
+      color: var(--green-mid);
+    }
+    .input-hint.is-blocked     { color: var(--danger); font-weight: 600; }
+    .input-hint.is-blocked::before {
+      content: '⚠ ';
+      color: var(--danger);
+    }
+    /* Highlight fields that were auto-filled so the user notices. */
+    .form-input.is-prefilled,
+    select.form-input.is-prefilled {
+      background: rgba(4,70,53,.04);
+      border-color: var(--green);
+    }
+
     /* ── Submit button ── */
     .btn-submit {
       width: 100%;
@@ -1218,17 +1236,19 @@
         <div class="form-group">
           <label class="form-label">Full Name</label>
           <input class="form-input" type="text" name="cust_name"
+                 id="registerName"
                  placeholder="Rahim Uddin" required>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
           <div class="form-group">
             <label class="form-label">Phone</label>
             <input class="form-input" type="tel" name="phone"
-                   placeholder="01711-000001" required>
+                   id="registerPhone"
+                   placeholder="01711-000001" required autocomplete="tel">
           </div>
           <div class="form-group">
             <label class="form-label">Gender</label>
-            <select class="form-input" name="gender">
+            <select class="form-input" name="gender" id="registerGender">
               <option value="M">Male</option>
               <option value="F">Female</option>
             </select>
@@ -1237,12 +1257,15 @@
         <div class="form-group">
           <label class="form-label">Email</label>
           <input class="form-input" type="email" name="email"
+                 id="registerEmail"
                  placeholder="you@example.com" required>
         </div>
         <div class="form-group">
           <label class="form-label">Address</label>
           <input class="form-input" type="text" name="address"
+                 id="registerAddress"
                  placeholder="House, Road, Area, City">
+          <p class="input-hint" id="registerLookupHint" aria-live="polite"></p>
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
@@ -1351,6 +1374,149 @@
       pw.addEventListener('input', () => { renderMeter(); renderMatch(); });
       confirm.addEventListener('input', renderMatch);
       renderMeter();
+    })();
+
+    /* ── Customer lookup on registration phone field ──────────────────────
+       When the user types a phone number into the registration modal we
+       ask the server whether that number already belongs to a customer.
+       If it does we:
+         · pre-fill name/email/address/gender from the existing record
+         · show a green hint with their loyalty-point balance
+       If the phone is already linked to an active login we show a red
+       warning and disable the submit button to prevent duplicates.
+       The phone is debounced (~350ms) so we don't spam the backend. */
+    (function () {
+      const phoneField = document.getElementById('registerPhone');
+      const nameField  = document.getElementById('registerName');
+      const emailField = document.getElementById('registerEmail');
+      const addrField  = document.getElementById('registerAddress');
+      const genderField= document.getElementById('registerGender');
+      const hint       = document.getElementById('registerLookupHint');
+      const regForm    = phoneField && phoneField.closest('form');
+      const submitBtn  = regForm && regForm.querySelector('button[type="submit"]');
+
+      // Fields we may auto-fill. None of them is required for the lookup
+      // itself, but we mark them with .is-prefilled so the user notices.
+      const prefilledFields = [nameField, emailField, addrField, genderField];
+
+      if (!phoneField || !regForm) return;
+
+      function clearPrefilled() {
+        prefilledFields.forEach(el => { if (el) el.classList.remove('is-prefilled'); });
+        if (hint) {
+          hint.textContent = '';
+          hint.className = 'input-hint';
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.title = '';
+        }
+      }
+
+      let lookupTimer = null;
+      let lookupSeq   = 0;          // guards against race conditions
+      let lastQueried = '';
+
+      phoneField.addEventListener('input', () => {
+        clearPrefilled();
+        const phone = phoneField.value.trim();
+        clearTimeout(lookupTimer);
+        // Don't bother with very short or obviously incomplete numbers.
+        if (phone.replace(/\D/g, '').length < 6) {
+          lastQueried = '';
+          return;
+        }
+
+        lookupTimer = setTimeout(async () => {
+          const seq = ++lookupSeq;
+          try {
+            const res = await fetch(
+              '/auth/customer/lookup?phone=' + encodeURIComponent(phone),
+              { headers: { 'Accept': 'application/json' } }
+            );
+            // Ignore stale responses.
+            if (seq !== lookupSeq) return;
+            lastQueried = phone;
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!data.found) {
+              // No prior record — leave the form empty for a fresh signup.
+              if (hint) {
+                hint.textContent = '';
+                hint.className = 'input-hint';
+              }
+              return;
+            }
+
+            if (data.fully_registered) {
+              // Already has an active login — block submission.
+              if (hint) {
+                hint.textContent =
+                  'This phone is already registered. Please close this and sign in instead.';
+                hint.className = 'input-hint is-blocked';
+              }
+              if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.title = 'This phone is already registered.';
+              }
+              // Still show the user their stored details for reference.
+              fillFromLookup(data);
+              showToast(
+                'This phone is already registered. Please log in instead.',
+                'warn'
+              );
+              return;
+            }
+
+            // Ghost customer — pre-fill from the existing record.
+            if (hint) {
+              const pts = data.loyalty_points || 0;
+              hint.textContent =
+                pts > 0
+                  ? `Welcome back! We found your record (${pts} loyalty ${pts === 1 ? 'point' : 'points'}). Just set a password to reactivate your account.`
+                  : 'Welcome back! We found your record. Just set a password to reactivate your account.';
+              hint.className = 'input-hint is-existing';
+            }
+            fillFromLookup(data);
+          } catch (err) {
+            // Network errors are silent — the user can still register manually.
+            console.warn('Customer lookup failed:', err);
+          }
+        }, 350);
+      });
+
+      function fillFromLookup(data) {
+        if (nameField && data.cust_name) {
+          nameField.value = data.cust_name;
+          nameField.classList.add('is-prefilled');
+        }
+        if (emailField && data.email) {
+          emailField.value = data.email;
+          emailField.classList.add('is-prefilled');
+        }
+        if (addrField && data.address) {
+          addrField.value = data.address;
+          addrField.classList.add('is-prefilled');
+        }
+        if (genderField && data.gender) {
+          genderField.value = data.gender;
+          genderField.classList.add('is-prefilled');
+        }
+      }
+
+      // Reset state when the modal is closed so the next open is fresh.
+      const modal = document.getElementById('registerModal');
+      if (modal) {
+        const observer = new MutationObserver(() => {
+          if (!modal.classList.contains('open')) {
+            clearPrefilled();
+            lookupSeq++;
+            lastQueried = '';
+          }
+        });
+        observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      }
     })();
 
     /* ── Password show/hide ── */
