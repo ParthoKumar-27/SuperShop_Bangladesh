@@ -1,11 +1,12 @@
 """Public storefront routes + discount helpers.
 
-This module imports the `app` and `templates` objects from `app_setup.py`
-and decorates them with the storefront endpoints (`/`, `/search`) plus
+This module imports the app and templates objects from app_setup.py
+and decorates them with the storefront endpoints (/, /search) plus
 the discount-annotation helpers they call. Imported for side-effects
-from `main.py` so the routes register on startup.
+from main.py so the routes register on startup.
 """
 import urllib.parse
+import time
 
 from fastapi import Request
 from fastapi.responses import HTMLResponse
@@ -15,6 +16,8 @@ from app_setup import app, templates
 from database import query
 from supabase_client import BUCKET, SUPABASE_URL
 
+_CACHE = {}
+_CACHE_TTL = 300 # 5 minutes
 
 # ── Image URL helper ──────────────────────────────────────────────────────────
 # Stored values may be:
@@ -41,11 +44,16 @@ def _normalize_image_url(raw: str | None) -> str | None:
 #  ACTIVE HOT DEALS — products with a currently valid discount row
 # ══════════════════════════════════════════════════════════════════════════════
 def _fetch_hot_deals(limit: int = 20):
-    """Return up to `limit` products that have an active discount row.
+    """Return up to limit products that have an active discount row.
 
     Active = CURRENT_DATE between start_date and end_date. Handles both
     PERCENT and FLAT discounts and resolves category-wide discounts too.
     """
+    now = time.time()
+    cache_key = f"hot_deals_{limit}"
+    if cache_key in _CACHE and now - _CACHE[cache_key]["ts"] < _CACHE_TTL:
+        return _CACHE[cache_key]["data"]
+
     rows = query(
         """
         SELECT  p.product_id,
@@ -77,6 +85,8 @@ def _fetch_hot_deals(limit: int = 20):
     ) or []
     for _r in rows:
         _r["image_url"] = _normalize_image_url(_r.get("image_url"))
+    
+    _CACHE[cache_key] = {"data": rows, "ts": now}
     return rows
 
 
@@ -89,7 +99,7 @@ def _fetch_hot_deals(limit: int = 20):
 #   disc_type     : str    ('PERCENT' or 'FLAT' or None)
 #   disc_value    : float  (raw discount number)
 def _annotate_products_with_discounts(products):
-    """Mutate `products` in place — attach sale_price + disc_label where active."""
+    """Mutate products in place — attach sale_price + disc_label where active."""
     if not products:
         return products
     ids = [p["product_id"] for p in products]
@@ -157,14 +167,68 @@ ROLE_HOME = {
     "CUSTOMER": "/customer/dashboard",
 }
 
+def _get_categories():
+    now = time.time()
+    if "categories" in _CACHE and now - _CACHE["categories"]["ts"] < _CACHE_TTL:
+        return _CACHE["categories"]["data"]
+    
+    categories = query("""
+        SELECT cat_id, cat_name, parent_cat_id
+        FROM   category
+        ORDER  BY parent_cat_id NULLS FIRST, cat_name
+    """)
+    _CACHE["categories"] = {"data": categories, "ts": now}
+    return categories
+
+def _get_branches():
+    now = time.time()
+    if "branches" in _CACHE and now - _CACHE["branches"]["ts"] < _CACHE_TTL:
+        return _CACHE["branches"]["data"]
+    
+    _branches_rows = query(
+        "SELECT branch_id, branch_name FROM branch "
+        "WHERE is_active = 'Y' ORDER BY branch_name"
+    )
+    data = list(_branches_rows or [])
+    _CACHE["branches"] = {"data": data, "ts": now}
+    return data
+
+def _get_home_products():
+    now = time.time()
+    if "home_products" in _CACHE and now - _CACHE["home_products"]["ts"] < _CACHE_TTL:
+        return _CACHE["home_products"]["data"]
+    
+    products = query("""
+        SELECT p.product_id,
+               p.product_name,
+               p.brand,
+               p.unit_price,
+               p.unit,
+               p.cat_id,
+               p.image_url,
+               c.cat_name AS category
+        FROM   product   p
+        LEFT   JOIN category c ON p.cat_id = c.cat_id
+        WHERE  p.is_active = 'Y'
+        ORDER  BY p.product_name
+    """)
+    for _p in products:
+        _p["image_url"] = _normalize_image_url(_p.get("image_url"))
+    _annotate_products_with_discounts(products)
+    
+    _CACHE["home_products"] = {"data": products, "ts": now}
+    return products
+
+
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ROOT — public storefront (no login required).
 #
 #  Logged-in admin or employee who types "/" should *stay on the page they
 #  were viewing*. We return an invisible 200 page that immediately runs
-#  `history.back()` so the browser snaps back to the previous page, leaving
-#  the URL bar pointing at *their* dashboard. Anonymous users and customers
+#  history.back() so the browser snaps back to the previous page, leaving
+#  the URL bar pointing at their dashboard. Anonymous users and customers
 #  see the storefront as usual.
 # ══════════════════════════════════════════════════════════════════════════════
 @app.get("/", response_class=HTMLResponse)
@@ -186,32 +250,10 @@ def storefront(request: Request):
 
     # ── Anonymous or customer: render the storefront ─────────────────────────
     # All categories ordered: top-level first, then sub-categories
-    categories = query("""
-        SELECT cat_id, cat_name, parent_cat_id
-        FROM   category
-        ORDER  BY parent_cat_id NULLS FIRST, cat_name
-    """)
+    categories = _get_categories()
 
     # All active products — visible to everyone
-    products = query("""
-        SELECT p.product_id,
-               p.product_name,
-               p.brand,
-               p.unit_price,
-               p.unit,
-               p.cat_id,
-               p.image_url,
-               c.cat_name AS category
-        FROM   product   p
-        LEFT   JOIN category c ON p.cat_id = c.cat_id
-        WHERE  p.is_active = 'Y'
-        ORDER  BY p.product_name
-    """)
-    # Normalize image_url so any legacy bare-key values still render in <img src>
-    for _p in products:
-        _p["image_url"] = _normalize_image_url(_p.get("image_url"))
-    # Attach per-product discount data so cards can show sale price + ribbon
-    _annotate_products_with_discounts(products)
+    products = _get_home_products()
 
     hot_deals = _fetch_hot_deals(limit=20)
 
@@ -231,11 +273,7 @@ def storefront(request: Request):
 
     # Branches shown in the "pick a branch" popup the first time a customer
     # adds anything to the cart from the storefront.
-    _branches_rows = query(
-        "SELECT branch_id, branch_name FROM branch "
-        "WHERE is_active = 'Y' ORDER BY branch_name"
-    )
-    _branches_list = list(_branches_rows or [])
+    _branches_list = _get_branches()
     _selected_branch_id = (
         request.session.get("selected_branch") if hasattr(request, "session") else None
     )
@@ -262,17 +300,13 @@ def storefront(request: Request):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  PUBLIC SEARCH — same look as storefront, filtered by `?q=` (no login needed)
+#  PUBLIC SEARCH — same look as storefront, filtered by ?q= (no login needed)
 # ══════════════════════════════════════════════════════════════════════════════
 @app.get("/search", response_class=HTMLResponse)
 def public_search(request: Request, q: str = ""):
     q = (q or "").strip()
 
-    categories = query("""
-        SELECT cat_id, cat_name, parent_cat_id
-        FROM   category
-        ORDER  BY parent_cat_id NULLS FIRST, cat_name
-    """)
+    categories = _get_categories()
 
     if q:
         like = f"%{q}%"
