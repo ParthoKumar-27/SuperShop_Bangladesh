@@ -48,6 +48,18 @@ def notify_all_branch_managers(notif_type, title, message, **kw):
         )
 
 
+def notify_customer(cust_id, notif_type, title, message, **kw):
+    """Send a notification to a single customer. Mirrors
+    notify_branch_manager but writes recipient_type='CUSTOMER'.
+    The notification table's CHECK constraint already accepts CUSTOMER."""
+    if not cust_id:
+        return
+    create_notification(
+        "CUSTOMER", cust_id, notif_type, title, message,
+        **kw,
+    )
+
+
 def notify_all_admins(notif_type, title, message, **kw):
     """Send the same notification to every active admin account.
     Used for events that need admin attention regardless of branch, e.g. a

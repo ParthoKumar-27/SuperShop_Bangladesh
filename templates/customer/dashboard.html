@@ -42,79 +42,135 @@
   .stat-tile .stat-lbl{font-size:11px;color:#cfd8d3;text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
 
   /* ── Order row (Amazon-style) ───────────────────────────────────── */
-  .orders-list{display:flex;flex-direction:column;gap:14px;}
+  .orders-list{display:flex;flex-direction:column;gap:18px;}
+
+  /* ── Pagination bar (← 1 2 3 →) ─────────────────────────────────── */
+  .order-pager{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:18px;flex-wrap:wrap;
+  }
+  .order-pager .pager-pages{display:inline-flex;align-items:center;gap:6px;}
+  .order-row.is-hidden{display:none !important;}
+  .order-pager .pg-step,
+  .order-pager .pg-num{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:34px;height:34px;padding:0 10px;
+    border-radius:9px;border:1px solid #e2e8e8;background:#fff;
+    color:#334155;font-size:12.5px;font-weight:700;
+    text-decoration:none;transition:.12s ease;
+    font-family:'DM Sans',sans-serif;
+  }
+  .order-pager .pg-num:hover,
+  .order-pager .pg-step:hover{
+    background:#f1f5f9;color:#0f172a;border-color:#cbd5e1;
+  }
+  .order-pager .pg-num.active{
+    background:#044635;color:#fff;border-color:#044635;
+    box-shadow:0 2px 6px rgba(4,70,53,.18);
+  }
+  .order-pager .pg-step.disabled{
+    color:#cbd5e1;background:#fafafa;border-color:#edf1ef;cursor:not-allowed;
+  }
+  .order-pager .pg-ellipsis{
+    min-width:24px;height:34px;display:inline-flex;
+    align-items:center;justify-content:center;
+    color:#94a3b8;font-size:13px;font-weight:700;letter-spacing:.05em;
+  }
   .order-row{
     background:#fff;
-    border:1px solid #eef2f1;
+    border:1px solid #e2e8e8;
     border-radius:14px;
     overflow:hidden;
-    transition:border-color .15s ease, box-shadow .15s ease;
+    box-shadow:0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(3, 16, 13, 0.233);
+    transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease;
   }
-  .order-row:hover{border-color:#cfeee3;box-shadow:0 8px 22px rgba(4,70,53,.06);}
+  .order-row:hover{
+    border-color:#cfeee3;
+    box-shadow:0 2px 4px rgba(15,23,42,.05), 0 14px 28px rgba(4,70,53,.10);
+    transform:translateY(-1px);
+  }
 
   .order-row-head{
-    display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;
-    padding:12px 18px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;
+    padding:14px 20px;
     background:#f8faf9;
-    border-bottom:1px solid #eef2f1;
+    border-bottom:1px solid #e2e8e8;
     font-size:12px;
   }
-  .order-row-head .head-cell{display:flex;flex-direction:column;gap:2px;}
+  .order-row-head .head-cell{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .order-row-head .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;}
   .order-row-head .val{font-size:13px;color:#1f2937;font-weight:700;}
 
+  /* ── Body: 3-column grid so the right side doesn't sit empty ────── */
+  /* [icon + status pills]   [branch meta]    [actions stack]            */
   .order-row-body{
-    display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;
-    padding:14px 18px;
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    gap:22px;
+    align-items:center;
+    padding:18px 20px;
   }
-  @media (max-width:640px){ .order-row-body{grid-template-columns:1fr;} }
+  @media (max-width:768px){
+    .order-row-body{grid-template-columns:auto 1fr;row-gap:14px;}
+  }
+  @media (max-width:520px){
+    .order-row-body{grid-template-columns:1fr;}
+  }
 
   .order-type-ic{
-    width:56px;height:56px;border-radius:12px;flex-shrink:0;
+    width:60px;height:60px;border-radius:14px;flex-shrink:0;
     background:linear-gradient(135deg,#f0f9f4 0%,#fff7ec 100%);
-    display:flex;align-items:center;justify-content:center;color:#044635;font-size:22px;
+    display:flex;align-items:center;justify-content:center;color:#044635;font-size:24px;
     border:1px solid #e6efe9;
+    box-shadow:inset 0 -3px 0 rgba(4,70,53,.06);
   }
 
-  .product-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .prod-chip{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:6px 10px 6px 6px;border-radius:10px;
-    background:#f8faf9;border:1px solid #eef2f1;
-    font-size:12px;color:#1f2937;font-weight:600;
-    max-width:220px;
+  /* Middle column: small "branch" panel so the row never feels empty */
+  .order-mid{
+    display:flex;flex-direction:column;gap:4px;
+    padding:0 4px;
+    min-width:0;
   }
-  .prod-chip .prod-ic{
-    width:32px;height:32px;border-radius:8px;
-    background:linear-gradient(135deg,#f0f9f4 0%,#fff7ec 100%);
-    display:inline-flex;align-items:center;justify-content:center;font-size:16px;
-    border:1px solid #e6efe9;flex-shrink:0;
+  .order-mid .mid-branch{
+    font-size:13px;font-weight:700;color:#1f2937;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  .prod-chip .prod-name{
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  .order-mid .mid-id{
+    font-size:11px;color:#94a3b8;font-weight:600;
+    font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  .prod-more{font-size:12px;color:#64748b;font-weight:600;}
 
-  .order-meta-col{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
-  @media (max-width:640px){ .order-meta-col{align-items:flex-start;} }
-  .order-total-row{display:flex;align-items:center;gap:8px;}
+  .order-meta-col{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:160px;}
+  /* (intentionally no total row here — the invoice has the breakdown,
+     and a heavy coloured total block on the dashboard competes with the
+     card chrome above). */
+  .order-total-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
   .order-total-row .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;}
   .order-total-row .val{font-size:18px;font-weight:800;color:#044635;}
 
-  .order-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
-  @media (max-width:640px){ .order-actions{justify-content:flex-start;} }
-  .btn-line{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:7px 12px;border-radius:999px;
-    font-size:12px;font-weight:700;
-    border:1px solid #e2e8f0;color:#475569;background:#fff;
-    transition:.15s;cursor:pointer;
+  /* Actions stack vertically with full-width pills so the right column
+     is dense and uses the empty space instead of floating in the middle. */
+  .order-actions{
+    display:flex;flex-direction:column;gap:8px;align-items:stretch;
   }
-  .btn-line:hover{background:#f1f5f9;color:#0f172a;border-color:#cbd5e1;}
-  .btn-line.primary{background:#044635;color:#fff;border-color:#044635;}
-  .btn-line.primary:hover{background:#033828;border-color:#033828;}
-  .btn-line.danger{color:#ef4444;border-color:#fecaca;}
-  .btn-line.danger:hover{background:#fee2e2;border-color:#fca5a5;}
+  @media (max-width:520px){ .order-actions{flex-direction:row;flex-wrap:wrap;} }
+  .btn-line{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:8px 14px;border-radius:999px;
+    font-size:12px;font-weight:700;
+    border:1px solid #e2e8f0;color:#334155;background:#ffffff;
+    transition:.15s;cursor:pointer;white-space:nowrap;
+    border-radius:9px;font-weight:600;
+  }
+  .btn-line:hover{background:#f5f7f7;color:#0f172a;border-color:#cbd5e1;}
+  /* Invoice button = soft brand cream. Reads as the primary action
+     against a white card without competing with the dark-green header. */
+  .btn-line.primary{background:#e7f3ec;color:#0a5b3a;border-color:#c5e2d2;}
+  .btn-line.primary:hover{background:#d6ebe0;border-color:#aed5bf;color:#063b25;}
+  /* Cancel button = brand orange (warmer than red, still legible on
+     white, and matches the accent used on the invoice + badges). */
+  .btn-line.danger{color:#a8440c;background:#fff3e6;border-color:#f7d4b1;}
+  .btn-line.danger:hover{background:#ffe6cf;border-color:#ecb37e;color:#7d3208;}
 
   /* ── Status pills ───────────────────────────────────────────────── */
   .pill{
@@ -131,6 +187,44 @@
   .pill-failed .dot{background:#ef4444;}
   .pill-state  {background:#eef5fb;color:#1d4ed8;}
   .pill-state .dot{background:#3b82f6;}
+
+  /* ── Labeled status pill (Payment / Order status) ──────────────── */
+  /* Each pill now wears a small uppercase caption so the user can
+     tell at a glance which is the payment status and which is the
+     order fulfillment status.  The caption sits to the LEFT of the
+     value pill, separated by a 4px gutter. */
+  .status-group{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .status-caption{
+    font-size:9.5px;font-weight:800;letter-spacing:.10em;
+    text-transform:uppercase;color:#94a3b8;
+  }
+  .pill-cancelled{background:#fef2f2;color:#b91c1c;}
+  .pill-cancelled .dot{background:#ef4444;}
+  /* REFUNDED payment — distinct from a failed payment and from a
+     regular PAID sale: warm orange so the user knows money moved
+     backwards through the gateway, not that the sale was cancelled. */
+  .pill-refund{background:#fff7ed;color:#9a3412;}
+  .pill-refund .dot{background:#f97316;}
+  .pill-confirmed{background:#eff6ff;color:#1d4ed8;}
+  .pill-confirmed .dot{background:#3b82f6;}
+  .pill-packed   {background:#fff7ed;color:#9a3412;}
+  .pill-packed   .dot{background:#f97316;}
+  .pill-otd      {background:#f5f3ff;color:#6d28d9;}
+  .pill-otd      .dot{background:#8b5cf6;}
+  .pill-delivered{background:#ecfdf5;color:#047857;}
+  .pill-delivered .dot{background:#10b981;}
+
+  /* Small inline method chip that follows a Payment pill, e.g.
+     "VISA" or "BKASH" — kept muted so it doesn't compete with the
+     coloured pill to its left. */
+  .method-chip{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:9.5px;font-weight:700;letter-spacing:.06em;
+    color:#64748b;background:#f1f5f9;border:1px solid #e2e8e8;
+    padding:2px 6px;border-radius:999px;text-transform:uppercase;
+  }
 
   /* ── Empty state ─────────────────────────────────────────────────── */
   .empty-illust{
@@ -285,7 +379,26 @@
       {% set ps = o.payment_status %}
       {% set pcls = 'pill-paid' if ps == 'PAID' else 'pill-pending' if ps == 'PENDING' else 'pill-failed' %}
       {% set ic = 'fa-truck-fast' if o.order_type == 'ONLINE' else 'fa-shop' %}
-      {% set _o_items = o['items'] %}
+      {# Order fulfilment pill (#scls) ─────────────────────── #}
+      {% set s = (o.order_status or '') %}
+      {% set scls =
+            'pill-cancelled' if s == 'CANCELLED'
+         else 'pill-delivered' if s == 'DELIVERED'
+         else 'pill-otd'       if s == 'OUT_FOR_DELIVERY'
+         else 'pill-packed'    if s == 'PACKED'
+         else 'pill-confirmed' if s == 'CONFIRMED'
+         else 'pill-state' %}
+      {# Gateway-level payment pill (#pay_*) ──────────────────
+         Pulled from the `payment` table (SUCCESS / FAILED / REFUNDED).
+         Falls back to a neutral pill when no payment row exists
+         yet (e.g. cash-on-delivery placed moments ago). #}
+      {% set pay_state = (o.pay_status or '') %}
+      {% set pay_label = '—' if not pay_state else pay_state %}
+      {% set pay_class =
+            'pill-paid'    if pay_state == 'SUCCESS'
+         else 'pill-refund' if pay_state == 'REFUNDED'
+         else 'pill-failed' if pay_state == 'FAILED'
+         else 'pill-pending' %}
       <article class="order-row">
 
         {# Header strip — order id / date / branch ──────────────── #}
@@ -308,53 +421,86 @@
           </div>
         </div>
 
-        {# Body — type icon, product chips, actions ─────────────── #}
+        {# Body — type icon, labeled status pills, actions ─────── #}
         <div class="order-row-body">
+
+          {# ── Col 1: type icon + status pills ────────────── #}
           <div class="flex items-start gap-3 min-w-0">
             <div class="order-type-ic"><i class="fa-solid {{ ic }}"></i></div>
-            <div class="min-w-0">
+            <div class="min-w-0 space-y-1.5">
 
-              {# Status pills row #}
-              <div class="flex items-center gap-1.5 flex-wrap mb-2">
+              {# ── Labeled status pills ──────────────────────── #}
+              {# Three distinct statuses are surfaced here:
+                   • Sale status   — bookkeeping flag on `sale`
+                   • Payment       — gateway-level status from the
+                                      `payment` table (the real record)
+                   • Order status  — fulfilment state for online orders
+                 Each wears a tiny uppercase caption so the user can
+                 tell at a glance which is which. #}
+              <div class="status-group">
+                <span class="status-caption">Sale</span>
                 <span class="pill {{ pcls }}"><span class="dot"></span> {{ ps }}</span>
-                {% if o.order_status %}
-                  <span class="pill pill-state"><span class="dot"></span> {{ o.order_status }}</span>
+              </div>
+
+              <div class="status-group">
+                <span class="status-caption">Payment</span>
+                <span class="pill {{ pay_class }}"><span class="dot"></span> {{ pay_label }}</span>
+                {% if o.pay_method %}
+                  <span class="method-chip"><i class="fa-solid fa-credit-card text-[9px]"></i> {{ o.pay_method }}</span>
                 {% endif %}
+              </div>
+
+              {% if o.order_status %}
+              <div class="status-group">
+                <span class="status-caption">Order status</span>
+                <span class="pill {{ scls }}"><span class="dot"></span> {{ s }}</span>
+              </div>
+              {% endif %}
+
+              {# Order type chip — kept small, no caption needed because
+                 the icon + word ("ONLINE" / "POS") is self-evident. #}
+              <div class="flex items-center gap-1.5 pt-0.5">
                 <span class="pill" style="background:#f1f5f9;color:#475569">
                   {{ o.order_type or 'POS' }}
                 </span>
               </div>
-
-              {# Product chips — show up to 4 #}
-              {% if _o_items %}
-                <div class="product-strip">
-                  {% for it in _o_items[:4] %}
-                    <span class="prod-chip" title="{{ it.product_name }}">
-                      <span class="prod-ic">🛍</span>
-                      <span class="prod-name">{{ it.product_name }}</span>
-                      <span class="text-[10px] text-gray-400">×{{ it.quantity }}</span>
-                    </span>
-                  {% endfor %}
-                  {% if _o_items | length > 4 %}
-                    <span class="prod-more">+{{ _o_items | length - 4 }} more</span>
-                  {% endif %}
-                </div>
-              {% else %}
-                <p class="text-xs text-gray-400">No item details available for this order.</p>
-              {% endif %}
             </div>
           </div>
 
+          {# ── Col 2: branch meta so the row never reads as empty ── #}
+          <div class="order-mid">
+            <span class="mid-branch"><i class="fa-solid fa-shop text-[#F17B0D] mr-1.5"></i>{{ o.branch_name }}</span>
+            <span class="mid-id">{{ o.order_type or 'POS' }} order · #{{ o.sale_id }}</span>
+          </div>
+
+          {# ── Col 3: stacked actions (no total — invoice covers it) ── #}
           <div class="order-meta-col">
             <div class="order-actions">
-              <form action="/customer/order/hide/{{ o.sale_id }}" method="post"
-                    onsubmit="return confirm('Hide this order from your account view?');">
-                <button type="submit" class="btn-line danger" title="Hide order">
-                  <i class="fa-regular fa-eye-slash"></i>
-                  <span class="hidden sm:inline">Hide</span>
+              {% if o.order_status == 'PLACED' %}
+                <button type="button"
+                        class="btn-line danger js-cancel-order"
+                        data-sale-id="{{ o.sale_id }}"
+                        data-order-id="{{ o.order_id or '' }}"
+                        data-branch="{{ (o.branch_name or '') | e }}"
+                        title="Cancel this order">
+                  <i class="fa-solid fa-circle-xmark"></i>
+                  <span>Cancel order</span>
                 </button>
-              </form>
-              <button type="button" onclick="openInvoice('{{ o.sale_id }}')" class="btn-line primary">
+              {% else %}
+                {# Disabled placeholder shown once an order is no longer PLACED
+                   (CONFIRMED, PACKED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED)
+                   so the row layout stays stable. #}
+                <button type="button"
+                        class="btn-line"
+                        disabled
+                        aria-disabled="true"
+                        style="opacity:.5;cursor:not-allowed;background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0;"
+                        title="This order can no longer be cancelled">
+                  <i class="fa-solid fa-ban"></i>
+                  <span>Cancelled</span>
+                </button>
+              {% endif %}
+              <button type="button" onclick="openInvoice('{{ o.sale_id }}')" class="btn-line">
                 <i class="fa-solid fa-receipt text-[11px]"></i>
                 View invoice
               </button>
@@ -364,6 +510,17 @@
       </article>
     {% endfor %}
   </div>
+
+  {# ── Pagination — purely client-side, slices the rendered list ── #}
+  <nav class="order-pager" id="orderPager" aria-label="Order history pages" hidden>
+    <button type="button" class="pg-step" data-pager-prev aria-label="Previous page">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <div class="pager-pages" data-pager-pages></div>
+    <button type="button" class="pg-step" data-pager-next aria-label="Next page">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </nav>
 
 {% endif %}
 
@@ -393,7 +550,114 @@
   </div>
 </div>
 
+{# ── Cancel-order confirmation modal — same branded shell as #invoiceModal ── #}
+<div class="cs-im-backdrop" id="cancelModal" role="dialog" aria-modal="true"
+     aria-labelledby="cancelTitle" aria-hidden="true">
+  <div class="cs-im-modal" style="max-width:480px;">
+    <div class="cs-im-head" style="background:linear-gradient(135deg,#7a1f12 0%,#b03a2a 60%,#c45f00 100%);">
+      <span class="cs-im-badge" style="border-color:rgba(255,200,180,.4);color:#ffd6c2;">
+        <i class="fa-solid fa-circle-xmark"></i> Cancel order
+      </span>
+      <button type="button" class="cs-im-close" id="cancelClose"
+              aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      <h3 id="cancelTitle">Cancel this order?</h3>
+      <p>This will release the items back to stock. If you already paid, the
+         charge will be refunded. <strong>This can't be undone.</strong></p>
+    </div>
+
+    <div class="cs-im-body" id="cancelBody">
+      <div class="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 mb-4 flex items-start gap-3">
+        <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+        <p class="text-sm text-amber-900 leading-snug">
+          Once the branch confirms or packs your order it can no longer be
+          cancelled here — you'll need to contact the branch directly.
+        </p>
+      </div>
+
+      <dl class="text-sm space-y-2">
+        <div class="flex justify-between gap-3">
+          <dt class="text-gray-400 uppercase tracking-wider text-[10px] font-bold">Order</dt>
+          <dd id="cancelOrderId" class="font-bold text-[#044635] mono"></dd>
+        </div>
+        <div class="flex justify-between gap-3">
+          <dt class="text-gray-400 uppercase tracking-wider text-[10px] font-bold">Branch</dt>
+          <dd id="cancelBranch" class="font-semibold text-gray-800 text-right"></dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="cs-im-foot" style="justify-content:space-between;">
+      <button type="button" class="cs-im-btn cs-im-btn-ghost" id="cancelKeep">
+        <i class="fa-solid fa-arrow-left"></i>&nbsp; Keep order
+      </button>
+      <button type="button" class="cs-im-btn" id="cancelConfirm"
+              style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);color:#fff;
+                     box-shadow:0 10px 22px rgba(220,38,38,.30),inset 0 1px 0 rgba(255,255,255,.18);">
+        <i class="fa-solid fa-circle-xmark"></i>&nbsp; Yes, cancel order
+      </button>
+    </div>
+  </div>
+</div>
+
+{# Client-side pagination for the order list — JS only, no URL/router changes. #}
 <script>
+(function () {
+  const PAGE_SIZE = 5;
+  const rows   = Array.from(document.querySelectorAll('.orders-list .order-row'));
+  const pager  = document.getElementById('orderPager');
+  const pagesEl = pager && pager.querySelector('[data-pager-pages]');
+  const prevBtn = pager && pager.querySelector('[data-pager-prev]');
+  const nextBtn = pager && pager.querySelector('[data-pager-next]');
+  if (!pager || !pagesEl || rows.length === 0) return;
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  if (totalPages <= 1) return;          // hide pager entirely
+
+  let currentPage = 1;
+  const ellipsis = document.createElement('span');
+  ellipsis.className = 'pg-ellipsis';
+  ellipsis.textContent = '…';
+
+  function renderChips() {
+    pagesEl.innerHTML = '';
+    const window = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const sorted = [...window].filter(p => p >= 1 && p <= totalPages).sort((a,b)=>a-b);
+    let last = 0;
+    for (const p of sorted) {
+      if (last && p - last > 1) pagesEl.appendChild(ellipsis.cloneNode(true));
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'pg-num' + (p === currentPage ? ' active' : '');
+      chip.textContent = String(p);
+      chip.dataset.page = String(p);
+      pagesEl.appendChild(chip);
+      last = p;
+    }
+    if (prevBtn) prevBtn.disabled = currentPage === 1;
+    if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+  }
+
+  function showPage(p) {
+    currentPage = Math.min(totalPages, Math.max(1, p));
+    rows.forEach((row, i) => {
+      const pageIdx = Math.floor(i / PAGE_SIZE) + 1;
+      row.classList.toggle('is-hidden', pageIdx !== currentPage);
+    });
+    renderChips();
+  }
+
+  pagesEl.addEventListener('click', function (e) {
+    const t = e.target.closest('.pg-num');
+    if (!t || t.classList.contains('active')) return;
+    showPage(parseInt(t.dataset.page, 10));
+  });
+  prevBtn && prevBtn.addEventListener('click', () => showPage(currentPage - 1));
+  nextBtn && nextBtn.addEventListener('click', () => showPage(currentPage + 1));
+
+  pager.hidden = false;
+  showPage(1);
+})();
+
 const invoiceModal    = document.getElementById('invoiceModal');
 const invoiceBody     = document.getElementById('invoiceBody');
 const invoiceCloseBtn = document.getElementById('invoiceClose');
@@ -471,7 +735,7 @@ async function openInvoice(saleId) {
 
       <div class="border-t border-gray-100 pt-3 space-y-1.5 text-sm">
         <div class="flex justify-between text-gray-600"><span>Subtotal</span><span class="mono">৳${Number(inv.subtotal).toFixed(2)}</span></div>
-        ${inv.discount_amt > 0 ? `<div class="flex justify-between text-emerald-700"><span>Loyalty discount</span><span class="mono">-৳${Number(inv.discount_amt).toFixed(2)}</span></div>` : ''}
+        ${inv.discount_amt > 0 ? `<div class="flex justify-between text-emerald-700"><span>Discount</span><span class="mono">-৳${Number(inv.discount_amt).toFixed(2)}</span></div>` : ''}
         <div class="flex justify-between text-gray-600"><span>Tax</span><span class="mono">৳${Number(inv.tax_amt).toFixed(2)}</span></div>
         <div class="flex justify-between font-extrabold text-[#F17B0D] text-base pt-2 border-t border-dashed border-gray-200 mt-1">
           <span>Total</span><span class="mono">৳${Number(inv.total_amt).toFixed(2)}</span>
@@ -499,6 +763,86 @@ invoiceModal   .addEventListener('click', function (e) {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && invoiceModal.classList.contains('open')) closeInvoice();
+});
+
+// ════════════════════════════════════════════════════════════════════════
+//  CANCEL-ORDER CONFIRMATION MODAL
+//  ─ Mirrors the invoice modal's portal + open/close pattern
+//  ─ Submits a real POST so the action goes through the same
+//    /customer/order/cancel/{sale_id} route the manager flow uses
+// ════════════════════════════════════════════════════════════════════════
+const cancelModal     = document.getElementById('cancelModal');
+const cancelOrderId   = document.getElementById('cancelOrderId');
+const cancelBranch    = document.getElementById('cancelBranch');
+const cancelCloseBtn  = document.getElementById('cancelClose');
+const cancelKeepBtn   = document.getElementById('cancelKeep');
+const cancelConfirm   = document.getElementById('cancelConfirm');
+
+// Same portal trick as the invoice modal — escape the .cs-content
+// containing block so the backdrop spans the full viewport.
+if (cancelModal && cancelModal.parentElement !== document.body) {
+  document.body.appendChild(cancelModal);
+}
+
+let _cancelSaleId = null;
+
+function closeCancel() {
+  if (!cancelModal.classList.contains('open')) return;
+  cancelModal.classList.remove('open');
+  cancelModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  cancelConfirm.disabled = false;
+  cancelConfirm.innerHTML =
+    '<i class="fa-solid fa-circle-xmark"></i>&nbsp; Yes, cancel order';
+  if (_lastFocus && _lastFocus.focus) _lastFocus.focus();
+}
+
+function openCancelOrder(saleId, orderId, branchName) {
+  _lastFocus   = document.activeElement;
+  _cancelSaleId = saleId;
+
+  cancelOrderId.textContent = orderId ? ('#' + orderId) : ('#' + saleId);
+  cancelBranch.textContent  = branchName || '—';
+
+  cancelModal.classList.add('open');
+  cancelModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+document.querySelectorAll('.js-cancel-order').forEach(btn => {
+  btn.addEventListener('click', () => {
+    openCancelOrder(
+      btn.dataset.saleId,
+      btn.dataset.orderId,
+      btn.dataset.branch,
+    );
+  });
+});
+
+cancelCloseBtn.addEventListener('click', closeCancel);
+cancelKeepBtn .addEventListener('click', closeCancel);
+cancelModal   .addEventListener('click', e => {
+  if (e.target === cancelModal) closeCancel();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && cancelModal.classList.contains('open')) closeCancel();
+});
+
+cancelConfirm.addEventListener('click', () => {
+  if (!_cancelSaleId) return;
+
+  // Disable to prevent double-submits while the form posts.
+  cancelConfirm.disabled = true;
+  cancelConfirm.innerHTML =
+    '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Cancelling…';
+
+  // Submit via a hidden form so it works even when JS is the only
+  // thing that changed (no inline onsubmit, no confirm() dialog).
+  const f = document.createElement('form');
+  f.method = 'POST';
+  f.action = '/customer/order/cancel/' + encodeURIComponent(_cancelSaleId);
+  document.body.appendChild(f);
+  f.submit();
 });
 </script>
 {% endblock %}

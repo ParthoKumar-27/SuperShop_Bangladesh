@@ -50,13 +50,16 @@
         }
 
         /* ══════════════════ NAVBAR — gradient + animated sheen ══════════════════ */
+        /* overflow:visible so the notif badge can escape the navbar;
+           the sheen and orange-glow pseudo-elements are clipped
+           to the navbar via clip-path on ::before / ::after. */
         .cs-navbar{
             position:sticky;top:0;z-index:50;
             background:linear-gradient(105deg,var(--green-deep) 0%,var(--green) 45%,var(--green-mid) 100%);
             color:#fff;
             box-shadow:0 8px 28px rgba(2,36,27,.22);
             isolation:isolate;
-            overflow:hidden;
+            overflow:visible;
         }
         .cs-navbar::before{
             content:'';
@@ -65,6 +68,7 @@
             background-size:220% 100%;
             animation:csSheen 7s ease-in-out infinite;
             pointer-events:none;z-index:-1;
+            clip-path:inset(0);
         }
         .cs-navbar::after{
             content:'';
@@ -72,6 +76,7 @@
             width:320px;height:320px;
             background:radial-gradient(circle,rgba(241,123,13,.28) 0%,transparent 70%);
             pointer-events:none;z-index:-1;
+            clip-path:inset(40px 0 0 0);
         }
         @keyframes csSheen{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
 
@@ -156,6 +161,233 @@
             box-shadow:0 4px 10px rgba(241,123,13,.4);
             border:2px solid var(--green-deep);
         }
+
+        /* ══════════════════ CUSTOMER NOTIFICATIONS BELL ══════════════════
+           Mirror of the storefront bell — same data source
+           (GET /customer/notifications). The badge is a sibling of the
+           button (both children of .cs-bell-wrap) so it can escape the
+           button's flex layout and overflow into the navbar without
+           being clipped by .cs-navbar { overflow:hidden } or losing
+           to the navbar's stacking context. */
+        .cs-bell-wrap{
+            position:relative;
+            display:inline-block;
+            overflow:visible;
+            z-index:120;
+        }
+        .cs-bell-btn{
+            position:relative;
+            width:42px;height:42px;border-radius:12px;
+            display:inline-flex;align-items:center;justify-content:center;
+            background:rgba(255,255,255,.06);
+            border:1px solid rgba(255,255,255,.12);
+            color:#fff;font-size:17px;
+            cursor:pointer;
+            font-family:inherit;
+            transition:background .15s ease, transform .15s ease,
+                       border-color .15s ease, box-shadow .15s ease;
+            overflow:visible;
+            padding:0;
+        }
+        .cs-bell-btn:hover{
+            background:linear-gradient(135deg, rgba(241,123,13,.35) 0%, rgba(241,123,13,.12) 100%);
+            border-color:rgba(241,123,13,.6);
+            transform:translateY(-2px);
+        }
+        .cs-bell-btn:focus-visible{
+            outline:none;
+            box-shadow:0 0 0 3px rgba(241,123,13,.45);
+        }
+        .cs-bell-wrap .cs-bell-count{
+            position:absolute;
+            top:-7px;right:-7px;
+            min-width:18px;height:18px;padding:0 5px;
+            border-radius:999px;
+            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
+            color:#fff;font-size:10px;font-weight:800;
+            line-height:18px;text-align:center;
+            box-shadow:0 4px 10px rgba(241,123,13,.55),
+                       0 0 0 2px var(--green-deep);
+            display:none;
+            z-index:3;
+            pointer-events:none;
+        }
+        .cs-bell-wrap .cs-bell-count:not([hidden]){
+            display:inline-block;
+        }
+        .cs-bell-menu{
+            position:absolute;
+            top:calc(100% + 12px);
+            right:0;
+            width:340px;
+            max-width:calc(100vw - 32px);
+            background:#fff;
+            border-radius:14px;
+            box-shadow:0 22px 50px rgba(2,36,27,.32);
+            border:1px solid var(--border);
+            overflow:hidden;
+            z-index:120;
+            display:none;
+            animation:csBellIn .18s ease-out;
+        }
+        .cs-bell-wrap.open .cs-bell-menu{ display:block; }
+        @keyframes csBellIn{
+            from{opacity:0; transform:translateY(-6px);}
+            to  {opacity:1; transform:translateY(0);}
+        }
+        .cs-bell-menu::before{
+            content:'';
+            position:absolute;
+            top:-7px; right:14px;
+            width:14px; height:14px;
+            background:#fff;
+            border-top:1px solid var(--border);
+            border-left:1px solid var(--border);
+            transform:rotate(45deg);
+        }
+        .cs-bell-head{
+            display:flex; align-items:center; justify-content:space-between;
+            padding:14px 16px 10px;
+            font-size:13px; font-weight:800;
+            color:var(--green);
+            border-bottom:1px solid #f1f5f4;
+            background:linear-gradient(180deg,#f7faf9 0%,#ffffff 100%);
+            gap:8px;
+        }
+        .cs-bell-head i{ color:var(--orange); }
+        .cs-bell-head .cs-bell-badge{
+            font-family:'DM Sans',sans-serif;
+            font-size:11px; font-weight:700;
+            color:var(--orange-deep);
+            background:rgba(241,123,13,.12);
+            padding:3px 8px; border-radius:999px;
+        }
+        .cs-bell-markall{
+            font-family:'DM Sans',sans-serif;
+            font-size:11px; font-weight:700;
+            color:var(--green);
+            background:transparent;
+            border:1px solid rgba(4,70,53,.18);
+            padding:4px 10px;
+            border-radius:999px;
+            cursor:pointer;
+            transition:background .12s ease, border-color .12s ease,
+                       color .12s ease;
+            white-space:nowrap;
+        }
+        .cs-bell-markall:hover{
+            background:rgba(4,70,53,.08);
+            border-color:var(--green);
+        }
+        .cs-bell-markall:disabled{
+            opacity:.45;
+            cursor:not-allowed;
+            background:transparent;
+        }
+        .cs-bell-list{
+            max-height:360px;
+            overflow-y:auto;
+        }
+        .cs-bell-list::-webkit-scrollbar{ width:6px; }
+        .cs-bell-list::-webkit-scrollbar-thumb{
+            background:rgba(4,70,53,.18);
+            border-radius:4px;
+        }
+        .cs-bell-empty{
+            padding:28px 16px;
+            text-align:center;
+            color:var(--mid);
+            font-size:12.5px;
+        }
+        .cs-bell-empty i{
+            display:block;
+            font-size:28px;
+            color:#cbd5e1;
+            margin-bottom:8px;
+        }
+        .cs-bell-item{
+            display:block;
+            padding:11px 14px;
+            border-top:1px solid #f1f5f4;
+            cursor:pointer;
+            transition:background .12s ease;
+            position:relative;
+            text-decoration:none;
+            color:inherit;
+        }
+        .cs-bell-item:first-child{ border-top:none; }
+        .cs-bell-item:hover{ background:#f7faf9; }
+        .cs-bell-item.is-unread{
+            background:#fffaf2;
+        }
+        .cs-bell-item.is-unread::before{
+            content:'';
+            position:absolute;
+            left:4px; top:18px;
+            width:6px; height:6px;
+            border-radius:50%;
+            background:var(--orange);
+            box-shadow:0 0 6px rgba(241,123,13,.65);
+        }
+        .cs-bell-item .cs-bell-title{
+            font-size:12.5px; font-weight:700;
+            color:var(--dark);
+            margin-bottom:2px;
+            display:flex; align-items:center; gap:6px;
+            flex-wrap:wrap;
+        }
+        .cs-bell-item .cs-bell-msg{
+            font-size:12px;
+            color:var(--mid);
+            line-height:1.45;
+            margin-bottom:4px;
+            word-wrap:break-word;
+        }
+        .cs-bell-item .cs-bell-time{
+            font-size:10.5px;
+            color:#94a3b8;
+            font-weight:600;
+            letter-spacing:.02em;
+        }
+        .cs-bell-item .cs-bell-type{
+            font-size:9.5px; font-weight:800;
+            letter-spacing:.08em; text-transform:uppercase;
+            padding:2px 7px; border-radius:999px;
+            background:rgba(4,70,53,.08);
+            color:var(--green);
+        }
+        .cs-bell-item .cs-bell-type.order_confirmed,
+        .cs-bell-item .cs-bell-type.order_packed{
+            background:rgba(20,184,166,.15);
+            color:#0d9488;
+        }
+        .cs-bell-item .cs-bell-type.order_delivered{
+            background:rgba(4,70,53,.10);
+            color:var(--green);
+        }
+        .cs-bell-item .cs-bell-type.order_cancelled,
+        .cs-bell-item .cs-bell-type.delivery_failed{
+            background:rgba(225,29,72,.10);
+            color:var(--red, #e11d48);
+        }
+        .cs-bell-item .cs-bell-type.rider_assigned,
+        .cs-bell-item .cs-bell-type.order_out_for_delivery{
+            background:rgba(241,123,13,.14);
+            color:var(--orange-deep);
+        }
+        .cs-bell-foot{
+            padding:10px 14px;
+            background:#f8faf9;
+            border-top:1px solid var(--border);
+            font-size:11.5px;
+            text-align:center;
+            color:var(--mid);
+        }
+        .cs-bell-foot a{
+            color:var(--orange-deep);
+            font-weight:700;
+        }
+        .cs-bell-foot a:hover{ color:var(--orange); }
 
         .cs-user-chip{
             display:flex;align-items:center;gap:10px;
@@ -510,6 +742,104 @@
         }
         .cs-pwd-toggle:hover{ background:#f1f5f9; color:#475569; }
         .cs-pwd-toggle i{ font-size:14px; }
+
+        /* ══════════════════ LOGOUT CONFIRM MODAL (base.html) ══════════════════
+           Shared overlay reused via class .cs-confirm-overlay; the modal is
+           inserted once at end of body by csConfirmLogout(). Buttons inside
+           .cs-confirm-modal are wired to "Cancel" (.cs-confirm-cancel) and
+           "Yes, log out" (.cs-confirm-ok). Closed by ESC or backdrop click. */
+        .cs-confirm-overlay{
+            position:fixed;inset:0;
+            background:rgba(2,36,27,.55);
+            backdrop-filter:blur(4px);
+            z-index:9999;
+            display:none;
+            align-items:center;justify-content:center;
+            padding:16px;
+            animation:csConfirmFade .18s ease-out;
+        }
+        .cs-confirm-overlay[open]{ display:flex; }
+        @keyframes csConfirmFade{ from{opacity:0;} to{opacity:1;} }
+        .cs-confirm-modal{
+            background:#fff;
+            border-radius:18px;
+            max-width:420px;width:100%;
+            box-shadow:0 30px 80px rgba(2,36,27,.45);
+            padding:28px 26px 22px;
+            text-align:center;
+            animation:csConfirmPop .22s cubic-bezier(.2,.9,.3,1.2);
+        }
+        @keyframes csConfirmPop{
+            from{opacity:0; transform:translateY(12px) scale(.96);}
+            to  {opacity:1; transform:translateY(0) scale(1);}
+        }
+        .cs-confirm-icon{
+            width:60px;height:60px;border-radius:50%;
+            background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%);
+            color:#b91c1c;
+            display:inline-flex;align-items:center;justify-content:center;
+            font-size:26px;
+            margin:0 auto 16px;
+            box-shadow:0 8px 18px rgba(185,28,28,.18);
+        }
+        .cs-confirm-title{
+            font-size:18px;font-weight:800;color:#0f172a;
+            margin:0 0 6px;
+        }
+        .cs-confirm-msg{
+            font-size:14px;color:#475569;line-height:1.5;
+            margin:0 0 20px;
+        }
+        .cs-confirm-actions{
+            display:flex;gap:10px;justify-content:center;
+        }
+        .cs-confirm-btn{
+            flex:1;min-width:0;
+            padding:10px 16px;border-radius:10px;
+            font-size:14px;font-weight:700;
+            cursor:pointer;border:1px solid transparent;
+            font-family:inherit;
+            transition:transform .12s ease, box-shadow .12s ease,
+                       background .12s ease, color .12s ease;
+        }
+        .cs-confirm-btn:hover{ transform:translateY(-1px); }
+        .cs-confirm-cancel{
+            background:#fff;border-color:#e2e8f0;color:#475569;
+        }
+        .cs-confirm-cancel:hover{ background:#f1f5f9; color:#0f172a; }
+        .cs-confirm-ok{
+            background:linear-gradient(135deg,#f17b0d 0%,#c2410c 100%);
+            color:#fff;
+            box-shadow:0 6px 16px rgba(241,123,13,.35);
+        }
+        .cs-confirm-ok:hover{ box-shadow:0 10px 22px rgba(241,123,13,.5); }
+        .cs-confirm-ok:focus-visible,
+        .cs-confirm-cancel:focus-visible{
+            outline:none;
+            box-shadow:0 0 0 3px rgba(241,123,13,.35);
+        }
+        body.cs-no-scroll{ overflow:hidden; }
+
+        /* Customer name in user chip — clickable affordance. Wrapped in
+           <a class="cs-name-link"> and points to /customer/profile. Only
+           rendered for CUSTOMER role; ADMIN/EMPLOYEE keep the plain <p>. */
+        a.cs-name-link{
+            display:inline-block;
+            color:#fff;
+            text-decoration:none;
+            border-radius:6px;
+            padding:1px 4px;
+            margin:-1px -4px;
+            transition:background .15s ease, color .15s ease;
+        }
+        a.cs-name-link:hover{
+            background:rgba(255,255,255,.10);
+            color:#ffb35c;
+        }
+        a.cs-name-link:focus-visible{
+            outline:none;
+            box-shadow:0 0 0 2px rgba(255,179,92,.6);
+        }
     </style>
 </head>
 
@@ -568,6 +898,47 @@
                     <span class="cs-cart-badge"{% if cart_count == 0 %} hidden{% endif %}>{{ cart_count }}</span>
                 </a>
 
+                {# ── Customer notification bell ───────────────────────────
+                   Polls GET /customer/notifications every 30s; clicking
+                   an item marks it read via POST .../{id}/read and
+                   navigates to the notification's link_url (or dashboard
+                   fallback). Gated to CUSTOMER role only. #}
+                <div class="cs-bell-wrap" id="csBellDropdown">
+                    <button type="button"
+                            class="cs-bell-btn"
+                            id="csBellBtn"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                    </button>
+                    <span class="cs-bell-count" id="csNotifBadge" hidden>0</span>
+                    <div class="cs-bell-menu" role="menu" aria-labelledby="csBellBtn">
+                        <div class="cs-bell-head">
+                            <span><i class="fa-solid fa-bell mr-1"></i>Notifications</span>
+                            <div class="flex items-center gap-2">
+                                <span class="cs-bell-badge" id="csNotifCount" hidden>0 new</span>
+                                <button type="button"
+                                        class="cs-bell-markall"
+                                        id="csNotifMarkAll"
+                                        disabled
+                                        title="Mark all notifications as read">
+                                    <i class="fa-solid fa-check-double mr-1"></i>Mark all read
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cs-bell-list" id="csNotifList">
+                            <div class="cs-bell-empty">
+                                <i class="fa-regular fa-bell-slash"></i>
+                                Loading…
+                            </div>
+                        </div>
+                        <div class="cs-bell-foot">
+                            <a href="/customer/dashboard">Go to dashboard →</a>
+                        </div>
+                    </div>
+                </div>
+
             {% elif role == "EMPLOYEE" %}
                 <a href="/products" class="cs-nav-link hidden md:inline-block">Products</a>
                 <a href="/sales" class="cs-nav-link hidden md:inline-block">Sales</a>
@@ -587,10 +958,19 @@
                     {{ (user_name or "U")[0] | upper }}
                 </div>
                 <div class="text-right pr-2 hidden sm:block">
-                    <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
+                    {% if role == "CUSTOMER" %}
+                        <a href="/customer/profile" class="cs-name-link" title="View my profile">
+                            <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
+                        </a>
+                    {% else %}
+                        <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
+                    {% endif %}
                     <p class="text-green-200 text-[10px] uppercase tracking-wider">{{ role }}</p>
                 </div>
-                <a href="/auth/logout" class="cs-btn-orange ml-1">Logout</a>
+                <a href="/auth/logout"
+                   class="cs-btn-orange ml-1 cs-logout-link"
+                   data-confirm="Are you sure you want to log out?"
+                   aria-label="Log out">Logout</a>
             </div>
             {% else %}
             <a href="/auth/login" class="cs-btn-orange">Login</a>
@@ -1043,6 +1423,260 @@
     }
 
     btn.addEventListener('click', askAndSubmit);
+  })();
+
+  /* ══════════════ CUSTOMER NOTIFICATION BELL ══════════════
+     Polls GET /customer/notifications every 30s. Same data
+     source as the storefront bell — this just gives the bell
+     parity inside the customer dashboard shell. */
+  (function(){
+    const wrap    = document.getElementById('csBellDropdown');
+    const btn     = document.getElementById('csBellBtn');
+    const list    = document.getElementById('csNotifList');
+    const badge   = document.getElementById('csNotifBadge');
+    const count   = document.getElementById('csNotifCount');
+    const markAll = document.getElementById('csNotifMarkAll');
+    if (!wrap || !btn || !list || !badge || !count) return;
+
+    const escapeHtml = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    function relTime(iso){
+      if (!iso) return '';
+      const t = new Date(iso);
+      if (isNaN(t.getTime())) return '';
+      const diff = Math.floor((Date.now() - t.getTime()) / 1000);
+      if (diff < 5)    return 'just now';
+      if (diff < 60)   return diff + 's ago';
+      if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+      return Math.floor(diff/86400) + 'd ago';
+    }
+
+    function render(notifications){
+      const n = Array.isArray(notifications) ? notifications : [];
+      // is_read comes from the DB as 'Y' / 'N' — both are truthy strings,
+      // so `!x.is_read` always returns false and the badge would never
+      // show.  Match the storefront's explicit compare against 'N'.
+      const isUnread = (x) => x.is_read === 'N' || x.is_read === 'n' || x.is_read === false;
+      const unread   = n.filter(isUnread).length;
+
+      // Top-right pill badge on the bell button
+      if (unread > 0){
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+      // Header label inside the dropdown
+      if (unread > 0){
+        count.textContent = unread + ' new';
+        count.hidden = false;
+      } else {
+        count.hidden = true;
+      }
+      // Mark-all-read button only useful when there are unread items
+      if (markAll){
+        markAll.disabled = unread === 0 || n.length === 0;
+      }
+
+      if (n.length === 0){
+        list.innerHTML =
+          '<div class="cs-bell-empty">' +
+            '<i class="fa-regular fa-bell-slash"></i>' +
+            'No notifications yet' +
+          '</div>';
+        return;
+      }
+
+      const items = n.map(n => {
+        const typeClass = escapeHtml(n.notif_type || 'general');
+        const unreadCls = isUnread(n) ? ' is-unread' : '';
+        return (
+          '<a class="cs-bell-item' + unreadCls + '"' +
+              ' data-id="' + escapeHtml(n.notif_id) + '"' +
+              ' href="' + escapeHtml(n.link_url || '/customer/dashboard') + '">' +
+            '<div class="cs-bell-title">' +
+              '<span class="cs-bell-type ' + typeClass + '">' + escapeHtml(n.notif_type || '') + '</span>' +
+              escapeHtml(n.title || '') +
+            '</div>' +
+            (n.message ? '<div class="cs-bell-msg">' + escapeHtml(n.message) + '</div>' : '') +
+            '<div class="cs-bell-time">' + escapeHtml(relTime(n.created_at)) + '</div>' +
+          '</a>'
+        );
+      }).join('');
+      list.innerHTML = items;
+    }
+
+    async function refresh(){
+      try {
+        const r = await fetch('/customer/notifications', { credentials: 'same-origin' });
+        if (!r.ok) return;
+        const data = await r.json();
+        render(data.notifications || []);
+      } catch(_) { /* network blip — try again next tick */ }
+    }
+
+    async function markRead(id){
+      try {
+        await fetch('/customer/notifications/' + encodeURIComponent(id) + '/read', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch(_) {}
+    }
+
+    async function markAllRead(){
+      try {
+        const r = await fetch('/customer/notifications/read-all', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (r.ok){
+          await refresh();   // immediately repaint — count drops to 0
+        }
+      } catch(_) {}
+    }
+
+    // Click-to-open / toggle
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = wrap.classList.toggle('open');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      if (isOpen) refresh();
+    });
+
+    // Click on an item: mark read, then follow the link
+    list.addEventListener('click', (e) => {
+      const item = e.target.closest('.cs-bell-item');
+      if (!item) return;
+      const id = item.getAttribute('data-id');
+      if (id) markRead(id);
+      // let the <a href> handle navigation naturally
+    });
+
+    // "Mark all read" button
+    if (markAll){
+      markAll.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (markAll.disabled) return;
+        markAll.disabled = true;
+        const original = markAll.innerHTML;
+        markAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Marking…';
+        markAllRead().finally(() => {
+          // refresh() inside markAllRead() will set the correct
+          // disabled state; only restore label if request failed
+          if (!document.getElementById('csBellDropdown').contains(markAll)) return;
+          markAll.innerHTML = original;
+        });
+      });
+    }
+
+    // Close on outside click / ESC
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)){
+        wrap.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape'){
+        wrap.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    // Initial fetch + 30s polling. Use visibilitychange to pause
+    // when the tab is hidden so we're not hammering Supabase while
+    // the customer has the page in the background.
+    refresh();
+    setInterval(() => {
+      if (!document.hidden) refresh();
+    }, 30000);
+  })();
+
+  /* ══════════════ LOGOUT CONFIRMATION MODAL ══════════════
+     Intercepts any element with [data-confirm] (e.g. .cs-logout-link).
+     Renders a single shared overlay element on demand, traps focus on
+     the primary action, closes on ESC/backdrop, then navigates to
+     the original href on confirmation. */
+  (function(){
+    const links = document.querySelectorAll('[data-confirm]');
+    if (!links.length) return;
+
+    let overlay = null;
+    let lastFocus = null;
+
+    function close(){
+      if (!overlay) return;
+      overlay.removeAttribute('open');
+      document.body.classList.remove('cs-no-scroll');
+      // Re-trigger animation by removing from DOM after fade-out
+      setTimeout(() => {
+        if (overlay && !overlay.hasAttribute('open')){
+          overlay.remove();
+          overlay = null;
+        }
+      }, 220);
+      if (lastFocus && typeof lastFocus.focus === 'function'){
+        lastFocus.focus();
+      }
+    }
+
+    function open(message, okHref){
+      lastFocus = document.activeElement;
+      overlay = document.createElement('div');
+      overlay.className = 'cs-confirm-overlay';
+      overlay.setAttribute('role','dialog');
+      overlay.setAttribute('aria-modal','true');
+      overlay.setAttribute('aria-labelledby','csConfirmTitle');
+      overlay.innerHTML =
+        '<div class="cs-confirm-modal">' +
+          '<div class="cs-confirm-icon"><i class="fa-solid fa-right-from-bracket"></i></div>' +
+          '<h3 class="cs-confirm-title" id="csConfirmTitle">Confirm log out</h3>' +
+          '<p class="cs-confirm-msg">' + (message || 'Are you sure?') + '</p>' +
+          '<div class="cs-confirm-actions">' +
+            '<button type="button" class="cs-confirm-btn cs-confirm-cancel">Cancel</button>' +
+            '<button type="button" class="cs-confirm-btn cs-confirm-ok">Yes, log out</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      // Force layout, then animate in
+      void overlay.offsetWidth;
+      overlay.setAttribute('open','');
+      document.body.classList.add('cs-no-scroll');
+
+      const cancel = overlay.querySelector('.cs-confirm-cancel');
+      const ok     = overlay.querySelector('.cs-confirm-ok');
+      cancel.addEventListener('click', close);
+      ok.addEventListener('click', () => { window.location.href = okHref; });
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+      });
+
+      // ESC closes
+      const onKey = (e) => {
+        if (e.key === 'Escape'){ close(); document.removeEventListener('keydown', onKey); }
+        else if (e.key === 'Tab'){
+          // simple focus trap between cancel and ok
+          if (e.shiftKey && document.activeElement === cancel){ e.preventDefault(); ok.focus(); }
+          else if (!e.shiftKey && document.activeElement === ok){ e.preventDefault(); cancel.focus(); }
+        }
+      };
+      document.addEventListener('keydown', onKey);
+      cancel.focus();
+    }
+
+    links.forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = a.getAttribute('href') || '/auth/logout';
+        open(a.dataset.confirm, href);
+      });
+    });
   })();
 </script>
 

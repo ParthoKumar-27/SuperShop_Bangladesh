@@ -155,7 +155,7 @@
 
                     {% if sale.discount_amt|float > 0 %}
                     <div class="flex justify-between text-sm text-emerald-700">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-tag text-xs"></i> Loyalty Discount</span>
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-tag text-xs"></i> Discount</span>
                         <span class="mono font-semibold">-৳{{ "{:,.2f}".format(sale.discount_amt|float) }}</span>
                     </div>
                     {% endif %}

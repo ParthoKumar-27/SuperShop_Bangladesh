@@ -1,0 +1,29 @@
+[SQL] 97.5 ms
+[SQL] 144.1 ms
+[SQL] 97.9 ms
+[SQL] 109.4 ms
+[SQL] 92.7 ms
+INFO:     127.0.0.1:50077 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61425 - "GET /auth/login?role=customer HTTP/1.1" 200 OK
+[SQL] 93.3 ms
+[SQL] 90.6 ms
+INFO:     127.0.0.1:61427 - "POST /auth/customer/login HTTP/1.1" 302 Found
+[SQL] 90.8 ms
+[SQL] 90.4 ms
+[SQL] 100.3 ms
+[SQL] 96.1 ms
+[SQL] 91.3 ms
+INFO:     127.0.0.1:50061 - "POST /auth/customer/register HTTP/1.1" 302 Found
+[SQL] 91.0 ms
+INFO:     127.0.0.1:49826 - "POST /auth/customer/register HTTP/1.1" 302 Found
+[SQL] 91.2 ms
+INFO:     127.0.0.1:61461 - "POST /auth/customer/register HTTP/1.1" 302 Found
+[SQL] 90.1 ms
+[SQL] 92.1 ms
+INFO:     127.0.0.1:58245 - "POST /auth/customer/login HTTP/1.1" 302 Found
+INFO:     127.0.0.1:53482 - "GET /customer/dashboard HTTP/1.1" 302 Found
+INFO:     127.0.0.1:53482 - "GET /auth/login?next=/customer/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58311 - "GET /customer/dashboard HTTP/1.1" 302 Found
+INFO:     127.0.0.1:58311 - "GET /auth/login?next=/customer/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58313 - "GET /customer/dashboard HTTP/1.1" 302 Found
+INFO:     127.0.0.1:58313 - "GET /auth/login?next=/customer/dashboard HTTP/1.1" 200 OK

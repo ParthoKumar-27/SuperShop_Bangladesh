@@ -7,6 +7,7 @@ from urllib.parse import quote
 from httpcore import request
 from database import query, execute
 from auth import require_customer, _hash, _verify
+from notifications import notify_branch_manager
 from fastapi import FastAPI, Request, Form, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -35,6 +36,72 @@ def _normalize_image_url(raw):
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER DASHBOARD  (protected — CUSTOMER only)
 # ══════════════════════════════════════════════════════════════════════════════
+def _cancel_and_refund_customer(order_id: str):
+    """Same logic as employee._cancel_and_refund, but lives in this module
+    so customer.py has no cross-router import on employee.py.
+
+    In one transaction:
+      • online_order.order_status → 'CANCELLED'
+      • sale.payment_status       → 'CANCELLED'
+      • branch_inventory          ← restocked per item
+      • payment.status            ← 'REFUNDED' (only if money was taken)
+      • customer.loyalty_points   ← decremented (only if refunded)
+
+    Idempotent: if the sale is already CANCELLED we no-op, but we still
+    ensure the online_order flag is CANCELLED so the dashboard's Cancel
+    button disappears reliably even if a prior partial run left it
+    stranded in PLACED."""
+    row = query("""
+        SELECT s.sale_id, s.cust_id, s.total_amt, s.payment_status,
+               oo.order_status
+        FROM   online_order oo JOIN sale s ON oo.sale_id = s.sale_id
+        WHERE  oo.order_id = %s
+    """, (order_id,))
+    if not row:
+        return None
+    row = row[0]
+    sale_id, cust_id = row["sale_id"], row["cust_id"]
+
+    if row["payment_status"] == "CANCELLED":
+        # Sale already cancelled — make sure the online_order flag is
+        # also CANCELLED so the row no longer advertises Cancel button.
+        if (row["order_status"] or "").upper() != "CANCELLED":
+            execute(
+                "UPDATE online_order SET order_status = 'CANCELLED' "
+                "WHERE order_id = %s",
+                (order_id,),
+            )
+        return sale_id  # already handled
+
+    items = query("SELECT product_id, quantity FROM sale_item WHERE sale_id = %s", (sale_id,))
+    for it in items:
+        execute("""
+            UPDATE branch_inventory bi
+            SET    quantity = quantity + %s
+            FROM   online_order oo
+            WHERE  bi.product_id = %s AND bi.branch_id = oo.branch_id
+              AND  oo.order_id = %s
+        """, (it["quantity"], it["product_id"], order_id))
+
+    if row["payment_status"] == "PAID":
+        execute("""
+            UPDATE payment SET status = 'REFUNDED'
+            WHERE sale_id = %s AND status = 'SUCCESS'
+        """, (sale_id,))
+        points_to_reverse = int(float(row["total_amt"] or 0) // 10)
+        if points_to_reverse > 0 and cust_id:
+            execute("""
+                UPDATE customer
+                SET loyalty_points = GREATEST(loyalty_points - %s, 0)
+                WHERE cust_id = %s
+            """, (points_to_reverse, cust_id))
+
+    execute("UPDATE sale SET payment_status = 'CANCELLED' WHERE sale_id = %s", (sale_id,))
+    execute(
+        "UPDATE online_order SET order_status = 'CANCELLED' WHERE order_id = %s",
+        (order_id,),
+    )
+    return sale_id
 # ══════════════════════════════════════════════════════════════════════════════
 #  CUSTOMER SHOP, CART & CHECKOUT
 # ══════════════════════════════════════════════════════════════════════════════
@@ -429,6 +496,29 @@ def place_order(
 
     request.session["cart"] = {}
     _refresh_customer_session(request, session)
+
+    # ── Notify the branch manager that a new online order landed ────────
+    # Fire-and-forget: a notification failure must never break checkout.
+    try:
+        cust_row = query(
+            "SELECT cust_name FROM customer WHERE cust_id = %s",
+            (cust_id,),
+        )
+        cust_name = cust_row[0]["cust_name"] if cust_row else "A customer"
+        item_count = sum(qty for _, qty, _, _ in items)
+        notify_branch_manager(
+            branch_id,
+            "NEW_ONLINE_ORDER",
+            "New online order",
+            f"{cust_name} placed order {order_id} — {item_count} item(s), "
+            f"BDT {total_amt:,.2f} via {payment_method}.",
+            link_url="/employee/branch/orders",
+            ref_table="online_order",
+            ref_id=order_id,
+        )
+    except Exception as _notif_err:
+        # Never let a notifier bug roll back a successful checkout.
+        print(f"[notify] NEW_ONLINE_ORDER failed: {_notif_err}")
 
     return RedirectResponse("/customer/dashboard?msg=order_placed", status_code=302)
 
@@ -1373,30 +1463,17 @@ def customer_dashboard(request: Request, session=Depends(require_customer)):
                TO_CHAR(s.sale_date, 'DD Mon YYYY HH24:MI') AS sale_date,
                b.branch_name, s.total_amt,
                s.payment_status, s.order_type,
-               oo.order_status, oo.delivery_address
+               oo.order_id, oo.order_status, oo.delivery_address,
+               pay.status  AS pay_status,
+               pay.method  AS pay_method
         FROM   sale s
                JOIN branch b ON s.branch_id = b.branch_id
                LEFT JOIN online_order oo ON s.sale_id = oo.sale_id
+               LEFT JOIN payment pay      ON pay.sale_id = s.sale_id
         WHERE  s.cust_id = %s
         ORDER BY s.sale_date DESC
-        LIMIT 10
+        LIMIT  50
     """, (cust_id,))
-
-    # Attach the first 4 items per order so the dashboard can render product
-    # chips inline (Amazon-style "Your Orders" rows). One round-trip per order
-    # is acceptable since the LIMIT is small.
-    for o in my_orders:
-        o["items"] = query(
-            """
-            SELECT p.product_name, si.quantity, si.line_total
-            FROM   sale_item si
-            JOIN   product   p ON si.product_id = p.product_id
-            WHERE  si.sale_id = %s
-            ORDER  BY si.sale_id
-            LIMIT  4
-            """,
-            (o["sale_id"],),
-        )
 
     cust_info = query(
         "SELECT cust_name, loyalty_points, membership_type FROM customer WHERE cust_id = %s",
@@ -1449,14 +1526,119 @@ def category_page(request: Request, cat_id: str):
     )
 
 
-@customer_router.post("/order/hide/{sale_id}")
-def hide_order(sale_id: str, session=Depends(require_customer)):
+@customer_router.post("/order/cancel/{sale_id}")
+def cancel_order(
+    sale_id: str,
+    session=Depends(require_customer),
+):
+    """Allow a customer to cancel one of their own orders.
+
+    Mirrors the branch-manager cancel flow but enforces:
+      • ownership — the sale must belong to the logged-in customer
+      • online order — POS / walk-in sales have no online_order row
+      • cancellable state — order_status must still be 'PLACED'
+
+    On success: stock is restocked, loyalty points reversed, payment
+    refunded (if already PAID), and the sale is marked CANCELLED.
+    """
     cust_id = session.get("user_id")
-    
-    execute("""
-        UPDATE sale
-        SET hidden_by_customer = 'Y'
-        WHERE sale_id = %s AND cust_id = %s
+
+    owned = query("""
+        SELECT  oo.order_id, oo.order_status, s.cust_id
+        FROM    online_order oo
+        JOIN    sale s ON s.sale_id = oo.sale_id
+        WHERE   oo.sale_id = %s
+          AND   s.cust_id = %s
     """, (sale_id, cust_id))
-    
-    return RedirectResponse("/customer/dashboard?msg=order_hidden", status_code=302)
+
+    if not owned:
+        return RedirectResponse(
+            "/customer/dashboard?error=Order+not+found",
+            status_code=302,
+        )
+
+    order_id = owned[0]["order_id"]
+    current  = (owned[0]["order_status"] or "").upper()
+
+    if current != "PLACED":
+        return RedirectResponse(
+            f"/customer/dashboard?error=Order+can+only+be+cancelled+while+it+is+still+placed",
+            status_code=302,
+        )
+
+    # Mark the online_order as CANCELLED so the row drops out of the
+    # "active" state on the dashboard (Cancel button → "Cancelled"
+    # placeholder) and the manager's order queue stays consistent.
+    # Mirrors the branch-manager flow at employee.py:_cancel_and_refund,
+    # which also flips online_order.order_status before delegating.
+    execute(
+        "UPDATE online_order SET order_status = 'CANCELLED' WHERE order_id = %s",
+        (order_id,),
+    )
+
+    _cancel_and_refund_customer(order_id)
+
+    return RedirectResponse(
+        "/customer/dashboard?msg=order_cancelled",
+        status_code=302,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CUSTOMER NOTIFICATIONS — feeds the storefront bell icon
+#
+#  GET  /customer/notifications
+#       Returns the 20 most-recent notifications addressed to the logged-in
+#       customer.  Used by the bell widget in storefront.html.
+#
+#  POST /customer/notifications/{notif_id}/read
+#       Marks a single notification as read.  Scoped by recipient_type +
+#       recipient_id so a customer can never mutate someone else's row.
+#
+#  POST /customer/notifications/read-all
+#       Marks every unread notification for the current customer as
+#       read in one shot.  Returns the number of rows affected so the
+#       bell widget can update its badge without a second fetch.
+# ══════════════════════════════════════════════════════════════════════════════
+
+@customer_router.get("/notifications")
+def customer_notifications(session=Depends(require_customer)):
+    cust_id = session.get("user_id")
+    rows = query("""
+        SELECT notif_id, notif_type, title, message, link_url, is_read,
+               TO_CHAR(created_at, 'DD Mon, HH12:MI AM') AS created_at
+        FROM   notification
+        WHERE  recipient_type = 'CUSTOMER' AND recipient_id = %s
+        ORDER  BY created_at DESC
+        LIMIT  20
+    """, (cust_id,))
+    unread = sum(1 for r in rows if r["is_read"] == "N")
+    return JSONResponse({"notifications": rows, "unread_count": unread})
+
+
+@customer_router.post("/notifications/{notif_id}/read")
+def customer_mark_notification_read(notif_id: str, session=Depends(require_customer)):
+    cust_id = session.get("user_id")
+    execute("""
+        UPDATE notification SET is_read='Y', read_at=CURRENT_TIMESTAMP
+        WHERE  notif_id = %s AND recipient_type='CUSTOMER' AND recipient_id = %s
+    """, (notif_id, cust_id))
+
+
+@customer_router.post("/notifications/read-all")
+def customer_mark_all_notifications_read(session=Depends(require_customer)):
+    cust_id = session.get("user_id")
+    # Snapshot how many are currently unread so the client can show
+    # "Marked N as read" without an extra round-trip.
+    before = query(
+        "SELECT COUNT(*) AS c FROM notification "
+        "WHERE recipient_type='CUSTOMER' AND recipient_id=%s AND is_read='N'",
+        (cust_id,),
+    )
+    marked = int(before[0]["c"]) if before else 0
+    execute("""
+        UPDATE notification SET is_read='Y', read_at=CURRENT_TIMESTAMP
+        WHERE  recipient_type='CUSTOMER' AND recipient_id = %s
+          AND  is_read = 'N'
+    """, (cust_id,))
+    return JSONResponse({"marked": marked, "unread_count": 0})

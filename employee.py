@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from database import query, execute
 from auth import _hash, _verify
-from notifications import check_low_stock, notify_all_admins
+from notifications import check_low_stock, notify_all_admins, notify_customer
 employee_router = APIRouter(prefix="/employee", tags=["Employee"])
 templates = Jinja2Templates(directory="templates")
 
@@ -448,6 +448,47 @@ def update_order_status(
     if order_status == "CANCELLED":
         _cancel_and_refund(order_id)          # ← NEW
 
+    # ── Tell the customer their order moved to a new status ────────────
+    # Fire-and-forget — a notification failure must never roll back the
+    # state change.  Only fire for terminal-ish statuses that matter to
+    # the customer (CONFIRMED/PACKED/CANCELLED).  OUT_FOR_DELIVERY and
+    # DELIVERED are owned by the rider flow downstream.
+    try:
+        if order_status in ("CONFIRMED", "PACKED", "CANCELLED"):
+            cust_row = query(
+                "SELECT cust_id FROM online_order WHERE order_id = %s",
+                (order_id,),
+            )
+            cust_id = cust_row[0]["cust_id"] if cust_row else None
+            if cust_id:
+                if order_status == "CONFIRMED":
+                    notify_customer(
+                        cust_id, "ORDER_CONFIRMED",
+                        "Order confirmed",
+                        f"Your order {order_id} has been confirmed by the branch.",
+                        link_url=f"/customer/dashboard",
+                        ref_table="online_order", ref_id=order_id,
+                    )
+                elif order_status == "PACKED":
+                    notify_customer(
+                        cust_id, "ORDER_PACKED",
+                        "Order packed",
+                        f"Your order {order_id} has been packed and is ready for dispatch.",
+                        link_url=f"/customer/dashboard",
+                        ref_table="online_order", ref_id=order_id,
+                    )
+                elif order_status == "CANCELLED":
+                    notify_customer(
+                        cust_id, "ORDER_CANCELLED",
+                        "Order cancelled",
+                        f"Your order {order_id} has been cancelled by the branch. "
+                        "Refund will be processed shortly.",
+                        link_url=f"/customer/dashboard",
+                        ref_table="online_order", ref_id=order_id,
+                    )
+    except Exception as _err:
+        print(f"[notify] order-status customer notify failed: {_err}")
+
     return RedirectResponse(
         f"/employee/branch/orders?success=Order+{order_id}+updated",
         status_code=302
@@ -540,6 +581,25 @@ def assign_rider(
         "/employee/delivery_rider/dashboard",
         delivery_id,
     ))
+
+    # ── Notify the customer that a rider is on the way ────────────────
+    try:
+        cust_row = query(
+            "SELECT cust_id FROM online_order WHERE order_id = %s",
+            (order_id,),
+        )
+        cust_id = cust_row[0]["cust_id"] if cust_row else None
+        if cust_id:
+            notify_customer(
+                cust_id, "RIDER_ASSIGNED",
+                "Rider assigned",
+                f"A rider has been assigned to your order {order_id}. "
+                "They will pick it up shortly.",
+                link_url="/customer/dashboard",
+                ref_table="online_order", ref_id=order_id,
+            )
+    except Exception as _err:
+        print(f"[notify] rider-assigned customer notify failed: {_err}")
 
     return RedirectResponse(
         f"/employee/branch/orders?success=Rider+assigned+to+{order_id}",
@@ -1781,6 +1841,60 @@ def rider_update_status(
 
         if order_id:
             _cancel_and_refund(order_id)
+
+    # ── Tell the customer the delivery status changed ────────────────
+    # We need cust_id + order_id.  Fall back to a fresh join if `info`
+    # was never populated (e.g. only PICKED_UP / ON_THE_WAY / FAILED).
+    try:
+        if new_status in ("PICKED_UP", "ON_THE_WAY", "DELIVERED", "FAILED"):
+            ctx = info if new_status == "DELIVERED" and info else None
+            if ctx is None:
+                row = query("""
+                    SELECT oo.cust_id, d.order_id
+                    FROM   delivery d
+                    JOIN   online_order oo ON d.order_id = oo.order_id
+                    WHERE  d.delivery_id  = %s
+                """, (delivery_id,))
+                ctx = row[0] if row else {}
+
+            cust_id  = ctx.get("cust_id")
+            order_id = ctx.get("order_id")
+            if cust_id and order_id:
+                if new_status == "PICKED_UP":
+                    notify_customer(
+                        cust_id, "ORDER_OUT_FOR_DELIVERY",
+                        "Out for delivery",
+                        f"Your order {order_id} has been picked up and is on its way.",
+                        link_url="/customer/dashboard",
+                        ref_table="online_order", ref_id=order_id,
+                    )
+                elif new_status == "ON_THE_WAY":
+                    notify_customer(
+                        cust_id, "ORDER_OUT_FOR_DELIVERY",
+                        "Out for delivery",
+                        f"Your order {order_id} is on the way to you.",
+                        link_url="/customer/dashboard",
+                        ref_table="online_order", ref_id=order_id,
+                    )
+                elif new_status == "DELIVERED":
+                    notify_customer(
+                        cust_id, "ORDER_DELIVERED",
+                        "Order delivered",
+                        f"Your order {order_id} has been delivered. Enjoy!",
+                        link_url="/customer/dashboard",
+                        ref_table="online_order", ref_id=order_id,
+                    )
+                elif new_status == "FAILED":
+                    notify_customer(
+                        cust_id, "ORDER_CANCELLED",
+                        "Delivery failed",
+                        f"We couldn't deliver your order {order_id}. "
+                        "A refund will be processed shortly.",
+                        link_url="/customer/dashboard",
+                        ref_table="online_order", ref_id=order_id,
+                    )
+    except Exception as _err:
+        print(f"[notify] rider status customer notify failed: {_err}")
 
     return RedirectResponse(
         f"/employee/delivery_rider/dashboard?success=Delivery+{delivery_id}+updated+to+{new_status.replace('_','+')}",

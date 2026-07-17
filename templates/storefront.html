@@ -413,6 +413,245 @@
     .btn-logout:hover { background: rgba(255,255,255,.12); border-color: #fff; }
 
     /* ════════════════════════════════════════════════════════════════════
+       CUSTOMER NOTIFICATIONS BELL
+       Lives inside .topnav-actions so it inherits the green navbar's
+       colour palette.  Mirrors the bell pattern used by the employee
+       dashboard, but tuned to the storefront's translucent pill look.
+       ════════════════════════════════════════════════════════════════════ */
+    .header-dropdown {
+      position: relative;
+    }
+    .bell-btn {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.22);
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background .15s ease, transform .15s ease, border-color .15s ease;
+      font-family: inherit;
+    }
+    .bell-btn:hover {
+      background: rgba(255,255,255,.20);
+      border-color: rgba(255,255,255,.45);
+      transform: translateY(-1px);
+    }
+    .bell-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(241,123,13,.45);
+    }
+    .bell-btn .notif-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 800;
+      line-height: 18px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(241,123,13,.55),
+                  0 0 0 2px var(--green-deep);
+      display: none;
+    }
+    .bell-btn .notif-count:not(:empty):not([data-zero="1"]) {
+      display: inline-block;
+    }
+
+    /* The dropdown — white card with soft shadow, anchored to bell */
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      width: 340px;
+      max-width: calc(100vw - 32px);
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 22px 50px rgba(2,36,27,.28);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      z-index: 220;
+      display: none;
+      animation: ddIn .18s ease-out;
+    }
+    .header-dropdown.open .dropdown-menu { display: block; }
+    @keyframes ddIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-menu::before {
+      content: '';
+      position: absolute;
+      top: -7px; right: 18px;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      transform: rotate(45deg);
+    }
+    .dropdown-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: -.01em;
+      border-bottom: 1px solid #f1f5f4;
+      background: linear-gradient(180deg, #f7faf9 0%, #ffffff 100%);
+    }
+    .dropdown-title .dd-unread {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange-deep);
+      background: rgba(241,123,13,.12);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .dropdown-title .dd-markall {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      background: transparent;
+      border: 1px solid rgba(4,70,53,.18);
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .12s ease, border-color .12s ease, color .12s ease;
+      white-space: nowrap;
+    }
+    .dropdown-title .dd-markall:hover {
+      background: rgba(4,70,53,.08);
+      border-color: var(--green);
+    }
+    .dropdown-title .dd-markall:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      background: transparent;
+    }
+    .dropdown-list {
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .dropdown-list::-webkit-scrollbar { width: 6px; }
+    .dropdown-list::-webkit-scrollbar-thumb {
+      background: rgba(4,70,53,.18);
+      border-radius: 4px;
+    }
+    .dropdown-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--mid);
+      font-size: 12.5px;
+    }
+    .dropdown-empty i {
+      display: block;
+      font-size: 28px;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .dropdown-item {
+      display: block;
+      padding: 11px 14px;
+      border-top: 1px solid #f1f5f4;
+      cursor: pointer;
+      transition: background .12s ease;
+      position: relative;
+    }
+    .dropdown-item:first-child { border-top: none; }
+    .dropdown-item:hover { background: #f7faf9; }
+    .dropdown-item.is-unread {
+      background: #fffaf2;
+    }
+    .dropdown-item.is-unread::before {
+      content: '';
+      position: absolute;
+      left: 4px; top: 18px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 6px rgba(241,123,13,.65);
+    }
+    .dropdown-item .dd-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dropdown-item .dd-msg {
+      font-size: 12px;
+      color: var(--mid);
+      line-height: 1.45;
+      margin-bottom: 4px;
+      word-wrap: break-word;
+    }
+    .dropdown-item .dd-time {
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    .dropdown-item .dd-type {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(4,70,53,.08);
+      color: var(--green);
+    }
+    .dropdown-item .dd-type.order_confirmed,
+    .dropdown-item .dd-type.order_packed {
+      background: rgba(20,184,166,.15);
+      color: #0d9488;
+    }
+    .dropdown-item .dd-type.order_delivered {
+      background: rgba(4,70,53,.10);
+      color: var(--green);
+    }
+    .dropdown-item .dd-type.order_cancelled,
+    .dropdown-item .dd-type.delivery_failed {
+      background: rgba(225,29,72,.10);
+      color: var(--red);
+    }
+    .dropdown-item .dd-type.rider_assigned,
+    .dropdown-item .dd-type.order_out_for_delivery {
+      background: rgba(241,123,13,.14);
+      color: var(--orange-deep);
+    }
+    .dropdown-foot {
+      padding: 10px 14px;
+      background: #f8faf9;
+      border-top: 1px solid var(--border);
+      font-size: 11.5px;
+      text-align: center;
+      color: var(--mid);
+    }
+    .dropdown-foot a {
+      color: var(--orange-deep);
+      font-weight: 700;
+    }
+    .dropdown-foot a:hover { color: var(--orange); }
+
+    /* ════════════════════════════════════════════════════════════════════
        LAYOUT
        ════════════════════════════════════════════════════════════════════ */
     .layout {
@@ -2011,6 +2250,81 @@
       .hero-shell { margin-bottom: 16px; }
       .marquee-track span { font-size: 14px; }
     }
+
+    /* ══════════════════ LOGOUT CONFIRM MODAL (storefront.html) ══════════════════
+       Same pattern as base.html but `sf-` prefixed to coexist with the
+       customer portal CSS when storefront embeds customer templates. */
+    .sf-confirm-overlay{
+      position:fixed;inset:0;
+      background:rgba(2,36,27,.55);
+      backdrop-filter:blur(4px);
+      z-index:9999;
+      display:none;
+      align-items:center;justify-content:center;
+      padding:16px;
+      animation:sfConfirmFade .18s ease-out;
+    }
+    .sf-confirm-overlay[open]{ display:flex; }
+    @keyframes sfConfirmFade{ from{opacity:0;} to{opacity:1;} }
+    .sf-confirm-modal{
+      background:#fff;
+      border-radius:18px;
+      max-width:420px;width:100%;
+      box-shadow:0 30px 80px rgba(2,36,27,.45);
+      padding:28px 26px 22px;
+      text-align:center;
+      animation:sfConfirmPop .22s cubic-bezier(.2,.9,.3,1.2);
+    }
+    @keyframes sfConfirmPop{
+      from{opacity:0; transform:translateY(12px) scale(.96);}
+      to  {opacity:1; transform:translateY(0) scale(1);}
+    }
+    .sf-confirm-icon{
+      width:60px;height:60px;border-radius:50%;
+      background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%);
+      color:#b91c1c;
+      display:inline-flex;align-items:center;justify-content:center;
+      font-size:26px;
+      margin:0 auto 16px;
+      box-shadow:0 8px 18px rgba(185,28,28,.18);
+    }
+    .sf-confirm-title{
+      font-size:18px;font-weight:800;color:#0f172a;
+      margin:0 0 6px;
+    }
+    .sf-confirm-msg{
+      font-size:14px;color:#475569;line-height:1.5;
+      margin:0 0 20px;
+    }
+    .sf-confirm-actions{
+      display:flex;gap:10px;justify-content:center;
+    }
+    .sf-confirm-btn{
+      flex:1;min-width:0;
+      padding:10px 16px;border-radius:10px;
+      font-size:14px;font-weight:700;
+      cursor:pointer;border:1px solid transparent;
+      font-family:inherit;
+      transition:transform .12s ease, box-shadow .12s ease,
+                 background .12s ease, color .12s ease;
+    }
+    .sf-confirm-btn:hover{ transform:translateY(-1px); }
+    .sf-confirm-cancel{
+      background:#fff;border-color:#e2e8f0;color:#475569;
+    }
+    .sf-confirm-cancel:hover{ background:#f1f5f9; color:#0f172a; }
+    .sf-confirm-ok{
+      background:linear-gradient(135deg,#f17b0d 0%,#c2410c 100%);
+      color:#fff;
+      box-shadow:0 6px 16px rgba(241,123,13,.35);
+    }
+    .sf-confirm-ok:hover{ box-shadow:0 10px 22px rgba(241,123,13,.5); }
+    .sf-confirm-ok:focus-visible,
+    .sf-confirm-cancel:focus-visible{
+      outline:none;
+      box-shadow:0 0 0 3px rgba(241,123,13,.35);
+    }
+    body.sf-no-scroll{ overflow:hidden; }
   </style>
 </head>
 <body
@@ -2077,15 +2391,70 @@
       {% endif %}
     </a>
 
+    {% if logged_in and role == 'CUSTOMER' %}
+      <!-- Customer notification bell — mirrors employee base.html pattern,
+           fed by GET /customer/notifications. -->
+      <div class="header-dropdown" id="csHeaderDropdown">
+        <button type="button"
+                class="bell-btn"
+                id="csBellBtn"
+                aria-label="Notifications"
+                aria-haspopup="true"
+                aria-expanded="false">
+          <i class="fas fa-bell"></i>
+          <span class="notif-count"
+                id="csNotifCount"
+                data-count="{{ notif_unread or 0 }}"
+                {% if not notif_unread %}data-zero="1"{% endif %}>{{ notif_unread or 0 }}</span>
+        </button>
+        <div class="dropdown-menu"
+             id="csNotifList"
+             role="menu"
+             aria-labelledby="csBellBtn">
+          <div class="dropdown-title">
+            <span><i class="fas fa-bell"></i>&nbsp; Notifications</span>
+            <div class="flex items-center gap-2">
+              <span class="dd-unread" id="csNotifBadge">{{ notif_unread or 0 }} new</span>
+              <button type="button"
+                      class="dd-markall"
+                      id="csNotifMarkAll"
+                      disabled
+                      title="Mark all notifications as read">
+                <i class="fas fa-check-double"></i>&nbsp;Mark all read
+              </button>
+            </div>
+          </div>
+          <div class="dropdown-list" id="csNotifItems">
+            <div class="dropdown-empty">
+              <i class="fas fa-bell-slash"></i>
+              Loading…
+            </div>
+          </div>
+          <div class="dropdown-foot">
+            <a href="/customer/dashboard"><i class="fas fa-arrow-right"></i>&nbsp; View all in dashboard</a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
     {% if role == 'CUSTOMER' %}
       <a href="/customer/dashboard" class="btn-signin"><i class="fas fa-user"></i>&nbsp; My Account</a>
-      <a href="/auth/logout" class="btn-logout">Logout</a>
+      <a href="/auth/logout"
+         class="btn-logout"
+         data-confirm="Are you sure you want to log out of your account?"
+         aria-label="Log out">Logout</a>
     {% elif role == 'ADMIN' %}
       <a href="/admin/dashboard" class="btn-signin">Dashboard</a>
-      <a href="/auth/logout" class="btn-logout">Logout</a>
+      <a href="/auth/logout"
+         class="btn-logout"
+         data-confirm="Are you sure you want to log out of the admin console?"
+         aria-label="Log out">Logout</a>
     {% elif role == 'EMPLOYEE' %}
       <a href="/employee/dashboard" class="btn-signin">Dashboard</a>
-      <a href="/auth/logout" class="btn-logout">Logout</a>
+      <a href="/auth/logout"
+         class="btn-logout"
+         data-confirm="Are you sure you want to end your shift and log out?"
+         aria-label="Log out">Logout</a>
     {% else %}
       <a href="/auth/login" class="btn-signin"><i class="fas fa-sign-in-alt"></i>&nbsp; Sign in / Sign up</a>
     {% endif %}
@@ -3627,6 +3996,279 @@
     }
 
     render();
+  })();
+</script>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     CUSTOMER NOTIFICATIONS — bell polling + dropdown render
+     Hits GET /customer/notifications every 30s.  Endpoint requires a
+     logged-in customer; if the user is signed out / not a customer,
+     the bell DOM doesn't exist so this whole block is a no-op.
+     ════════════════════════════════════════════════════════════════════ -->
+<script>
+  (function () {
+    const dd       = document.getElementById('csHeaderDropdown');
+    const btn      = document.getElementById('csBellBtn');
+    const list     = document.getElementById('csNotifItems');
+    const badge    = document.getElementById('csNotifBadge');
+    const counter  = document.getElementById('csNotifCount');
+    const markAll  = document.getElementById('csNotifMarkAll');
+    if (!dd || !btn || !list || !badge || !counter) return;  // bell not rendered
+
+    // ── Pretty time formatting ("just now" / "5m ago" / "3h ago" / "2d ago")
+    function relTime(raw) {
+      if (!raw) return '';
+      // raw comes in like "06 Nov, 09:42 PM" — JS can't parse that,
+      // so try ISO fallback first, then re-parse the components.
+      let d = new Date(raw);
+      if (isNaN(d.getTime())) {
+        // Best-effort: parse "DD Mon, HH:MM AM"
+        const m = String(raw).match(/^(\d{2})\s+(\w{3}),\s*(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (m) {
+          const months = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                           Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 };
+          let h = parseInt(m[3], 10);
+          const ampm = m[5].toUpperCase();
+          if (ampm === 'PM' && h < 12) h += 12;
+          if (ampm === 'AM' && h === 12) h = 0;
+          d = new Date(Date.UTC(
+            new Date().getUTCFullYear(),
+            months[m[2]] ?? 0,
+            parseInt(m[1], 10),
+            h,
+            parseInt(m[4], 10)
+          ));
+        }
+      }
+      if (isNaN(d.getTime())) return raw;
+      const diffMs  = Date.now() - d.getTime();
+      const mins    = Math.round(diffMs / 60000);
+      if (mins < 1)   return 'just now';
+      if (mins < 60)  return mins + 'm ago';
+      const hours     = Math.round(mins / 60);
+      if (hours < 24) return hours + 'h ago';
+      const days      = Math.round(hours / 24);
+      if (days < 7)   return days + 'd ago';
+      return d.toLocaleDateString();
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setUnread(n) {
+      counter.textContent = n;
+      counter.setAttribute('data-count', n);
+      if (n > 0) {
+        counter.removeAttribute('data-zero');
+        badge.textContent = n + ' new';
+        badge.style.display = '';
+      } else {
+        counter.setAttribute('data-zero', '1');
+        badge.textContent = '';
+        badge.style.display = 'none';
+      }
+      if (markAll){
+        markAll.disabled = (n <= 0);
+      }
+    }
+
+    function renderNotifications(items, unreadCount) {
+      setUnread(unreadCount || 0);
+      if (!items || !items.length) {
+        list.innerHTML =
+          '<div class="dropdown-empty">' +
+            '<i class="fas fa-bell-slash"></i>' +
+            'No notifications yet.' +
+          '</div>';
+        return;
+      }
+      list.innerHTML = items.map(n => {
+        const isUnread = n.is_read === 'N' || n.is_read === 'n';
+        const link     = n.link_url || '/customer/dashboard';
+        const typeCls  = (n.notif_type || '').toLowerCase();
+        return (
+          '<a class="dropdown-item' + (isUnread ? ' is-unread' : '') + '"' +
+               ' href="' + escapeHtml(link) + '"' +
+               ' data-notif-id="' + escapeHtml(n.notif_id) + '">' +
+            '<div class="dd-title">' +
+              '<span class="dd-type ' + escapeHtml(typeCls) + '">' + escapeHtml(n.notif_type) + '</span>' +
+              '<span>' + escapeHtml(n.title) + '</span>' +
+            '</div>' +
+            '<div class="dd-msg">' + escapeHtml(n.message) + '</div>' +
+            '<div class="dd-time">' + escapeHtml(relTime(n.created_at)) + '</div>' +
+          '</a>'
+        );
+      }).join('');
+
+      // Mark-read on click, then navigate (let the link href do its thing).
+      list.querySelectorAll('.dropdown-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.getAttribute('data-notif-id');
+          if (id) markNotifRead(id);
+        }, { once: true });
+      });
+    }
+
+    function loadNotifications() {
+      fetch('/customer/notifications', { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : { notifications: [], unread_count: 0 })
+        .then(data => renderNotifications(
+          data.notifications || [],
+          data.unread_count || 0
+        ))
+        .catch(() => { /* swallow — bell is purely cosmetic */ });
+    }
+
+    function markNotifRead(notifId) {
+      const fd = new FormData();
+      fd.append('_', Date.now().toString());
+      fetch('/customer/notifications/' + encodeURIComponent(notifId) + '/read', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: fd,
+      }).catch(() => {});
+    }
+
+    function markAllRead() {
+      if (!markAll || markAll.disabled) return;
+      const original = markAll.innerHTML;
+      markAll.disabled = true;
+      markAll.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Marking…';
+      const fd = new FormData();
+      fd.append('_', Date.now().toString());
+      fetch('/customer/notifications/read-all', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: fd,
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data){
+            // server told us exactly how many got marked — show that
+            const n = data.marked || 0;
+            markAll.innerHTML = '<i class="fas fa-check"></i>&nbsp;' + n + ' marked';
+            setTimeout(() => { markAll.innerHTML = original; }, 1500);
+          }
+        })
+        .catch(() => { markAll.innerHTML = original; })
+        .finally(() => { loadNotifications(); });
+    }
+
+    // ── Dropdown open/close ─────────────────────────────────────────
+    function closeDropdown() {
+      dd.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function toggleDropdown() {
+      const willOpen = !dd.classList.contains('open');
+      dd.classList.toggle('open', willOpen);
+      btn.setAttribute('aria-expanded', String(willOpen));
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDropdown();
+    });
+    document.addEventListener('click', (e) => {
+      if (!dd.contains(e.target)) closeDropdown();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDropdown();
+    });
+
+    // ── Mark-all-read button ───────────────────────────────────────
+    if (markAll){
+      markAll.addEventListener('click', (e) => {
+        e.stopPropagation();
+        markAllRead();
+      });
+    }
+
+    // ── Polling ─────────────────────────────────────────────────────
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
+  })();
+
+  /* ══════════════ LOGOUT CONFIRMATION MODAL (storefront) ══════════════
+     Intercepts any [data-confirm] element and shows a centered modal
+     before navigating to the original href. Same UX as base.html,
+     scoped under `sf-` so the styles stay independent. */
+  (function(){
+    const links = document.querySelectorAll('[data-confirm]');
+    if (!links.length) return;
+
+    let overlay = null;
+    let lastFocus = null;
+
+    function close(){
+      if (!overlay) return;
+      overlay.removeAttribute('open');
+      document.body.classList.remove('sf-no-scroll');
+      setTimeout(() => {
+        if (overlay && !overlay.hasAttribute('open')){
+          overlay.remove();
+          overlay = null;
+        }
+      }, 220);
+      if (lastFocus && typeof lastFocus.focus === 'function'){
+        lastFocus.focus();
+      }
+    }
+
+    function open(message, okHref){
+      lastFocus = document.activeElement;
+      overlay = document.createElement('div');
+      overlay.className = 'sf-confirm-overlay';
+      overlay.setAttribute('role','dialog');
+      overlay.setAttribute('aria-modal','true');
+      overlay.setAttribute('aria-labelledby','sfConfirmTitle');
+      overlay.innerHTML =
+        '<div class="sf-confirm-modal">' +
+          '<div class="sf-confirm-icon"><i class="fa-solid fa-right-from-bracket"></i></div>' +
+          '<h3 class="sf-confirm-title" id="sfConfirmTitle">Confirm log out</h3>' +
+          '<p class="sf-confirm-msg">' + (message || 'Are you sure?') + '</p>' +
+          '<div class="sf-confirm-actions">' +
+            '<button type="button" class="sf-confirm-btn sf-confirm-cancel">Cancel</button>' +
+            '<button type="button" class="sf-confirm-btn sf-confirm-ok">Yes, log out</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      void overlay.offsetWidth;
+      overlay.setAttribute('open','');
+      document.body.classList.add('sf-no-scroll');
+
+      const cancel = overlay.querySelector('.sf-confirm-cancel');
+      const ok     = overlay.querySelector('.sf-confirm-ok');
+      cancel.addEventListener('click', close);
+      ok.addEventListener('click', () => { window.location.href = okHref; });
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+      });
+
+      const onKey = (e) => {
+        if (e.key === 'Escape'){ close(); document.removeEventListener('keydown', onKey); }
+        else if (e.key === 'Tab'){
+          if (e.shiftKey && document.activeElement === cancel){ e.preventDefault(); ok.focus(); }
+          else if (!e.shiftKey && document.activeElement === ok){ e.preventDefault(); cancel.focus(); }
+        }
+      };
+      document.addEventListener('keydown', onKey);
+      cancel.focus();
+    }
+
+    links.forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = a.getAttribute('href') || '/auth/logout';
+        open(a.dataset.confirm, href);
+      });
+    });
   })();
 </script>
 </body>
