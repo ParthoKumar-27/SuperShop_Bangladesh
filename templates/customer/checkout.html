@@ -131,6 +131,34 @@
     font-size:12.5px;
   }
   .info-pill i { margin-top:1px; }
+
+  /* ── stock-availability modal body ─────────────────────────────
+     The popup itself is mounted by base.html's window.csConfirm()
+     (so it floats over navbar + sidebar).  These styles only style
+     the rich body HTML we inject via the bodyHTML option. */
+  .stock-list {
+    margin: 0; padding: 0; list-style: none;
+    max-height: 46vh; overflow-y: auto;
+    border-top: 1px dashed #e2e8f0;
+  }
+  .stock-list li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px dashed #f1f5f9;
+  }
+  .stock-list li:last-child { border-bottom: 0; }
+  .stock-list .name { flex: 1; font-size: 13.5px; font-weight: 600; color: #0f172a; min-width: 0; }
+  .stock-list .qty  { font-size: 12px; color: #64748b; white-space: nowrap; }
+  .stock-list .qty b { color: #dc2626; }
+  .stock-list .pill {
+    font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+  }
+  .pill-inactive            { background: #fef3c7; color: #92400e; }
+  .pill-out_of_stock        { background: #fee2e2; color: #991b1b; }
+  .pill-insufficient_stock  { background: #ffedd5; color: #9a3412; }
+  .stock-hint {
+    font-size: 12.5px; color: #6b7280; margin: 0 0 10px;
+  }
 </style>
 
 {# ── Page header ── #}
@@ -375,12 +403,127 @@
 
   refreshPayCards();
 
-  /* ── submit guard: prevent double-submit, show loading state ── */
+  /* ── submit guard: prevent double-submit, intercept 409 stock errors ── */
   const form = document.getElementById('checkoutForm');
   const btn  = document.getElementById('placeOrderBtn');
-  form.addEventListener('submit', function () {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Placing order…';
+
+  function setBusy(busy) {
+    btn.disabled = busy;
+    btn.innerHTML = busy
+      ? '<i class="fa-solid fa-spinner fa-spin"></i> Placing order…'
+      : '<i class="fa-solid fa-bag-shopping"></i> Place Order — ৳' + '{{ "%.2f"|format(grand_total) }}';
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function reasonLabel(reason) {
+    if (reason === 'inactive')           return { cls: 'pill-inactive',           text: 'Unavailable' };
+    if (reason === 'out_of_stock')       return { cls: 'pill-out_of_stock',       text: 'Out of stock' };
+    if (reason === 'insufficient_stock') return { cls: 'pill-insufficient_stock', text: 'Low stock' };
+    return { cls: 'pill-inactive', text: 'Unavailable' };
+  }
+
+  function renderStockBodyHTML(unavailable) {
+    const rows = unavailable.map(item => {
+      const meta = reasonLabel(item.reason);
+      const requestedTxt = `<b>${escapeHtml(item.requested)}</b> requested`;
+      const availableTxt = (item.available > 0)
+        ? ` · only <b>${escapeHtml(item.available)}</b> left`
+        : '';
+      return (
+        '<li>' +
+          '<div class="name">' + escapeHtml(item.product_name || item.product_id) + '</div>' +
+          '<div class="qty">' + requestedTxt + availableTxt + '</div>' +
+          '<span class="pill ' + meta.cls + '">' + escapeHtml(meta.text) + '</span>' +
+        '</li>'
+      );
+    }).join('');
+    return (
+      '<p class="stock-hint">Another customer may have just purchased the last of these. Please review your cart before continuing.</p>' +
+      '<ul class="stock-list">' + rows + '</ul>'
+    );
+  }
+
+  form.addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    setBusy(true);
+
+    try {
+      const res = await fetch(form.action || '/customer/checkout', {
+        method:  'POST',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'fetch' },
+        body:    new FormData(form),
+      });
+
+      // Happy path — server returns a 302 redirect to /customer/dashboard
+      if (res.redirected) {
+        window.location.href = res.url;
+        return;
+      }
+
+      // 409 = stock conflict (no payment taken, no DB write)
+      if (res.status === 409) {
+        const data = await res.json().catch(() => null);
+        const redirectTo = (data && data.redirect) || '/customer/cart';
+
+        if (data && Array.isArray(data.unavailable) && data.unavailable.length) {
+          // Re-enable the button so the user could try again after
+          // adjusting their cart.
+          setBusy(false);
+
+          // Render via the *global* csConfirm helper from base.html.
+          // That helper mounts the modal directly under <body>, so it
+          // floats over the navbar, sidebar, footer — i.e. the entire
+          // page, not just the checkout card.
+          if (typeof window.csConfirm === 'function') {
+            const ok = await window.csConfirm({
+              title:   'Some items are no longer available',
+              iconHTML:'<i class="fa-solid fa-triangle-exclamation"></i>',
+              wide:    true,
+              danger:  true,
+              bodyHTML: renderStockBodyHTML(data.unavailable),
+              confirmLabel: 'Go to cart',
+              cancelLabel:  'Stay on checkout',
+            });
+            if (ok) {
+              window.location.href = redirectTo;
+            }
+            return;
+          }
+          // Fallback: base.html's helper is missing (very old cache).
+          // Use the native confirm so the user is never silently stuck.
+          if (window.confirm('Some items are no longer available. Go to your cart now?')) {
+            window.location.href = redirectTo;
+          } else {
+            window.location.href = '/customer/checkout';
+          }
+          return;
+        }
+
+        // Malformed 409 — bounce to cart.
+        window.location.href = redirectTo;
+        return;
+      }
+
+      // Any other non-2xx: redirect to cart so the user isn't stuck.
+      if (!res.ok) {
+        window.location.href = '/customer/cart?error=checkout_failed';
+        return;
+      }
+
+      // 200 with no redirect — server returned plain JSON for some
+      // reason.  Treat it like a soft success and head to the dashboard.
+      window.location.href = '/customer/dashboard?msg=order_placed';
+    } catch (err) {
+      // Network error / fetch failed → fall back to classic submit so
+      // the user is never stranded on the checkout page.
+      setBusy(false);
+      form.submit();
+    }
   });
 </script>
 

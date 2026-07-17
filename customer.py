@@ -390,9 +390,73 @@ def place_order(
 
     if not branch_id:
         branch_id = request.session.get("selected_branch")
-        
+
     if not branch_id:
         raise HTTPException(status_code=400, detail="No branch selected for checkout")
+
+    # ── Stock availability pre-check ───────────────────────────────
+    # Two customers can race on the same SKU.  Before we charge anyone
+    # (or even create a sale row / payment row / online_order row),
+    # read the *live* branch_inventory for every cart line.  If a
+    # product is INACTIVE (deactivated by the admin/manager) or the
+    # branch stock is below the requested quantity, abort with a
+    # structured 409 — no inserts, no stock decrement, no payment.
+    stock_rows = query("""
+        SELECT bi.product_id, bi.quantity,
+               COALESCE(p.is_active, 'N') AS is_active,
+               p.product_name
+        FROM   branch_inventory bi
+        JOIN   product p USING (product_id)
+        WHERE  bi.branch_id = %s
+          AND  bi.product_id = ANY(%s)
+    """, (branch_id, list(cart.keys())))
+
+    stock_by_pid = {r["product_id"]: r for r in stock_rows}
+
+    unavailable = []
+    for pid, qty, _bid in _cart_iter(cart):
+        if qty <= 0:
+            continue
+        row = stock_by_pid.get(pid)
+        # No row at all = product isn't stocked at this branch
+        if row is None or (row.get("is_active") or "N") != "Y":
+            unavailable.append({
+                "product_id": pid,
+                "product_name": row["product_name"] if row else pid,
+                "requested": qty,
+                "available": 0,
+                "reason": "inactive",
+            })
+            continue
+        avail = int(float(row["quantity"] or 0))
+        if avail <= 0:
+            unavailable.append({
+                "product_id": pid,
+                "product_name": row["product_name"],
+                "requested": qty,
+                "available": avail,
+                "reason": "out_of_stock",
+            })
+        elif avail < qty:
+            unavailable.append({
+                "product_id": pid,
+                "product_name": row["product_name"],
+                "requested": qty,
+                "available": avail,
+                "reason": "insufficient_stock",
+            })
+
+    if unavailable:
+        # Always return JSON so the checkout page can render a modal
+        # listing exactly which items are unavailable.  If the client
+        # somehow bypassed fetch (rare), they'll see the JSON in the
+        # browser — still no DB writes happened.
+        return JSONResponse(
+            {"ok": False, "reason": "stock_unavailable",
+             "unavailable": unavailable,
+             "redirect": "/customer/cart"},
+            status_code=409,
+        )
 
     by_product, by_cat = _get_active_discounts()
 
@@ -517,7 +581,9 @@ def place_order(
             (cust_id,),
         )
         cust_name = cust_row[0]["cust_name"] if cust_row else "A customer"
-        item_count = sum(qty for _, qty, _, _ in items)
+        # `items` is a list of 5-tuples: (pid, qty, unit_price, line_total, disc_id)
+        # — unpack only the fields we need to avoid `not enough values to unpack`.
+        item_count = sum(qty for _, qty, *_ in items)
         notify_branch_manager(
             branch_id,
             "NEW_ONLINE_ORDER",
@@ -825,6 +891,45 @@ async def add_to_cart(request: Request, session=Depends(require_customer)):
 
     quantity = max(1, quantity)
 
+    # ── Branch availability guard ────────────────────────────────────────
+    # If the customer already locked a branch in the session, reject adds
+    # for products that aren't stocked at that branch.  Mirrors the storefront
+    # "Not available in this branch" badge so direct API POSTs can't smuggle
+    # in items the customer already saw as unavailable.
+    _sel_branch = request.session.get("selected_branch")
+    if _sel_branch:
+        _inv_row = query(
+            """
+            SELECT  bi.quantity,
+                    p.product_name,
+                    COALESCE(p.is_active, 'N') AS is_active
+            FROM    branch_inventory bi
+            JOIN    product         p  USING (product_id)
+            WHERE   bi.branch_id  = %s
+              AND   bi.product_id = %s
+            """,
+            (_sel_branch, product_id),
+        )
+        _inv_qty     = int((_inv_row[0] or {}).get("quantity") or 0) if _inv_row else 0
+        _prod_name   = ((_inv_row[0] or {}).get("product_name") or product_id) if _inv_row else product_id
+        _is_active   = ((_inv_row[0] or {}).get("is_active") or "N") if _inv_row else "N"
+        if not _inv_row or _inv_qty <= 0 or _is_active != "Y":
+            if "application/json" in content_type:
+                return JSONResponse(
+                    {
+                        "ok":           False,
+                        "reason":       "not_in_branch",
+                        "product_id":   product_id,
+                        "product_name": _prod_name,
+                        "branch_id":    _sel_branch,
+                        "available":    _inv_qty,
+                    },
+                    status_code=409,
+                )
+            # Non-JSON submission → bounce back to storefront so the user sees
+            # the unavailable badge rather than landing on the shop page.
+            return RedirectResponse("/", status_code=302)
+
     # ── Update the session cart ──────────────────────────────────────────
     # Each cart entry is now {qty, branch_id} so the cart itself is the
     # ground truth for which branch the customer is shopping.  This makes
@@ -914,6 +1019,62 @@ async def set_cart_branch(request: Request, session=Depends(require_customer)):
             "branch_name": row[0]["branch_name"],
         })
     return RedirectResponse(request.headers.get("referer") or "/", status_code=302)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  STOREFRONT AVAILABILITY FEED
+#
+#  Returns a JSON snapshot of which active products are in stock at the
+#  given branch.  The storefront uses this on the client side to re-tag
+#  every product card after the customer picks (or switches) a branch, so
+#  the "Not available in this branch" badge appears immediately without a
+#  full page refresh.
+# ══════════════════════════════════════════════════════════════════════════════
+@customer_router.get("/storefront/availability")
+def storefront_availability(request: Request, branch_id: str = "", session=Depends(require_customer)):
+    branch_id = (branch_id or "").strip()
+    if not branch_id:
+        return JSONResponse({"ok": False, "error": "Missing branch_id"}, status_code=400)
+
+    branch_row = query(
+        "SELECT branch_id, branch_name FROM branch "
+        "WHERE branch_id = %s AND is_active = 'Y'",
+        (branch_id,),
+    )
+    if not branch_row:
+        return JSONResponse({"ok": False, "error": "Invalid branch"}, status_code=400)
+
+    rows = query(
+        """
+        SELECT  p.product_id,
+                COALESCE(bi.quantity, 0) AS quantity,
+                COALESCE(p.is_active, 'N') AS is_active
+        FROM    product          p
+        LEFT    JOIN branch_inventory bi
+                ON  bi.product_id = p.product_id
+                AND bi.branch_id  = %s
+        WHERE   p.is_active = 'Y'
+        ORDER   BY p.product_name
+        """,
+        (branch_id,),
+    ) or []
+
+    availability = [
+        {
+            "product_id": r["product_id"],
+            "available":  (int(r.get("quantity") or 0) > 0)
+                          and ((r.get("is_active") or "N") == "Y"),
+            "quantity":   int(r.get("quantity") or 0),
+        }
+        for r in rows
+    ]
+
+    return JSONResponse({
+        "ok":           True,
+        "branch_id":    branch_id,
+        "branch_name":  branch_row[0]["branch_name"],
+        "availability": availability,
+    })
 
 
 

@@ -1833,8 +1833,22 @@
           // populate
           box.querySelector('[data-cs-modal-title]').textContent =
             opts.title || 'Are you sure?';
-          box.querySelector('[data-cs-modal-msg]').textContent =
-            opts.message || 'This action cannot be undone.';
+          if (opts.bodyHTML) {
+            // Replace the default single-message paragraph with rich
+            // content (e.g. a list of unavailable cart items).  The
+            // modal widens via .cs-modal-wide so the list has room.
+            const msg = box.querySelector('[data-cs-modal-msg]');
+            if (msg) {
+              msg.innerHTML = opts.bodyHTML;
+              msg.style.textAlign = 'left';
+            }
+            box.classList.add('cs-modal-wide');
+          } else {
+            box.querySelector('[data-cs-modal-msg]').textContent =
+              opts.message || 'This action cannot be undone.';
+          }
+          // Allow callers to force the wider layout even for plain text.
+          if (opts.wide) box.classList.add('cs-modal-wide');
 
           const icon = box.querySelector('[data-cs-modal-icon]');
           const iconHTML = opts.danger

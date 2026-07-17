@@ -98,6 +98,41 @@ def _fetch_hot_deals(limit: int = 20):
 #   disc_label    : str    ("-15%" or "-৳30") for ribbons/badges
 #   disc_type     : str    ('PERCENT' or 'FLAT' or None)
 #   disc_value    : float  (raw discount number)
+def _annotate_products_with_branch_availability(products, branch_id):
+    """Annotate each product with whether it is in the selected branch and how
+    many units are currently stocked there. Mutates in place; products with no
+    matching `branch_inventory` row get quantity 0 and ``available_in_branch=False``.
+
+    If no branch is selected yet (``branch_id`` is falsy) every product is left
+    untouched and tagged ``available_in_branch=True`` — we don't want to bar
+    the user from browsing before they've picked a branch; the cart-icon
+    flow's existing branch-gate handles the "select first" UX.
+    """
+    if not products or not branch_id:
+        for p in products:
+            p["stock_at_branch"] = 0 if branch_id else None
+            p["available_in_branch"] = not branch_id  # no branch → don't warn
+        return products
+
+    ids = [p["product_id"] for p in products]
+    rows = query(
+        """
+        SELECT  bi.product_id,
+                bi.quantity
+        FROM    branch_inventory bi
+        WHERE   bi.branch_id = %s
+          AND   bi.product_id = ANY(%s)
+        """,
+        (branch_id, ids),
+    ) or []
+    on_hand = {r["product_id"]: int(r.get("quantity") or 0) for r in rows}
+    for p in products:
+        qty = on_hand.get(p["product_id"], 0)
+        p["stock_at_branch"] = qty
+        p["available_in_branch"] = qty > 0
+    return products
+
+
 def _annotate_products_with_discounts(products):
     """Mutate products in place — attach sale_price + disc_label where active."""
     if not products:
@@ -117,11 +152,11 @@ def _annotate_products_with_discounts(products):
                     ELSE
                          GREATEST(0, p.unit_price - d.discount_value)
                 END AS sale_price,
-                (p.unit_price - CASE
+                CASE
                     WHEN d.discount_type = 'PERCENT' THEN
                          (p.unit_price * d.discount_value / 100.0)
                     ELSE LEAST(p.unit_price, d.discount_value)
-                END) AS saving
+                END AS saving
         FROM    discount d
         JOIN    product  p ON p.product_id = d.product_id
                            OR  p.cat_id    = d.cat_id
@@ -197,7 +232,7 @@ def _get_home_products():
     now = time.time()
     if "home_products" in _CACHE and now - _CACHE["home_products"]["ts"] < _CACHE_TTL:
         return _CACHE["home_products"]["data"]
-    
+
     products = query("""
         SELECT p.product_id,
                p.product_name,
@@ -215,7 +250,9 @@ def _get_home_products():
     for _p in products:
         _p["image_url"] = _normalize_image_url(_p.get("image_url"))
     _annotate_products_with_discounts(products)
-    
+    # Branch availability is per-request — tag here with no branch so callers
+    # override via `_annotate_products_with_branch_availability(products, bid)`.
+
     _CACHE["home_products"] = {"data": products, "ts": now}
     return products
 
@@ -252,10 +289,29 @@ def storefront(request: Request):
     # All categories ordered: top-level first, then sub-categories
     categories = _get_categories()
 
+    # Branches shown in the "pick a branch" popup the first time a customer
+    # adds anything to the cart from the storefront.
+    _branches_list = _get_branches()
+    _selected_branch_id = (
+        request.session.get("selected_branch") if hasattr(request, "session") else None
+    )
+    _selected_branch = (
+        next((b for b in _branches_list if b["branch_id"] == _selected_branch_id), None)
+        if _selected_branch_id
+        else None
+    )
+
     # All active products — visible to everyone
     products = _get_home_products()
+    # Tag each product with whether it's in stock at the customer's selected
+    # branch.  The card uses this to show a "Not available in this branch"
+    # badge and to block the inline add-to-cart when the SKU is missing.
+    _annotate_products_with_branch_availability(products, _selected_branch_id)
 
+    # Same tagging for the hot-deals carousel so its inline cart icons respect
+    # the selected branch too.
     hot_deals = _fetch_hot_deals(limit=20)
+    _annotate_products_with_branch_availability(hot_deals, _selected_branch_id)
 
     # Cart count (from session) — shown as a badge on the topbar cart icon.
     # Cart entries may be the legacy shape {pid: qty} or the new shape
@@ -270,18 +326,6 @@ def storefront(request: Request):
                 cart_count += int(_entry or 0)
     else:
         cart_count = 0
-
-    # Branches shown in the "pick a branch" popup the first time a customer
-    # adds anything to the cart from the storefront.
-    _branches_list = _get_branches()
-    _selected_branch_id = (
-        request.session.get("selected_branch") if hasattr(request, "session") else None
-    )
-    _selected_branch = (
-        next((b for b in _branches_list if b["branch_id"] == _selected_branch_id), None)
-        if _selected_branch_id
-        else None
-    )
 
     return templates.TemplateResponse(
         request,
@@ -332,6 +376,22 @@ def public_search(request: Request, q: str = ""):
         _p["image_url"] = _normalize_image_url(_p.get("image_url"))
     _annotate_products_with_discounts(products)
 
+    # Branch availability tagging for the search results page as well, so a
+    # customer who searched for an item at a branch that doesn't carry it
+    # gets the same "Not available in this branch" badge.
+    _selected_branch_id = (
+        request.session.get("selected_branch") if hasattr(request, "session") else None
+    )
+    _branches_list = _get_branches()
+    _selected_branch = (
+        next((b for b in _branches_list if b["branch_id"] == _selected_branch_id), None)
+        if _selected_branch_id
+        else None
+    )
+    _annotate_products_with_branch_availability(products, _selected_branch_id)
+    hot_deals = _fetch_hot_deals(limit=20)
+    _annotate_products_with_branch_availability(hot_deals, _selected_branch_id)
+
     _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
     if isinstance(_cart, dict):
         cart_count = 0
@@ -349,10 +409,12 @@ def public_search(request: Request, q: str = ""):
         {
             "categories": categories,
             "products":   products,
-            "hot_deals":  _fetch_hot_deals(limit=20),
+            "hot_deals":  hot_deals,
             "logged_in":  bool(request.session.get("role")),
             "role":       request.session.get("role"),
             "search_query": q,
             "cart_count": cart_count,
+            "branches":   _branches_list,
+            "selected_branch": _selected_branch,
         }
     )

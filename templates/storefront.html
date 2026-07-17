@@ -1585,6 +1585,75 @@
     .pc-action-icon:hover { filter: brightness(1.08); }
     .pc-action-icon:active { transform: translateY(0) scale(.94); }
     .pc-action-icon.is-busy { opacity: .7; pointer-events: none; }
+    /* ── Branch-availability state on a product card ──────────────────── */
+    .product-card.is-unavailable { opacity: .78; }
+    .product-card.is-unavailable .product-card-img { filter: grayscale(.35); }
+    .product-card.is-unavailable .pc-action-icon {
+        background: #e2e8f0;
+        color: #64748b;
+        cursor: not-allowed;
+        pointer-events: none;
+        box-shadow: none;
+    }
+    .product-card.is-unavailable .pc-action-icon:hover { filter: none; }
+    /* Same disabled look for deal-card "Add to cart" buttons when the
+       product is flagged unavailable for the customer's selected branch. */
+    .deal-card.is-unavailable { opacity: .82; }
+    .deal-card.is-unavailable .deal-emoji { filter: grayscale(.35); }
+    .deal-card.is-unavailable .deal-cart-btn {
+        background: #e2e8f0;
+        color: #64748b;
+        cursor: not-allowed;
+        pointer-events: none;
+        box-shadow: none;
+    }
+    .deal-na-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(15, 23, 42, .82);
+        color: #f8fafc;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        z-index: 4;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, .25);
+    }
+    .deal-na-badge i { color: #fca5a5; }
+    .pc-na-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(15, 23, 42, .82);
+        color: #f8fafc;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 10px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 4;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, .25);
+    }
+    .pc-na-badge i { color: #fca5a5; }
+    @media (max-width: 540px) {
+      .pc-na-badge { font-size: 10px; padding: 4px 8px; }
+    }
+    .product-card.pc-shake { animation: pc-shake .42s ease; }
+    @keyframes pc-shake {
+      0%, 100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(5px); }
+      60%      { transform: translateX(-3px); }
+      80%      { transform: translateX(2px); }
+    }
     .pc-action-icon.is-added {
       background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
       box-shadow: 0 8px 16px rgba(4,70,53,.40), inset 0 1px 0 rgba(255,255,255,.22);
@@ -2667,14 +2736,18 @@
                 '🛢'  if 'oil'         in n else
                 '🍒'  if 'sugar'       in n else
                 '🛒' %}
-            <div class="deal-card" data-quick-view
+            <div class="deal-card{% if selected_branch and not d.available_in_branch %} is-unavailable{% endif %}"
+                 data-quick-view
                  data-product-id="{{ d.product_id }}"
                  data-product-name="{{ d.product_name }}"
                  data-brand="{{ (d.brand or 'SuperShop') | e }}"
                  data-unit-price="{{ d.unit_price|float }}"
                  data-sale-price="{{ d.sale_price|float }}"
                  data-image-url="{{ d.image_url or '' }}"
-                 data-emoji="{{ _emoji }}">
+                 data-emoji="{{ _emoji }}"
+                 {%- if selected_branch %}
+                 data-available-in-branch="{{ '1' if d.available_in_branch else '0' }}"
+                 {%- endif %}>
               <button type="button"
                       class="deal-cart-btn{% if not logged_in %} guest{% endif %}"
                       data-quick-add
@@ -2683,6 +2756,11 @@
                       title="{% if logged_in %}Add to cart{% else %}Sign in to shop{% endif %}">
                 {% if logged_in %}<i class="fas fa-cart-plus"></i>{% else %}<i class="fas fa-arrow-right"></i>{% endif %}
               </button>
+              {% if selected_branch and not d.available_in_branch %}
+                <span class="deal-na-badge" role="note">
+                  <i class="fas fa-circle-exclamation"></i> Not in {{ selected_branch.branch_name }}
+                </span>
+              {% endif %}
               <span class="deal-badge{% if d.discount_type == 'FLAT' %} flat{% endif %}"
                     title="{{ d.discount_name }}">{{ savings_txt }}</span>
               <div class="deal-emoji">
@@ -2707,14 +2785,18 @@
             {% set di = loop.index0 %}
             {% set _fallback_pct = [30,25,40,20,15,35][di % 6] %}
             {% set _sale = p.unit_price|float * (1 - _fallback_pct/100.0) %}
-            <div class="deal-card" data-quick-view
+            <div class="deal-card{% if selected_branch and not p.available_in_branch %} is-unavailable{% endif %}"
+                 data-quick-view
                  data-product-id="{{ p.product_id }}"
                  data-product-name="{{ p.product_name }}"
                  data-brand="{{ (p.brand or 'SuperShop') | e }}"
                  data-unit-price="{{ p.unit_price|float }}"
                  data-sale-price="{{ _sale|float }}"
                  data-image-url="{{ p.image_url or '' }}"
-                 data-emoji="{% set n = p.product_name | lower %}{% if 'milk' in n %}🥛{% elif 'bread' in n %}🍞{% elif 'biscuit' in n or 'digestive' in n %}🍪{% elif 'chip' in n %}🥨{% elif 'juice' in n %}🧃{% elif 'rice' in n %}🍚{% elif 'shampoo' in n or 'soap' in n %}🧴{% elif 'tea' in n %}🍵{% elif 'oil' in n %}🛢{% elif 'sugar' in n %}🍒{% else %}🛒{% endif %}">
+                 data-emoji="{% set n = p.product_name | lower %}{% if 'milk' in n %}🥛{% elif 'bread' in n %}🍞{% elif 'biscuit' in n or 'digestive' in n %}🍪{% elif 'chip' in n %}🥨{% elif 'juice' in n %}🧃{% elif 'rice' in n %}🍚{% elif 'shampoo' in n or 'soap' in n %}🧴{% elif 'tea' in n %}🍵{% elif 'oil' in n %}🛢{% elif 'sugar' in n %}🍒{% else %}🛒{% endif %}"
+                 {%- if selected_branch %}
+                 data-available-in-branch="{{ '1' if p.available_in_branch else '0' }}"
+                 {%- endif %}>
               <button type="button"
                       class="deal-cart-btn{% if not logged_in %} guest{% endif %}"
                       data-quick-add
@@ -2723,6 +2805,11 @@
                       title="{% if logged_in %}Add to cart{% else %}Sign in to shop{% endif %}">
                 {% if logged_in %}<i class="fas fa-cart-plus"></i>{% else %}<i class="fas fa-arrow-right"></i>{% endif %}
               </button>
+              {% if selected_branch and not p.available_in_branch %}
+                <span class="deal-na-badge" role="note">
+                  <i class="fas fa-circle-exclamation"></i> Not in {{ selected_branch.branch_name }}
+                </span>
+              {% endif %}
               <span class="deal-badge">-{{ _fallback_pct }}%</span>
               <div class="deal-emoji">
                 {% set n = p.product_name | lower %}
@@ -2837,20 +2924,30 @@
         {%- elif 'jam'       in n -%}{% set emoji = '🍯' %}
         {%- else -%}{% set emoji = '🛍' %}
         {%- endif -%}
-        <div class="product-card"
+        <div class="product-card{% if selected_branch and not p.available_in_branch %} is-unavailable{% endif %}"
              data-catid="{{ p.cat_id if p.cat_id else '' }}"
              data-name="{{ p.product_name | lower }}"
              data-display="{{ p.product_name }}"
              data-brand="{{ (p.brand or 'SuperShop') | e }}"
              data-price="{{ p.unit_price|float }}"
              data-emoji="{{ emoji }}"
-             data-product-id="{{ p.product_id }}">
+             data-product-id="{{ p.product_id }}"
+             {%- if selected_branch %}
+             data-available-in-branch="{{ '1' if p.available_in_branch else '0' }}"
+             data-stock-at-branch="{{ p.stock_at_branch or 0 }}"
+             {%- endif %}>
           <button type="button" class="wishlist-btn" aria-label="Save to wishlist"
                   onclick="event.stopPropagation(); toggleWishlist(this);">
             <i class="far fa-heart"></i>
           </button>
           {% if p.disc_label %}
             <span class="product-card-discount" aria-label="Discount">{{ p.disc_label }}</span>
+          {% endif %}
+          {% if selected_branch and not p.available_in_branch %}
+            <span class="pc-na-badge" role="note">
+              <i class="fas fa-circle-exclamation"></i>
+              Not available in {{ selected_branch.branch_name }}
+            </span>
           {% endif %}
           <div class="product-card-link" role="button" tabindex="0"
                data-quick-view
@@ -3468,13 +3565,54 @@
     }, 1100);
   }
 
+  // Block-add guard.  A card carries ``data-available-in-branch`` once a
+  // branch has been picked from the popup; ``"0"`` means the SKU isn't
+  // stocked at that branch and must not be added to the cart.  We surface
+  // the failure as the requested toast and a brief shake so the card's
+  // disabled state is visible.  ``notBlocked()`` returns true for any card
+  // we should let through — no branch picked (and therefore no availability
+  // data yet) falls into the existing branch-picker flow below.
+  // Works for both `.product-card` and `.deal-card` (hot-deals carousel).
+  function notBlocked(trigger) {
+    const card = trigger.closest(
+      '.product-card, .deal-card'
+    );
+    if (!card) return true;
+    const flag = card.dataset.availableInBranch;
+    // No flag → branch not picked yet; the branch picker will handle it.
+    if (flag === undefined || flag === null) return true;
+    if (flag === '0') {
+      const name = trigger.dataset.productName
+                || (card.dataset.display || card.dataset.productName || 'this product');
+      toast("Couldn't add " + name + " in your cart", 'err');
+      try {
+        card.classList.remove('pc-shake');
+        // Force reflow so the animation restarts on consecutive clicks.
+        void card.offsetWidth;
+        card.classList.add('pc-shake');
+      } catch (_) {}
+      return false;
+    }
+    return true;
+  }
+
   async function postCartAdd(productId) {
     const res = await fetch('/customer/cart/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ product_id: productId, quantity: 1 })
     });
-    if (!res.ok) throw new Error('http ' + res.status);
+    if (!res.ok) {
+      // Try to surface the server's structured error so callers can branch
+      // on `reason` (e.g. ``not_in_branch``).  Fall back to a plain Error
+      // when the response is empty or non-JSON.
+      let body = null;
+      try { body = await res.json(); } catch (_) { body = null; }
+      const err = new Error('http ' + res.status);
+      err.status = res.status;
+      err.data   = body;
+      throw err;
+    }
     return res.json().catch(function () { return {}; });
   }
 
@@ -3488,18 +3626,140 @@
     return res.json().catch(function () { return {}; });
   }
 
+  async function fetchBranchAvailability(branchId) {
+    const res = await fetch(
+      '/customer/storefront/availability?branch_id=' +
+        encodeURIComponent(branchId),
+      { method: 'GET', headers: { 'Accept': 'application/json' } }
+    );
+    if (!res.ok) throw new Error('http ' + res.status);
+    return res.json();
+  }
+
+  // Re-tag every storefront product card (and deal card) with the
+  // availability for the customer's just-picked branch.  This runs without
+  // a page refresh — the badge appears or disappears the moment the user
+  // confirms the branch popup.  Lookup is by product_id against a Map built
+  // from the JSON response so we touch the DOM O(n) once, not O(n*m).
+  async function applyBranchAvailability(branchId) {
+    let payload;
+    try {
+      payload = await fetchBranchAvailability(branchId);
+    } catch (_) {
+      // If the feed fails, fall back to a hard reload — better an ugly
+      // refresh than an out-of-sync storefront.
+      try { window.location.reload(); } catch (__) {}
+      return;
+    }
+    if (!payload || payload.ok !== true || !Array.isArray(payload.availability)) {
+      return;
+    }
+    const map = new Map();
+    payload.availability.forEach(function (row) {
+      map.set(row.product_id, {
+        available: !!row.available,
+        quantity:  Number(row.quantity || 0),
+      });
+    });
+    const branchName = payload.branch_name || 'this branch';
+
+    function tagCard(card) {
+      if (!card) return;
+      const pid = card.dataset.productId;
+      const info = map.get(pid);
+      // If the product isn't in the feed (e.g. an inactive or hidden SKU
+      // the server filtered out), leave the card untouched — its initial
+      // server-rendered state is the source of truth.
+      if (!info) return;
+      const wasUnavailable = card.dataset.availableInBranch === '0';
+      const isUnavailable = !info.available;
+      card.dataset.availableInBranch = isUnavailable ? '0' : '1';
+      card.dataset.stockAtBranch    = String(info.quantity);
+
+      // Toggle the disabled look on the .pc-action-icon or .deal-cart-btn.
+      const cartBtn = card.querySelector(
+        '.pc-action-icon, .deal-cart-btn'
+      );
+      if (cartBtn) {
+        cartBtn.disabled = isUnavailable;
+        cartBtn.setAttribute(
+          'aria-label',
+          isUnavailable ? 'Not available in this branch' : 'Add to cart'
+        );
+      }
+
+      // Toggle the is-unavailable class on the card itself.
+      card.classList.toggle('is-unavailable', isUnavailable);
+
+      // Add or remove the badge.  We tag it with a known class so we can
+      // find / replace it on subsequent branch changes without leaving
+      // stale spans behind.
+      const badgeClass =
+        card.classList.contains('deal-card') ? 'deal-na-badge' : 'pc-na-badge';
+      let badge = card.querySelector('.' + badgeClass);
+      if (isUnavailable) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = badgeClass;
+          badge.setAttribute('role', 'note');
+          badge.innerHTML =
+            '<i class="fas fa-circle-exclamation"></i> ' +
+            (badgeClass === 'deal-na-badge'
+              ? 'Not in ' + escapeHtml(branchName)
+              : 'Not available in ' + escapeHtml(branchName));
+          // For the .product-card the badge sits on top of the wishlist
+          // heart (top-left).  For .deal-card we drop it next to the
+          // existing cart button.
+          card.appendChild(badge);
+        } else {
+          badge.innerHTML =
+            '<i class="fas fa-circle-exclamation"></i> ' +
+            (badgeClass === 'deal-na-badge'
+              ? 'Not in ' + escapeHtml(branchName)
+              : 'Not available in ' + escapeHtml(branchName));
+        }
+      } else if (badge) {
+        badge.remove();
+      }
+
+      // If the quick-view modal is currently open for this product, also
+      // refresh its meta line and disable state so the user doesn't see
+      // stale copy while the modal is open.
+      if (qvCurrent && qvCurrent.productId === pid && !wasUnavailable && isUnavailable) {
+        const meta = document.getElementById('qvMeta');
+        const addBtn = document.getElementById('qvAdd');
+        if (meta) {
+          meta.style.color = '#b91c1c';
+          meta.textContent = 'Not available in your selected branch. ' +
+            'Try another branch or pick a different product.';
+        }
+        if (addBtn) addBtn.disabled = true;
+      }
+    }
+
+    document.querySelectorAll('.product-card').forEach(tagCard);
+    document.querySelectorAll('.deal-card').forEach(tagCard);
+  }
+
   async function performAdd(productId, name, btn) {
     if (btn) {
       btn.classList.add('is-busy');
       btn.disabled = true;
     }
     try {
+      // postCartAdd throws on any non-2xx with `err.data` populated from
+      // the server's JSON body, so callers can branch on `reason`
+      // (e.g. ``not_in_branch``).
       const data = await postCartAdd(productId);
       if (data && typeof data.cart_count === 'number') updateCartBadge(data.cart_count);
       toast((name || 'Item') + ' added to cart', 'ok');
       flashAdded(btn);
     } catch (e) {
-      toast('Could not add to cart — try again', 'err');
+      if (e && e.data && e.data.reason === 'not_in_branch') {
+        toast("Couldn't add " + (name || 'this product') + " in your cart", 'err');
+      } else {
+        toast('Could not add to cart — try again', 'err');
+      }
     } finally {
       if (btn) {
         btn.classList.remove('is-busy');
@@ -3571,6 +3831,9 @@
     // Once the user has picked a branch, the quick-view flow can skip the
     // branch modal on subsequent adds (until the cart empties).
     QVBranchConfirmed = true;
+    // Live-update every card on the page so the "Not available in this
+    // branch" tag (and disabled cart icons) appears without a refresh.
+    try { await applyBranchAvailability(branchId); } catch (_) { /* reload fallback inside */ }
     await performAdd(payload.productId, payload.name, payload.btn);
   }
 
@@ -3590,6 +3853,10 @@
         encodeURIComponent(window.location.pathname + window.location.search);
       return;
     }
+
+    // Block adds for products the customer can see aren't in their branch.
+    // The card carries ``data-available-in-branch="0"`` in that case.
+    if (!notBlocked(trigger)) return;
 
     // Customer with no branch picked yet (or cart is empty) → ask first.
     if (!hasBranch()) {
@@ -3653,10 +3920,37 @@
     }
 
     const meta = document.getElementById('qvMeta');
+    const addBtn = document.getElementById('qvAdd');
+    // Resolve availability for the product behind this quick-view trigger.
+    // We look up the source card by productId; if it isn't on the page
+    // (e.g. opened from a deal-card that's been paged away) we fall back
+    // to "no branch" semantics — the existing branch gate still applies.
+    const sourceCard = document.querySelector(
+      '.product-card[data-product-id="' + d.productId + '"]'
+    );
+    const availFlag = sourceCard ? sourceCard.dataset.availableInBranch : undefined;
+    const isUnavailable = availFlag === '0';
+
     if (meta) {
-      meta.textContent = IS_CUSTOMER
-        ? 'In stock at your selected branch.'
-        : 'Sign in as a customer to add items to your cart.';
+      if (!IS_CUSTOMER) {
+        meta.textContent = 'Sign in as a customer to add items to your cart.';
+      } else if (isUnavailable) {
+        meta.style.color = '#b91c1c';
+        meta.textContent = 'Not available in your selected branch. ' +
+          'Try another branch or pick a different product.';
+      } else {
+        meta.style.color = '';
+        meta.textContent = 'In stock at your selected branch.';
+      }
+    }
+    if (addBtn) {
+      addBtn.disabled = isUnavailable;
+      addBtn.setAttribute(
+        'aria-label',
+        isUnavailable
+          ? 'Not available in this branch'
+          : 'Add to cart'
+      );
     }
 
     qvOpen = true;
@@ -3701,6 +3995,18 @@
       }
       if (!productId) {
         toast('Could not add to cart — missing product', 'err');
+        btn.disabled = false;
+        return;
+      }
+      // Refuse to add if the source card is flagged unavailable.  Even if
+      // the button somehow became enabled (e.g. another branch was picked
+      // while the modal was open), don't POST — show the same toast the
+      // inline icon uses.
+      const sourceCard = document.querySelector(
+        '.product-card[data-product-id="' + productId + '"]'
+      );
+      if (sourceCard && sourceCard.dataset.availableInBranch === '0') {
+        toast("Couldn't add " + (name || 'this product') + " in your cart", 'err');
         btn.disabled = false;
         return;
       }
