@@ -109,28 +109,22 @@ def _branch_manager_dashboard(request: Request, session):
     # ── Today / this month stats ────────────────────────────────────────
     # NOTE: exclude CANCELLED sales from revenue & order counts — a cancelled
     # sale shouldn't count toward today's revenue or order total.
-    today_stats = query("""
-        SELECT COUNT(*) AS n, COALESCE(SUM(total_amt),0) AS revenue
-        FROM   sale
-        WHERE  branch_id = %s
-          AND  DATE(sale_date) = CURRENT_DATE
-          AND  payment_status <> 'CANCELLED'
-    """, (branch_id,))[0]
-
-    month_stats = query("""
-        SELECT COALESCE(SUM(total_amt),0) AS revenue
-        FROM   sale
-        WHERE  branch_id = %s
-          AND  payment_status = 'PAID'
-          AND  DATE_TRUNC('month', sale_date) = DATE_TRUNC('month', CURRENT_DATE)
-    """, (branch_id,))[0]
-
-    pending_orders = query("""
-        SELECT COUNT(*) AS n
-        FROM   online_order
-        WHERE  branch_id = %s
-          AND  order_status NOT IN ('DELIVERED','CANCELLED')
-    """, (branch_id,))[0]["n"]
+    # Combine 5 simple scalar queries into a single batch query to reduce latency
+    combined_stats = query("""
+        SELECT
+            (SELECT COUNT(*) FROM sale WHERE branch_id=%s AND DATE(sale_date)=CURRENT_DATE AND payment_status<>'CANCELLED') AS today_n,
+            (SELECT COALESCE(SUM(total_amt),0) FROM sale WHERE branch_id=%s AND DATE(sale_date)=CURRENT_DATE AND payment_status<>'CANCELLED') AS today_revenue,
+            (SELECT COALESCE(SUM(total_amt),0) FROM sale WHERE branch_id=%s AND payment_status='PAID' AND DATE_TRUNC('month', sale_date) = DATE_TRUNC('month', CURRENT_DATE)) AS month_revenue,
+            (SELECT COUNT(*) FROM online_order WHERE branch_id=%s AND order_status NOT IN ('DELIVERED','CANCELLED')) AS pending_orders,
+            (SELECT COUNT(*) FROM branch_inventory WHERE branch_id=%s AND quantity <= reorder_level) AS low_stock_count,
+            (SELECT COUNT(*) FROM employee WHERE branch_id=%s AND is_active='Y') AS staff_count
+    """, (branch_id, branch_id, branch_id, branch_id, branch_id, branch_id))
+    
+    row = combined_stats[0] if combined_stats else {}
+    
+    today_stats = {"n": row.get("today_n", 0), "revenue": row.get("today_revenue", 0)}
+    month_stats = {"revenue": row.get("month_revenue", 0)}
+    pending_orders = row.get("pending_orders", 0)
 
     low_stock = query("""
         SELECT bi.inv_id, p.product_name, bi.quantity, bi.reorder_level
@@ -141,17 +135,8 @@ def _branch_manager_dashboard(request: Request, session):
         LIMIT  5
     """, (branch_id,))
 
-    low_stock_count = query("""
-        SELECT COUNT(*) AS n
-        FROM   branch_inventory
-        WHERE  branch_id = %s AND quantity <= reorder_level
-    """, (branch_id,))[0]["n"]
-
-    staff_count = query("""
-        SELECT COUNT(*) AS n
-        FROM   employee
-        WHERE  branch_id = %s AND is_active = 'Y'
-    """, (branch_id,))[0]["n"]
+    low_stock_count = row.get("low_stock_count", 0)
+    staff_count = row.get("staff_count", 0)
 
     # ── 7-day sales activity chart ──────────────────────────────────────
     # Exclude CANCELLED sales so cancelled/refunded amounts don't show on the chart.

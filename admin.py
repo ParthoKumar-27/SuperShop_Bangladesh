@@ -107,42 +107,25 @@ def _render(request: Request, template_name: str, session: dict, **extra):
 @admin_router.get("/dashboard", response_class=HTMLResponse)
 def admin_dashboard(request: Request, session=Depends(require_admin)):
 
+    # Combine 6 sequential queries into 1 to reduce network latency
+    combined_stats = query("""
+        SELECT 
+            (SELECT COALESCE(SUM(total_amt),0) FROM sale WHERE payment_status='PAID') AS total_revenue,
+            (SELECT COUNT(*) FROM sale) AS total_orders,
+            (SELECT COUNT(*) FROM product WHERE is_active='Y') AS products,
+            (SELECT COUNT(*) FROM sale WHERE payment_status='PENDING') AS pending_orders,
+            (SELECT COUNT(*) FROM sale WHERE DATE(sale_date)=CURRENT_DATE) AS today_sales,
+            (SELECT COUNT(*) FROM employee WHERE position='DELIVERY_RIDER' AND is_active='Y') AS riders
+    """)
+    row = combined_stats[0] if combined_stats else {}
+
     stats = {
-        "total_revenue": query("""
-            SELECT COALESCE(SUM(total_amt),0) AS n
-            FROM sale
-            WHERE payment_status='PAID'
-        """)[0]["n"],
-
-        "total_orders": query("""
-            SELECT COUNT(*) AS n
-            FROM sale
-        """)[0]["n"],
-
-        "products": query("""
-            SELECT COUNT(*) AS n
-            FROM product
-            WHERE is_active='Y'
-        """)[0]["n"],
-
-        "pending_orders": query("""
-            SELECT COUNT(*) AS n
-            FROM sale
-            WHERE payment_status='PENDING'
-        """)[0]["n"],
-
-        "today_sales": query("""
-            SELECT COUNT(*) AS n
-            FROM sale
-            WHERE DATE(sale_date)=CURRENT_DATE
-        """)[0]["n"],
-
-        "riders": query("""
-            SELECT COUNT(*) AS n
-            FROM employee
-            WHERE position='DELIVERY_RIDER'
-            AND is_active='Y'
-        """)[0]["n"],
+        "total_revenue": row.get("total_revenue", 0),
+        "total_orders": row.get("total_orders", 0),
+        "products": row.get("products", 0),
+        "pending_orders": row.get("pending_orders", 0),
+        "today_sales": row.get("today_sales", 0),
+        "riders": row.get("riders", 0),
     }
 
     recent_sales = query("""
@@ -1004,7 +987,7 @@ def admin_products_page(
     where  = []
     params: list = []
 
-    if cat_id == "__NONE__":
+    if cat_id == "_NONE_":
         where.append("p.cat_id IS NULL")
     elif cat_id:
         where.append("p.cat_id = %s")
