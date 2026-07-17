@@ -292,9 +292,27 @@ def storefront(request: Request):
     # Branches shown in the "pick a branch" popup the first time a customer
     # adds anything to the cart from the storefront.
     _branches_list = _get_branches()
-    _selected_branch_id = (
+    _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
+
+    # The cart is the single source of truth for the locked branch — each
+    # entry stores the branch the item came from.  Derive selected_branch_id
+    # from the cart first so a returning customer with items already in the
+    # cart is NEVER prompted to re-pick a branch from the storefront.  Only
+    # fall back to the session key (and then to nothing) when the cart is
+    # empty or its entries don't carry a branch_id.
+    def _cart_branch_id(cart):
+        if not cart:
+            return None
+        for entry in cart.values():
+            if isinstance(entry, dict) and entry.get("branch_id"):
+                return entry["branch_id"]
+        return None
+
+    _cart_branch = _cart_branch_id(_cart)
+    _session_branch_id = (
         request.session.get("selected_branch") if hasattr(request, "session") else None
     )
+    _selected_branch_id = _cart_branch or _session_branch_id
     _selected_branch = (
         next((b for b in _branches_list if b["branch_id"] == _selected_branch_id), None)
         if _selected_branch_id
@@ -316,7 +334,7 @@ def storefront(request: Request):
     # Cart count (from session) — shown as a badge on the topbar cart icon.
     # Cart entries may be the legacy shape {pid: qty} or the new shape
     # {pid: {"qty": n, "branch_id": bid}} — count qty in either case.
-    _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
+    # (`_cart` was already loaded above for branch-id derivation.)
     if isinstance(_cart, dict):
         cart_count = 0
         for _entry in _cart.values():
@@ -379,10 +397,25 @@ def public_search(request: Request, q: str = ""):
     # Branch availability tagging for the search results page as well, so a
     # customer who searched for an item at a branch that doesn't carry it
     # gets the same "Not available in this branch" badge.
-    _selected_branch_id = (
-        request.session.get("selected_branch") if hasattr(request, "session") else None
-    )
     _branches_list = _get_branches()
+    _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
+
+    # Cart wins as the source of truth for the locked branch — same rule
+    # used in customer.py /shop.  Without this, a returning customer whose
+    # session["selected_branch"] was cleared but who still has items in the
+    # cart would be incorrectly prompted to pick a branch here.
+    def _cart_branch_id(cart):
+        if not cart:
+            return None
+        for entry in cart.values():
+            if isinstance(entry, dict) and entry.get("branch_id"):
+                return entry["branch_id"]
+        return None
+
+    _selected_branch_id = (
+        _cart_branch_id(_cart)
+        or (request.session.get("selected_branch") if hasattr(request, "session") else None)
+    )
     _selected_branch = (
         next((b for b in _branches_list if b["branch_id"] == _selected_branch_id), None)
         if _selected_branch_id
@@ -392,7 +425,6 @@ def public_search(request: Request, q: str = ""):
     hot_deals = _fetch_hot_deals(limit=20)
     _annotate_products_with_branch_availability(hot_deals, _selected_branch_id)
 
-    _cart = request.session.get("cart", {}) if hasattr(request, "session") else {}
     if isinstance(_cart, dict):
         cart_count = 0
         for _entry in _cart.values():

@@ -731,24 +731,40 @@ def customer_shop(request: Request, session=Depends(require_customer)):
     # cart was built against (banner ↔ pill ↔ products agree).
     cart_branch_id = _cart_locked_branch(cart)
 
-    default_branch = next((b for b in branches if "dhanmondi" in b["branch_name"].lower()), branches[0] if branches else None)
+    # ── Default branch (display-only fallback) ───────────────────────
+    # We use Dhanmondi (or the first active branch) ONLY as a UI hint for
+    # the dropdown when neither the cart nor the session has a branch.
+    # Crucially we DO NOT write it to ``request.session["selected_branch"]``
+    # here — simply *viewing* /customer/shop must never silently lock a
+    # customer into a branch.  The session key is set only when the
+    # customer explicitly picks a branch via /customer/cart/set-branch,
+    # /customer/select-branch, or adds a product (which forces the branch
+    # picker if no branch was picked yet).
+    default_branch = next(
+        (b for b in branches if "dhanmondi" in b["branch_name"].lower()),
+        branches[0] if branches else None,
+    )
     session_branch_id = request.session.get("selected_branch")
-    if not session_branch_id and default_branch:
-        session_branch_id = default_branch["branch_id"]
-        request.session["selected_branch"] = session_branch_id
 
     # Pick the branch in this priority order:
     #   1. cart-derived branch (when cart has items)
-    #   2. session["selected_branch"] (when cart is empty)
-    #   3. fallback to the active default
+    #   2. session["selected_branch"] (when cart is empty but one was picked)
+    #   3. fallback to the active default (display only — never written back)
     if cart_has_items and cart_branch_id:
         selected_branch_id = cart_branch_id
         # Re-sync the session key so future POSTs (e.g. add-to-cart from
         # this page) use the locked branch, not a stale one.
         if session_branch_id != cart_branch_id:
             request.session["selected_branch"] = cart_branch_id
-    else:
+    elif session_branch_id:
         selected_branch_id = session_branch_id
+    else:
+        # No cart, no session branch → show the default in the dropdown
+        # but DO NOT persist it to the session.  This keeps the storefront
+        # branch gate honest: the next add-to-cart will still ask the
+        # customer to pick a branch, instead of pretending Dhanmondi was
+        # already chosen just because the user once opened this page.
+        selected_branch_id = default_branch["branch_id"] if default_branch else None
 
     selected_branch = next((b for b in branches if b["branch_id"] == selected_branch_id), None)
 

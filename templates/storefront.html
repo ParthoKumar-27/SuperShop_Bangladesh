@@ -1326,6 +1326,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 44px;
       overflow: hidden;
+      position: relative;
     }
     .deal-img {
       width: 100%;
@@ -1334,9 +1335,32 @@
       padding: 6px;
       background: #ffffff;
       display: block;
+      opacity: 0;
+      transition: opacity .35s ease;
     }
+    .deal-img.is-loaded { opacity: 1; }
     .deal-emoji-fallback {
       line-height: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+    }
+    /* Shimmer skeleton for the round deal tile.  Smaller surface area so
+       we keep the gradient on top of the same base colour and just animate
+       the highlight — looks crisp at 84×84 without sparkle flicker. */
+    .deal-img-skeleton {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg,
+          rgba(255,255,255,0) 30%,
+          rgba(255,255,255,.55) 50%,
+          rgba(255,255,255,0) 70%) 0 0 / 220% 100%;
+      animation: pc-skeleton 1.4s linear infinite;
+      pointer-events: none;
     }
     .deal-card h5 {
       font-size: 13px;
@@ -1473,7 +1497,8 @@
 
     .product-card-img {
       width: 100%;
-      height: 170px;
+      aspect-ratio: 4 / 3;
+      max-height: 200px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1490,13 +1515,40 @@
       object-fit: contain;
       object-position: center;
       padding: 12px;
-      transition: transform .4s ease;
+      transition: opacity .35s ease, transform .4s ease;
       background: #fff;
+      opacity: 0;
     }
-    .product-card:hover .product-card-photo {
+    /* Loaded state — JS adds .is-loaded once the bitmap decodes */
+    .product-card-photo.is-loaded { opacity: 1; }
+    .product-card:hover .product-card-photo.is-loaded {
       transform: scale(1.08);
     }
-    .pc-emoji-fallback { line-height: 1; }
+    .pc-emoji-fallback {
+      line-height: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+    }
+    /* Soft shimmer skeleton shown until the image settles (load or error) */
+    .pc-img-skeleton {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg,
+          rgba(255,255,255,0) 30%,
+          rgba(255,255,255,.55) 50%,
+          rgba(255,255,255,0) 70%) 0 0 / 220% 100%,
+        linear-gradient(135deg, #f0f9f4 0%, #e8f5ee 60%, #fff7ec 100%);
+      animation: pc-skeleton 1.4s linear infinite;
+    }
+    @keyframes pc-skeleton {
+      0%   { background-position: -120% 0, 0 0; }
+      100% { background-position:  120% 0, 0 0; }
+    }
     .product-card-img::after {
       content: '';
       position: absolute;
@@ -2765,8 +2817,9 @@
                     title="{{ d.discount_name }}">{{ savings_txt }}</span>
               <div class="deal-emoji">
                 {% if d.image_url %}
+                  <span class="deal-img-skeleton" aria-hidden="true"></span>
                   <img class="deal-img" src="{{ d.image_url }}" alt="{{ d.product_name }}"
-                       loading="lazy" data-fallback="{{ _emoji }}">
+                       loading="lazy" decoding="async" data-fallback="{{ _emoji }}">
                 {% else %}
                   <span class="deal-emoji-fallback">{{ _emoji }}</span>
                 {% endif %}
@@ -2813,17 +2866,35 @@
               <span class="deal-badge">-{{ _fallback_pct }}%</span>
               <div class="deal-emoji">
                 {% set n = p.product_name | lower %}
-                {%- if 'milk' in n -%}🥛
-                {%- elif 'bread' in n -%}🍞
-                {%- elif 'biscuit' in n or 'digestive' in n -%}🍪
-                {%- elif 'chip' in n -%}🥨
-                {%- elif 'juice' in n -%}🧃
-                {%- elif 'rice' in n -%}🍚
-                {%- elif 'shampoo' in n or 'soap' in n -%}🧴
-                {%- elif 'tea' in n -%}🍵
-                {%- elif 'oil' in n -%}🛢
-                {%- elif 'sugar' in n -%}🍒
-                {%- else -%}🛒
+                {%- if p.image_url -%}
+                  <span class="deal-img-skeleton" aria-hidden="true"></span>
+                  <img class="deal-img" src="{{ p.image_url }}" alt="{{ p.product_name }}"
+                       loading="lazy" decoding="async" data-fallback="
+                    {%- if 'milk' in n -%}🥛
+                    {%- elif 'bread' in n -%}🍞
+                    {%- elif 'biscuit' in n or 'digestive' in n -%}🍪
+                    {%- elif 'chip' in n -%}🥨
+                    {%- elif 'juice' in n -%}🧃
+                    {%- elif 'rice' in n -%}🍚
+                    {%- elif 'shampoo' in n or 'soap' in n -%}🧴
+                    {%- elif 'tea' in n -%}🍵
+                    {%- elif 'oil' in n -%}🛢
+                    {%- elif 'sugar' in n -%}🍒
+                    {%- else -%}🛒
+                    {%- endif -%}">
+                {%- else -%}
+                  {%- if 'milk' in n -%}🥛
+                  {%- elif 'bread' in n -%}🍞
+                  {%- elif 'biscuit' in n or 'digestive' in n -%}🍪
+                  {%- elif 'chip' in n -%}🥨
+                  {%- elif 'juice' in n -%}🧃
+                  {%- elif 'rice' in n -%}🍚
+                  {%- elif 'shampoo' in n or 'soap' in n -%}🧴
+                  {%- elif 'tea' in n -%}🍵
+                  {%- elif 'oil' in n -%}🛢
+                  {%- elif 'sugar' in n -%}🍒
+                  {%- else -%}🛒
+                  {%- endif -%}
                 {%- endif -%}
               </div>
               <h5 title="{{ p.product_name }}">{{ p.product_name }}</h5>
@@ -2960,11 +3031,13 @@
                data-emoji="{{ emoji }}"
                aria-label="Quick view {{ p.product_name }}">
             <div class="product-card-img">
+              <span class="pc-img-skeleton" aria-hidden="true"></span>
               {% if p.image_url %}
                 <img class="product-card-photo"
                      src="{{ p.image_url }}"
                      alt="{{ p.product_name }}"
-                     loading="lazy" />
+                     loading="lazy"
+                     decoding="async" />
               {%- else -%}
                 <span class="pc-emoji-fallback">{{ emoji }}</span>
               {%- endif %}
@@ -3467,27 +3540,79 @@
     updateClear();
   })();
 
-  // Image fallback
+  // Image fallback + smooth fade-in.  Each photo starts at opacity 0; once
+  // the browser has fully decoded the bitmap we flip .is-loaded and the
+  // cross-fade kicks in.  If the URL 404s we swap to the category emoji
+  // instead of leaving an empty grey box.
   document.querySelectorAll('.product-card-photo').forEach(img => {
+    const slot = img.parentElement;
+    const skel = slot ? slot.querySelector('.pc-img-skeleton') : null;
+
+    const settle = () => {
+      // Fade the image in, retire the shimmer, scale-on-hover can now run.
+      img.classList.add('is-loaded');
+      if (skel) {
+        skel.style.opacity = '0';
+        setTimeout(() => skel.remove(), 350);
+      }
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      // Cached image: skip the transition, just kill the skeleton.
+      settle();
+      return;
+    }
+
+    img.addEventListener('load', settle, { once: true });
+
     img.addEventListener('error', function () {
       const card = this.closest('.product-card');
       const emoji = card ? (card.dataset.emoji || '🛍') : '🛍';
       const span = document.createElement('span');
       span.className = 'pc-emoji-fallback';
       span.textContent = emoji;
-      this.replaceWith(span);
-    });
+      // Fade the broken image out, then swap.
+      this.style.transition = 'opacity .25s ease';
+      this.style.opacity = '0';
+      setTimeout(() => {
+        this.replaceWith(span);
+        if (skel) skel.remove();
+      }, 260);
+    }, { once: true });
   });
 
-  // Deal-card image fallback (image → emoji span on error)
+  // Deal-card image fallback + smooth fade-in (same shape as the grid card).
   document.querySelectorAll('.deal-img').forEach(img => {
+    const slot = img.parentElement;
+    const skel = slot ? slot.querySelector('.deal-img-skeleton') : null;
+
+    const settle = () => {
+      img.classList.add('is-loaded');
+      if (skel) {
+        skel.style.opacity = '0';
+        setTimeout(() => skel.remove(), 350);
+      }
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      settle();
+      return;
+    }
+
+    img.addEventListener('load', settle, { once: true });
+
     img.addEventListener('error', function () {
       const fb = this.dataset.fallback || '🛒';
       const span = document.createElement('span');
       span.className = 'deal-emoji-fallback';
       span.textContent = fb;
-      this.replaceWith(span);
-    });
+      this.style.transition = 'opacity .25s ease';
+      this.style.opacity = '0';
+      setTimeout(() => {
+        this.replaceWith(span);
+        if (skel) skel.remove();
+      }, 260);
+    }, { once: true });
   });
 
   // Toast helper
@@ -3518,6 +3643,17 @@
         const b = document.getElementById('cartBadge');
         return b ? parseInt(b.dataset.count || '0', 10) || 0 : 0;
       })();
+
+  // ── Branch-flag reconciliation ─────────────────────────────────────
+  // The "I picked a branch" hint is mirrored in localStorage so the modal
+  // doesn't re-pop on every add within the same session.  But that hint
+  // can become stale across navigations: if a different device/tab/admin
+  // cleared the session's `selected_branch`, the storefront would still
+  // think "yes, branch is picked" because of the cached localStorage entry.
+  // Drop the cache the moment the server tells us there's no branch.
+  if (document.body.dataset.hasBranch !== '1') {
+    try { window.localStorage.removeItem('ss_branch_picked'); } catch (_) {}
+  }
   // The branch gate fires again whenever:
   //   1. The server says we have no branch yet, OR
   //   2. The cart is empty (user emptied the cart or opened a fresh session).
@@ -4010,11 +4146,12 @@
         btn.disabled = false;
         return;
       }
-      // Always go through the branch picker first from the quick-view flow
-      // so customers see the same "Please select your nearest branch" UX
-      // they get from the inline cart icons.  This guarantees the modal
-      // shows on every QV add, even if hasBranch() is briefly stale.
-      if (!hasBranch() || !QVBranchConfirmed) {
+      // Mirror the inline-cart-icon flow: only force the branch picker when
+      // we genuinely don't have a branch locked (no server flag, no
+      // localStorage hint, or the cart is empty).  Once a customer has
+      // picked a branch, the QV "Add to cart" should be a one-click add just
+      // like the orange plus icon on the card.
+      if (!hasBranch()) {
         QVBranchConfirmed = false;
         closeQuickView();
         openBranchModal(productId, name, btn);
