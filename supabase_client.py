@@ -1,6 +1,11 @@
 import os
 import uuid
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Load variables from a local `.env` (project root) before any os.environ
+# lookup below. Safe to call repeatedly — re-reads are no-ops once loaded.
+load_dotenv()
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
