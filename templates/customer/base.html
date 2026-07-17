@@ -1,1684 +1,2302 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperShop BD - {% block title %}{% endblock %}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperShop BD - {% block title %}{% endblock %}</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <style>
-        :root{
-            --green:#044635;
-            --green-deep:#02241b;
-            --green-mid:#0a6b4f;
-            --orange:#F17B0D;
-            --orange-deep:#c45f00;
-            --orange-soft:#ffb35c;
-            --teal:#14b8a6;
-            --cream:#FFFCF1;
-            --dark:#464646;
-            --mid:#646464;
-            --white:#ffffff;
-            --border:#e5e7eb;
-            --shadow-sm:0 4px 16px rgba(4,70,53,.08);
-            --shadow:0 8px 28px rgba(4,70,53,.12);
-            --shadow-lg:0 22px 50px rgba(2,36,27,.22);
-            --radius:14px;
-            --radius-lg:22px;
-        }
+  <style>
+    :root {
+      --green: #044635;
+      --green-deep: #02241b;
+      --green-mid: #0a6b4f;
+      --orange: #F17B0D;
+      --orange-deep: #c45f00;
+      --orange-soft: #ffb35c;
+      --teal: #14b8a6;
+      --cream: #FFFCF1;
+      --dark: #464646;
+      --mid: #646464;
+      --white: #ffffff;
+      --border: #e5e7eb;
+      --shadow-sm: 0 4px 16px rgba(4, 70, 53, .08);
+      --shadow: 0 8px 28px rgba(4, 70, 53, .12);
+      --shadow-lg: 0 22px 50px rgba(2, 36, 27, .22);
+      --radius: 14px;
+      --radius-lg: 22px;
+    }
 
-        body{
-            font-family:'DM Sans',sans-serif;
-            background:
-                radial-gradient(1200px 600px at 0% 0%,rgba(20,184,166,.06),transparent 60%),
-                radial-gradient(900px 600px at 100% 0%,rgba(241,123,13,.06),transparent 60%),
-                #f5f7fa;
-            color:var(--dark);
-        }
-        .glass{backdrop-filter:blur(12px);background:rgba(255,255,255,.85);}
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background:
+        radial-gradient(1200px 600px at 0% 0%, rgba(20, 184, 166, .06), transparent 60%),
+        radial-gradient(900px 600px at 100% 0%, rgba(241, 123, 13, .06), transparent 60%),
+        #f5f7fa;
+      color: var(--dark);
+    }
 
-        /* respects the user's motion preference site-wide */
-        @media (prefers-reduced-motion: reduce){
-            *,*::before,*::after{
-                animation-duration:.001ms !important;
-                animation-iteration-count:1 !important;
-                transition-duration:.001ms !important;
-            }
-        }
+    .glass {
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, .85);
+    }
 
-        /* ══════════════════ NAVBAR — gradient + animated sheen ══════════════════ */
-        /* overflow:visible so the notif badge can escape the navbar;
+    /* respects the user's motion preference site-wide */
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+
+    /* ══════════════════ NAVBAR — gradient + animated sheen ══════════════════ */
+    /* overflow:visible so the notif badge can escape the navbar;
            the sheen and orange-glow pseudo-elements are clipped
            to the navbar via clip-path on ::before / ::after. */
-        .cs-navbar{
-            position:sticky;top:0;z-index:50;
-            background:linear-gradient(105deg,var(--green-deep) 0%,var(--green) 45%,var(--green-mid) 100%);
-            color:#fff;
-            box-shadow:0 8px 28px rgba(2,36,27,.22);
-            isolation:isolate;
-            overflow:visible;
-        }
-        .cs-navbar::before{
-            content:'';
-            position:absolute;inset:0;
-            background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.06) 45%,rgba(255,255,255,.14) 50%,rgba(255,255,255,.06) 55%,transparent 70%);
-            background-size:220% 100%;
-            animation:csSheen 7s ease-in-out infinite;
-            pointer-events:none;z-index:-1;
-            clip-path:inset(0);
-        }
-        .cs-navbar::after{
-            content:'';
-            position:absolute;top:-40px;right:6%;
-            width:320px;height:320px;
-            background:radial-gradient(circle,rgba(241,123,13,.28) 0%,transparent 70%);
-            pointer-events:none;z-index:-1;
-            clip-path:inset(40px 0 0 0);
-        }
-        @keyframes csSheen{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+    .cs-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(105deg, var(--green-deep) 0%, var(--green) 45%, var(--green-mid) 100%);
+      color: #fff;
+      box-shadow: 0 8px 28px rgba(2, 36, 27, .22);
+      isolation: isolate;
+      overflow: visible;
+    }
 
-        /* ══════════════════ ANNOUNCE BAR — rolling offers (matches storefront) ══════════════════ */
-        .cs-announce{
-            background:linear-gradient(90deg,var(--green-deep) 0%,var(--green) 50%,var(--green-mid) 100%);
-            color:rgba(255,255,255,.92);
-            font-size:12px;font-weight:600;
-            overflow:hidden;white-space:nowrap;
-            border-bottom:1px solid rgba(0,0,0,.18);
-        }
-        .cs-announce-track{
-            display:inline-flex;gap:48px;
-            padding:9px 0;
-            animation:csMarquee 28s linear infinite;
-        }
-        .cs-announce-track span{display:inline-flex;align-items:center;gap:8px;}
-        .cs-announce-track i{color:var(--orange-soft);}
-        .cs-announce-track .cs-sep{color:rgba(255,255,255,.35);}
-        @keyframes csMarquee{
-            0%  {transform:translateX(0);}
-            100%{transform:translateX(-50%);}
-        }
+    .cs-navbar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .06) 45%, rgba(255, 255, 255, .14) 50%, rgba(255, 255, 255, .06) 55%, transparent 70%);
+      background-size: 220% 100%;
+      animation: csSheen 7s ease-in-out infinite;
+      pointer-events: none;
+      z-index: -1;
+      clip-path: inset(0);
+    }
 
-        .cs-logo-badge{
-            width:48px;height:48px;border-radius:14px;
-            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
-            display:flex;align-items:center;justify-content:center;font-size:22px;
-            box-shadow:0 6px 14px rgba(241,123,13,.4),inset 0 1px 0 rgba(255,255,255,.25);
-            transition:transform .25s ease,box-shadow .25s ease;
-        }
-        .cs-logo-badge:hover{transform:rotate(-6deg) scale(1.04);box-shadow:0 10px 20px rgba(241,123,13,.55);}
+    .cs-navbar::after {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: 6%;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(241, 123, 13, .28) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+      clip-path: inset(40px 0 0 0);
+    }
 
-        .cs-nav-link{
-            color:rgba(255,255,255,.85);
-            padding:8px 14px;border-radius:10px;font-size:13.5px;font-weight:600;
-            transition:background .15s ease,color .15s ease,transform .15s ease;
-        }
-        .cs-nav-link:hover{background:rgba(255,255,255,.10);color:#fff;transform:translateY(-1px);}
+    @keyframes csSheen {
 
-        .cs-btn-orange{
-            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
-            color:#fff;
-            padding:9px 20px;border-radius:10px;font-size:13px;font-weight:700;
-            box-shadow:0 6px 14px rgba(241,123,13,.32),inset 0 1px 0 rgba(255,255,255,.18);
-            transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
-        }
-        .cs-btn-orange:hover{
-            transform:translateY(-1px);
-            box-shadow:0 10px 20px rgba(241,123,13,.42);
-            filter:brightness(1.05);
-        }
-        .cs-btn-orange:active{transform:translateY(0) scale(.97);}
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
 
-        .cs-btn-ghost{
-            background:transparent;color:#fff;
-            border:1.5px solid rgba(255,255,255,.4);
-            padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;
-            transition:background .15s,border-color .15s;
-        }
-        .cs-btn-ghost:hover{background:rgba(255,255,255,.12);border-color:#fff;}
+      50% {
+        background-position: 100% 50%;
+      }
+    }
 
-        .cs-cart-btn{
-            position:relative;
-            color:#fff;background:rgba(255,255,255,.06);
-            width:42px;height:42px;border-radius:12px;
-            display:flex;align-items:center;justify-content:center;font-size:18px;
-            border:1px solid rgba(255,255,255,.12);
-            transition:background .15s ease,transform .15s ease,border-color .15s ease;
-        }
-        .cs-cart-btn:hover{
-            background:linear-gradient(135deg,rgba(241,123,13,.35) 0%,rgba(241,123,13,.12) 100%);
-            border-color:rgba(241,123,13,.6);
-            transform:translateY(-2px);
-        }
-        .cs-cart-badge{
-            position:absolute;top:-4px;right:-4px;
-            min-width:20px;height:20px;padding:0 5px;
-            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
-            color:#fff;font-size:10px;font-weight:800;border-radius:999px;
-            display:flex;align-items:center;justify-content:center;
-            box-shadow:0 4px 10px rgba(241,123,13,.4);
-            border:2px solid var(--green-deep);
-        }
+    /* ══════════════════ ANNOUNCE BAR — rolling offers (matches storefront) ══════════════════ */
+    .cs-announce {
+      background: linear-gradient(90deg, var(--green-deep) 0%, var(--green) 50%, var(--green-mid) 100%);
+      color: rgba(255, 255, 255, .92);
+      font-size: 12px;
+      font-weight: 600;
+      overflow: hidden;
+      white-space: nowrap;
+      border-bottom: 1px solid rgba(0, 0, 0, .18);
+    }
 
-        /* ══════════════════ CUSTOMER NOTIFICATIONS BELL ══════════════════
+    .cs-announce-track {
+      display: inline-flex;
+      gap: 48px;
+      padding: 9px 0;
+      animation: csMarquee 28s linear infinite;
+    }
+
+    .cs-announce-track span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cs-announce-track i {
+      color: var(--orange-soft);
+    }
+
+    .cs-announce-track .cs-sep {
+      color: rgba(255, 255, 255, .35);
+    }
+
+    @keyframes csMarquee {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    .cs-logo-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 6px 14px rgba(241, 123, 13, .4), inset 0 1px 0 rgba(255, 255, 255, .25);
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .cs-logo-badge:hover {
+      transform: rotate(-6deg) scale(1.04);
+      box-shadow: 0 10px 20px rgba(241, 123, 13, .55);
+    }
+
+    .cs-nav-link {
+      color: rgba(255, 255, 255, .85);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: background .15s ease, color .15s ease, transform .15s ease;
+    }
+
+    .cs-nav-link:hover {
+      background: rgba(255, 255, 255, .10);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .cs-btn-orange {
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      padding: 9px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 6px 14px rgba(241, 123, 13, .32), inset 0 1px 0 rgba(255, 255, 255, .18);
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    }
+
+    .cs-btn-orange:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(241, 123, 13, .42);
+      filter: brightness(1.05);
+    }
+
+    .cs-btn-orange:active {
+      transform: translateY(0) scale(.97);
+    }
+
+    .cs-btn-ghost {
+      background: transparent;
+      color: #fff;
+      border: 1.5px solid rgba(255, 255, 255, .4);
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background .15s, border-color .15s;
+    }
+
+    .cs-btn-ghost:hover {
+      background: rgba(255, 255, 255, .12);
+      border-color: #fff;
+    }
+
+    .cs-cart-btn {
+      position: relative;
+      color: #fff;
+      background: rgba(255, 255, 255, .06);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      transition: background .15s ease, transform .15s ease, border-color .15s ease;
+    }
+
+    .cs-cart-btn:hover {
+      background: linear-gradient(135deg, rgba(241, 123, 13, .35) 0%, rgba(241, 123, 13, .12) 100%);
+      border-color: rgba(241, 123, 13, .6);
+      transform: translateY(-2px);
+    }
+
+    .cs-cart-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(241, 123, 13, .4);
+      border: 2px solid var(--green-deep);
+    }
+
+    /* ══════════════════ CUSTOMER NOTIFICATIONS BELL ══════════════════
            Mirror of the storefront bell — same data source
            (GET /customer/notifications). The badge is a sibling of the
            button (both children of .cs-bell-wrap) so it can escape the
            button's flex layout and overflow into the navbar without
            being clipped by .cs-navbar { overflow:hidden } or losing
            to the navbar's stacking context. */
-        .cs-bell-wrap{
-            position:relative;
-            display:inline-block;
-            overflow:visible;
-            z-index:120;
-        }
-        .cs-bell-btn{
-            position:relative;
-            width:42px;height:42px;border-radius:12px;
-            display:inline-flex;align-items:center;justify-content:center;
-            background:rgba(255,255,255,.06);
-            border:1px solid rgba(255,255,255,.12);
-            color:#fff;font-size:17px;
-            cursor:pointer;
-            font-family:inherit;
-            transition:background .15s ease, transform .15s ease,
-                       border-color .15s ease, box-shadow .15s ease;
-            overflow:visible;
-            padding:0;
-        }
-        .cs-bell-btn:hover{
-            background:linear-gradient(135deg, rgba(241,123,13,.35) 0%, rgba(241,123,13,.12) 100%);
-            border-color:rgba(241,123,13,.6);
-            transform:translateY(-2px);
-        }
-        .cs-bell-btn:focus-visible{
-            outline:none;
-            box-shadow:0 0 0 3px rgba(241,123,13,.45);
-        }
-        .cs-bell-wrap .cs-bell-count{
-            position:absolute;
-            top:-7px;right:-7px;
-            min-width:18px;height:18px;padding:0 5px;
-            border-radius:999px;
-            background:linear-gradient(135deg,var(--orange) 0%,var(--orange-deep) 100%);
-            color:#fff;font-size:10px;font-weight:800;
-            line-height:18px;text-align:center;
-            box-shadow:0 4px 10px rgba(241,123,13,.55),
-                       0 0 0 2px var(--green-deep);
-            display:none;
-            z-index:3;
-            pointer-events:none;
-        }
-        .cs-bell-wrap .cs-bell-count:not([hidden]){
-            display:inline-block;
-        }
-        .cs-bell-menu{
-            position:absolute;
-            top:calc(100% + 12px);
-            right:0;
-            width:340px;
-            max-width:calc(100vw - 32px);
-            background:#fff;
-            border-radius:14px;
-            box-shadow:0 22px 50px rgba(2,36,27,.32);
-            border:1px solid var(--border);
-            overflow:hidden;
-            z-index:120;
-            display:none;
-            animation:csBellIn .18s ease-out;
-        }
-        .cs-bell-wrap.open .cs-bell-menu{ display:block; }
-        @keyframes csBellIn{
-            from{opacity:0; transform:translateY(-6px);}
-            to  {opacity:1; transform:translateY(0);}
-        }
-        .cs-bell-menu::before{
-            content:'';
-            position:absolute;
-            top:-7px; right:14px;
-            width:14px; height:14px;
-            background:#fff;
-            border-top:1px solid var(--border);
-            border-left:1px solid var(--border);
-            transform:rotate(45deg);
-        }
-        .cs-bell-head{
-            display:flex; align-items:center; justify-content:space-between;
-            padding:14px 16px 10px;
-            font-size:13px; font-weight:800;
-            color:var(--green);
-            border-bottom:1px solid #f1f5f4;
-            background:linear-gradient(180deg,#f7faf9 0%,#ffffff 100%);
-            gap:8px;
-        }
-        .cs-bell-head i{ color:var(--orange); }
-        .cs-bell-head .cs-bell-badge{
-            font-family:'DM Sans',sans-serif;
-            font-size:11px; font-weight:700;
-            color:var(--orange-deep);
-            background:rgba(241,123,13,.12);
-            padding:3px 8px; border-radius:999px;
-        }
-        .cs-bell-markall{
-            font-family:'DM Sans',sans-serif;
-            font-size:11px; font-weight:700;
-            color:var(--green);
-            background:transparent;
-            border:1px solid rgba(4,70,53,.18);
-            padding:4px 10px;
-            border-radius:999px;
-            cursor:pointer;
-            transition:background .12s ease, border-color .12s ease,
-                       color .12s ease;
-            white-space:nowrap;
-        }
-        .cs-bell-markall:hover{
-            background:rgba(4,70,53,.08);
-            border-color:var(--green);
-        }
-        .cs-bell-markall:disabled{
-            opacity:.45;
-            cursor:not-allowed;
-            background:transparent;
-        }
-        .cs-bell-list{
-            max-height:360px;
-            overflow-y:auto;
-        }
-        .cs-bell-list::-webkit-scrollbar{ width:6px; }
-        .cs-bell-list::-webkit-scrollbar-thumb{
-            background:rgba(4,70,53,.18);
-            border-radius:4px;
-        }
-        .cs-bell-empty{
-            padding:28px 16px;
-            text-align:center;
-            color:var(--mid);
-            font-size:12.5px;
-        }
-        .cs-bell-empty i{
-            display:block;
-            font-size:28px;
-            color:#cbd5e1;
-            margin-bottom:8px;
-        }
-        .cs-bell-item{
-            display:block;
-            padding:11px 14px;
-            border-top:1px solid #f1f5f4;
-            cursor:pointer;
-            transition:background .12s ease;
-            position:relative;
-            text-decoration:none;
-            color:inherit;
-        }
-        .cs-bell-item:first-child{ border-top:none; }
-        .cs-bell-item:hover{ background:#f7faf9; }
-        .cs-bell-item.is-unread{
-            background:#fffaf2;
-        }
-        .cs-bell-item.is-unread::before{
-            content:'';
-            position:absolute;
-            left:4px; top:18px;
-            width:6px; height:6px;
-            border-radius:50%;
-            background:var(--orange);
-            box-shadow:0 0 6px rgba(241,123,13,.65);
-        }
-        .cs-bell-item .cs-bell-title{
-            font-size:12.5px; font-weight:700;
-            color:var(--dark);
-            margin-bottom:2px;
-            display:flex; align-items:center; gap:6px;
-            flex-wrap:wrap;
-        }
-        .cs-bell-item .cs-bell-msg{
-            font-size:12px;
-            color:var(--mid);
-            line-height:1.45;
-            margin-bottom:4px;
-            word-wrap:break-word;
-        }
-        .cs-bell-item .cs-bell-time{
-            font-size:10.5px;
-            color:#94a3b8;
-            font-weight:600;
-            letter-spacing:.02em;
-        }
-        .cs-bell-item .cs-bell-type{
-            font-size:9.5px; font-weight:800;
-            letter-spacing:.08em; text-transform:uppercase;
-            padding:2px 7px; border-radius:999px;
-            background:rgba(4,70,53,.08);
-            color:var(--green);
-        }
-        .cs-bell-item .cs-bell-type.order_confirmed,
-        .cs-bell-item .cs-bell-type.order_packed{
-            background:rgba(20,184,166,.15);
-            color:#0d9488;
-        }
-        .cs-bell-item .cs-bell-type.order_delivered{
-            background:rgba(4,70,53,.10);
-            color:var(--green);
-        }
-        .cs-bell-item .cs-bell-type.order_cancelled,
-        .cs-bell-item .cs-bell-type.delivery_failed{
-            background:rgba(225,29,72,.10);
-            color:var(--red, #e11d48);
-        }
-        .cs-bell-item .cs-bell-type.rider_assigned,
-        .cs-bell-item .cs-bell-type.order_out_for_delivery{
-            background:rgba(241,123,13,.14);
-            color:var(--orange-deep);
-        }
-        .cs-bell-foot{
-            padding:10px 14px;
-            background:#f8faf9;
-            border-top:1px solid var(--border);
-            font-size:11.5px;
-            text-align:center;
-            color:var(--mid);
-        }
-        .cs-bell-foot a{
-            color:var(--orange-deep);
-            font-weight:700;
-        }
-        .cs-bell-foot a:hover{ color:var(--orange); }
+    .cs-bell-wrap {
+      position: relative;
+      display: inline-block;
+      overflow: visible;
+      z-index: 120;
+    }
 
-        .cs-user-chip{
-            display:flex;align-items:center;gap:10px;
-            padding:5px 6px 5px 5px;
-            border-radius:999px;
-            background:rgba(255,255,255,.06);
-            border:1px solid rgba(255,255,255,.12);
-            transition:background .15s ease;
-        }
-        .cs-user-chip:hover{background:rgba(255,255,255,.12);}
-        .cs-user-chip-avatar{
-            width:32px;height:32px;border-radius:50%;
-            background:linear-gradient(135deg,#ffb347 0%,var(--orange) 55%,#d96500 100%);
-            display:flex;align-items:center;justify-content:center;
-            font-size:13px;font-weight:800;color:#fff;
-            border:2px solid rgba(255,255,255,.25);
-            box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
-        }
+    .cs-bell-btn {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .12);
+      color: #fff;
+      font-size: 17px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s ease, transform .15s ease,
+        border-color .15s ease, box-shadow .15s ease;
+      overflow: visible;
+      padding: 0;
+    }
 
-        /* ══════════════════ SIDEBAR ══════════════════ */
-        .cs-side{
-            width:100%;
-        }
-        .cs-side-card{
-            position:relative;
-            background:linear-gradient(160deg,#ffffff 0%,#fff7ec 45%,#ffe7cf 100%);
-            border:1px solid rgba(241,123,13,.18);
-            border-radius:var(--radius-lg);
-            box-shadow:0 18px 42px rgba(255,146,4,.18),0 4px 14px rgba(4,70,53,.05);
-            padding:18px 14px 14px;
-            animation:csSlideIn .45s cubic-bezier(.2,.8,.2,1) both;
-            overflow:hidden;
-        }
-        .cs-side-card::before{
-            content:'';
-            position:absolute;inset:0;
-            background:
-                linear-gradient(180deg,rgba(4,70,53,.04) 0%,transparent 220px),
-                radial-gradient(360px 180px at 100% 0%,rgba(241,123,13,.10),transparent 70%);
-            pointer-events:none;
-        }
-        .cs-side-card::-webkit-scrollbar{width:4px;}
-        .cs-side-card::-webkit-scrollbar-thumb{background:rgba(241,123,13,.25);border-radius:4px;}
-        @keyframes csSlideIn{
-            from{opacity:0;transform:translateX(-8px);}
-            to  {opacity:1;transform:translateX(0);}
-        }
+    .cs-bell-btn:hover {
+      background: linear-gradient(135deg, rgba(241, 123, 13, .35) 0%, rgba(241, 123, 13, .12) 100%);
+      border-color: rgba(241, 123, 13, .6);
+      transform: translateY(-2px);
+    }
 
-        .cs-side-avatar{
-            width:52px;height:52px;border-radius:50%;
-            background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);
-            color:#fff;font-size:18px;font-weight:800;
-            display:flex;align-items:center;justify-content:center;
-            box-shadow:0 6px 14px rgba(4,70,53,.25),inset 0 1px 0 rgba(255,255,255,.18);
-            flex-shrink:0;
-            position:relative;
-            isolation:isolate;
-        }
-        .cs-side-avatar::after{
-            content:'';
-            position:absolute;inset:-4px;
-            border-radius:50%;
-            background:conic-gradient(from 220deg,var(--orange) 0deg,var(--orange-soft) 90deg,transparent 200deg);
-            opacity:.55;
-            z-index:-1;
-            filter:blur(6px);
-        }
+    .cs-bell-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(241, 123, 13, .45);
+    }
 
-        .cs-points-chip{
-            display:inline-flex;align-items:center;gap:6px;
-            padding:5px 11px;border-radius:999px;
-            background:#f0f9f4;
-            border:1px solid #cfeee3;
-            color:#044635;
-            font-size:11.5px;font-weight:700;
-        }
-        .cs-points-chip i{color:var(--orange);font-size:11px;}
+    .cs-bell-wrap .cs-bell-count {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 18px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(241, 123, 13, .55),
+        0 0 0 2px var(--green-deep);
+      display: none;
+      z-index: 3;
+      pointer-events: none;
+    }
 
-        .cs-nav-label{
-            font-size:10.5px;font-weight:700;text-transform:uppercase;
-            letter-spacing:.12em;color:#94a3b8;
-            padding:16px 6px 6px;
-            display:flex;align-items:center;gap:8px;
-        }
-        .cs-nav-label::after{
-            content:'';flex:1;height:1px;
-            background:linear-gradient(90deg,#e5e7eb,transparent);
-        }
+    .cs-bell-wrap .cs-bell-count:not([hidden]) {
+      display: inline-block;
+    }
 
-        .cs-nav{
-            display:flex;flex-direction:column;gap:2px;
-        }
-        .cs-nav a{
-            display:flex;align-items:center;justify-content:space-between;
-            padding:9px 12px;
-            font-size:13.5px;color:#475569;font-weight:500;
-            border-radius:10px;
-            transition:background .15s ease,color .15s ease;
-            position:relative;
-        }
-        .cs-nav a:hover{
-            background:#f8fafc;
-            color:#044635;
-        }
-        .cs-nav a.active{
-            background:#044635;
-            color:#ffffff;
-            font-weight:600;
-            box-shadow:0 4px 10px rgba(4,70,53,.18);
-        }
-        .cs-nav a.active i{ color:#ffb35c; }
-        .cs-nav a.active .cs-nav-arrow{color:rgba(255,255,255,.75);}
-        .cs-nav-arrow{color:#cbd5e1;font-size:12px;transition:transform .15s ease;}
-        .cs-nav a:hover .cs-nav-arrow{transform:translateX(2px);color:#94a3b8;}
+    .cs-bell-menu {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      width: 340px;
+      max-width: calc(100vw - 32px);
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 22px 50px rgba(2, 36, 27, .32);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      z-index: 120;
+      display: none;
+      animation: csBellIn .18s ease-out;
+    }
 
-        .cs-danger-zone{
-            margin-top:18px;padding-top:14px;
-            border-top:1px solid #f1f5f9;
-        }
-        .cs-danger-btn{
-            width:100%;text-align:left;
-            padding:9px 12px;border-radius:10px;
-            color:#dc2626;font-size:13px;font-weight:600;
-            background:transparent;border:none;cursor:pointer;
-            display:flex;align-items:center;gap:10px;
-            transition:background .15s ease,color .15s ease;
-        }
-        .cs-danger-btn:hover{background:#fef2f2;color:#b91c1c;}
-        .cs-danger-btn i{width:18px;text-align:center;}
+    .cs-bell-wrap.open .cs-bell-menu {
+      display: block;
+    }
 
-        /* ══════════════════ FOOTER — matches storefront one-line style ══════════════════ */
-        .cs-footer{
-            background:linear-gradient(105deg,var(--green-deep),var(--green) 55%,var(--green-mid));
-            color:rgba(255,255,255,.65);
-            margin-top:36px;
-            padding:26px 18px;
-            font-size:12px;
-            text-align:center;
-            position:relative;overflow:hidden;
-        }
-        .cs-footer::before{
-            content:'';position:absolute;inset:0;
-            background:radial-gradient(800px 200px at 50% -50%,rgba(241,123,13,.25),transparent 60%);
-            pointer-events:none;
-        }
-        .cs-footer-inner{
-            position:relative;z-index:1;
-            max-width:1280px;margin:0 auto;
-            display:flex;flex-direction:column;align-items:center;gap:6px;
-        }
-        .cs-footer-title{color:#fff;font-weight:800;letter-spacing:-.01em;font-size:14px;}
-        .cs-footer-line{color:rgba(255,255,255,.65);}
-        .cs-footer-line b{color:var(--orange-soft);font-weight:700;}
-        .cs-footer-tag{color:var(--orange-soft);font-weight:700;}
+    @keyframes csBellIn {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
 
-        /* ══════════════════ UTILITY ══════════════════ */
-        .cs-link-emerald{
-            color:var(--green);
-            font-weight:600;
-            transition:color .15s ease;
-        }
-        .cs-link-emerald:hover{color:var(--orange);}
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        /* gentle entrance for the content area */
-        .cs-content{animation:csFadeUp .5s cubic-bezier(.2,.8,.2,1) .05s both;}
-        @keyframes csFadeUp{
-            from{opacity:0;transform:translateY(8px);}
-            to  {opacity:1;transform:translateY(0);}
-        }
+    .cs-bell-menu::before {
+      content: '';
+      position: absolute;
+      top: -7px;
+      right: 14px;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      transform: rotate(45deg);
+    }
 
-        /* ══════════════════ GLOBAL TOAST (used by every customer page) ══════════════════ */
-        .cs-toast-stack{
-            position:fixed; bottom:24px; right:24px;
-            display:flex; flex-direction:column-reverse; gap:10px;
-            z-index:2147483647; max-width:360px; width:calc(100% - 40px);
-            pointer-events:none;
-        }
-        .cs-toast{
-            position:relative; overflow:hidden;
-            display:flex; align-items:center; gap:10px;
-            padding:12px 14px 12px 16px; border-radius:12px;
-            font-size:13px; font-weight:600; line-height:1.4;
-            background:#fff; color:var(--dark);
-            box-shadow:0 18px 38px rgba(4,70,53,.20), 0 2px 6px rgba(0,0,0,.08);
-            border-left:4px solid var(--orange);
-            pointer-events:auto;
-            animation:csToastIn .35s cubic-bezier(.2,.8,.2,1) both;
-        }
-        @keyframes csToastIn{
-            from{opacity:0; transform:translateX(120%);}
-            to  {opacity:1; transform:translateX(0);}
-        }
-        .cs-toast.cs-hiding{animation:csToastOut .3s ease both;}
-        @keyframes csToastOut{
-            from{opacity:1; transform:translateX(0);}
-            to  {opacity:0; transform:translateX(120%);}
-        }
-        @media (prefers-reduced-motion: reduce){
-            .cs-toast{animation:none !important;}
-            .cs-toast.cs-hiding{animation:none !important; opacity:0;}
-        }
-        .cs-toast i{font-size:16px; flex-shrink:0; color:var(--orange);}
-        .cs-toast-ok    {border-left-color:#10b981;} .cs-toast-ok    i{color:#10b981;}
-        .cs-toast-err   {border-left-color:#ef4444;} .cs-toast-err   i{color:#ef4444;}
-        .cs-toast-warn  {border-left-color:#f59e0b;} .cs-toast-warn  i{color:#f59e0b;}
-        .cs-toast-text  {flex:1; word-break:break-word;}
-        .cs-toast-close{
-            width:26px; height:26px; border:none; background:transparent;
-            color:inherit; opacity:.55; cursor:pointer; border-radius:6px;
-            display:flex; align-items:center; justify-content:center;
-            font-size:11px; transition:.15s; flex-shrink:0;
-        }
-        .cs-toast-close:hover{opacity:1; background:rgba(0,0,0,.06);}
-        .cs-toast::after{
-            content:""; position:absolute; bottom:0; left:0;
-            height:3px; width:100%; background:currentColor;
-            opacity:.25; border-bottom-left-radius:12px; border-bottom-right-radius:12px;
-            transform-origin:left; animation:csToastProgress 4s linear forwards;
-        }
-        @keyframes csToastProgress{from{transform:scaleX(1);} to{transform:scaleX(0);}}
+    .cs-bell-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--green);
+      border-bottom: 1px solid #f1f5f4;
+      background: linear-gradient(180deg, #f7faf9 0%, #ffffff 100%);
+      gap: 8px;
+    }
 
-        @keyframes csCartPulse{
-            0%   {transform:scale(1);}
-            40%  {transform:scale(1.35);}
-            100% {transform:scale(1);}
-        }
-        .cs-cart-badge.pulse{animation:csCartPulse .45s ease;}
+    .cs-bell-head i {
+      color: var(--orange);
+    }
 
-        /* ══════════════════ Confirm modal ══════════════════ */
-        .cs-modal-backdrop{
-            position:fixed; inset:0;
-            background:rgba(4, 70, 53, .35);
-            backdrop-filter:blur(2px);
-            z-index:9998;
-            animation:csModalFade .18s ease both;
-        }
-        @keyframes csModalFade{from{opacity:0;} to{opacity:1;}}
-        .cs-modal{
-            position:fixed; top:50%; left:50%;
-            transform:translate(-50%, -50%);
-            width:min(420px, calc(100% - 32px));
-            background:#fff; border-radius:20px;
-            box-shadow:0 25px 60px -10px rgba(0,0,0,.25);
-            z-index:9999;
-            padding:28px 26px 22px;
-            animation:csModalPop .22s cubic-bezier(.2,.9,.3,1.3) both;
-            text-align:center;
-            font-family:inherit;
-        }
-        @keyframes csModalPop{
-            from{opacity:0; transform:translate(-50%, -42%) scale(.92);}
-            to  {opacity:1; transform:translate(-50%, -50%) scale(1);}
-        }
-        .cs-modal.hiding{animation:csModalOut .16s ease both;}
-        @keyframes csModalOut{
-            to{opacity:0; transform:translate(-50%, -50%) scale(.96);}
-        }
-        .cs-modal-x{
-            position:absolute; top:12px; right:12px;
-            width:30px; height:30px; border-radius:50%;
-            border:none; background:transparent; color:#9ca3af;
-            cursor:pointer; display:grid; place-items:center;
-            transition:background .15s ease, color .15s ease;
-        }
-        .cs-modal-x:hover{background:#f3f4f6; color:#374151;}
-        .cs-modal-icon{
-            width:64px; height:64px; border-radius:50%;
-            margin:0 auto 14px;
-            display:grid; place-items:center;
-            background:linear-gradient(135deg, #fef3e6, #fde2cf);
-            color:#F17B0D; font-size:26px;
-        }
-        .cs-modal-icon.is-danger{
-            background:linear-gradient(135deg, #fee2e2, #fecaca);
-            color:#dc2626;
-        }
-        .cs-modal-title{
-            font-size:18px; font-weight:800; color:#1f2937;
-            margin:0 0 6px;
-        }
-        .cs-modal-msg{
-            font-size:13.5px; color:#6b7280; line-height:1.5;
-            margin:0 0 18px;
-        }
-        .cs-modal-actions{
-            display:flex; gap:10px; justify-content:center;
-        }
-        .cs-modal-btn{
-            border:none; cursor:pointer;
-            padding:10px 22px; border-radius:12px;
-            font:inherit; font-weight:600; font-size:13.5px;
-            transition:transform .12s ease, box-shadow .15s ease, background .15s ease;
-        }
-        .cs-modal-btn:active{transform:translateY(1px);}
-        .cs-modal-btn-cancel{
-            background:#f3f4f6; color:#374151;
-        }
-        .cs-modal-btn-cancel:hover{background:#e5e7eb;}
-        .cs-modal-btn-confirm{
-            background:#044635; color:#fff;
-            box-shadow:0 6px 14px -4px rgba(4, 70, 53, .45);
-        }
-        .cs-modal-btn-confirm:hover{background:#033828;}
-        .cs-modal-btn-confirm.is-danger{
-            background:#dc2626;
-            box-shadow:0 6px 14px -4px rgba(220, 38, 38, .45);
-        }
-        .cs-modal-btn-confirm.is-danger:hover{background:#b91c1c;}
-        body.cs-modal-locked{overflow:hidden;}
+    .cs-bell-head .cs-bell-badge {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange-deep);
+      background: rgba(241, 123, 13, .12);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
 
-        /* ══════════════════ Password-prompt modal extras ══════════════════ */
-        .cs-modal.cs-modal-wide{ width:min(440px, calc(100% - 32px)); text-align:left; }
-        .cs-modal-field{ margin:0 0 16px; }
-        .cs-modal-field .cs-pwd-err{
-            display:flex; align-items:center; gap:6px;
-            margin:8px 2px 0; font-size:12px; font-weight:600;
-            color:#dc2626;
-        }
-        .cs-pwd-err i{ color:#dc2626; font-size:12px; }
-        .cs-pwd-wrap{
-            position:relative;
-            display:flex; align-items:center;
-        }
-        .cs-pwd-input{
-            width:100%;
-            padding:11px 42px 11px 14px;
-            font:inherit; font-size:13.5px; font-weight:500;
-            color:var(--dark);
-            background:#f9fafb;
-            border:1.5px solid #e5e7eb;
-            border-radius:11px;
-            transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
-        }
-        .cs-pwd-input::placeholder{ color:#9ca3af; font-weight:500; }
-        .cs-pwd-input:focus{
-            outline:none;
-            border-color:var(--green-mid);
-            background:#fff;
-            box-shadow:0 0 0 3px rgba(10,107,79,.12);
-        }
-        .cs-pwd-input.is-invalid{
-            border-color:#dc2626;
-            box-shadow:0 0 0 3px rgba(220,38,38,.10);
-        }
-        .cs-pwd-toggle{
-            position:absolute; right:6px; top:50%; transform:translateY(-50%);
-            width:32px; height:32px;
-            display:flex; align-items:center; justify-content:center;
-            border:none; background:transparent; cursor:pointer;
-            color:#94a3b8; border-radius:8px;
-            transition:background .15s ease, color .15s ease;
-        }
-        .cs-pwd-toggle:hover{ background:#f1f5f9; color:#475569; }
-        .cs-pwd-toggle i{ font-size:14px; }
+    .cs-bell-markall {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      background: transparent;
+      border: 1px solid rgba(4, 70, 53, .18);
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .12s ease, border-color .12s ease,
+        color .12s ease;
+      white-space: nowrap;
+    }
 
-        /* ══════════════════ LOGOUT CONFIRM MODAL (base.html) ══════════════════
+    .cs-bell-markall:hover {
+      background: rgba(4, 70, 53, .08);
+      border-color: var(--green);
+    }
+
+    .cs-bell-markall:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      background: transparent;
+    }
+
+    .cs-bell-list {
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .cs-bell-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .cs-bell-list::-webkit-scrollbar-thumb {
+      background: rgba(4, 70, 53, .18);
+      border-radius: 4px;
+    }
+
+    .cs-bell-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--mid);
+      font-size: 12.5px;
+    }
+
+    .cs-bell-empty i {
+      display: block;
+      font-size: 28px;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+
+    .cs-bell-item {
+      display: block;
+      padding: 11px 14px;
+      border-top: 1px solid #f1f5f4;
+      cursor: pointer;
+      transition: background .12s ease;
+      position: relative;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .cs-bell-item:first-child {
+      border-top: none;
+    }
+
+    .cs-bell-item:hover {
+      background: #f7faf9;
+    }
+
+    .cs-bell-item.is-unread {
+      background: #fffaf2;
+    }
+
+    .cs-bell-item.is-unread::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 18px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 6px rgba(241, 123, 13, .65);
+    }
+
+    .cs-bell-item .cs-bell-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .cs-bell-item .cs-bell-msg {
+      font-size: 12px;
+      color: var(--mid);
+      line-height: 1.45;
+      margin-bottom: 4px;
+      word-wrap: break-word;
+    }
+
+    .cs-bell-item .cs-bell-time {
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+
+    .cs-bell-item .cs-bell-type {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(4, 70, 53, .08);
+      color: var(--green);
+    }
+
+    .cs-bell-item .cs-bell-type.order_confirmed,
+    .cs-bell-item .cs-bell-type.order_packed {
+      background: rgba(20, 184, 166, .15);
+      color: #0d9488;
+    }
+
+    .cs-bell-item .cs-bell-type.order_delivered {
+      background: rgba(4, 70, 53, .10);
+      color: var(--green);
+    }
+
+    .cs-bell-item .cs-bell-type.order_cancelled,
+    .cs-bell-item .cs-bell-type.delivery_failed {
+      background: rgba(225, 29, 72, .10);
+      color: var(--red, #e11d48);
+    }
+
+    .cs-bell-item .cs-bell-type.rider_assigned,
+    .cs-bell-item .cs-bell-type.order_out_for_delivery {
+      background: rgba(241, 123, 13, .14);
+      color: var(--orange-deep);
+    }
+
+    .cs-bell-foot {
+      padding: 10px 14px;
+      background: #f8faf9;
+      border-top: 1px solid var(--border);
+      font-size: 11.5px;
+      text-align: center;
+      color: var(--mid);
+    }
+
+    .cs-bell-foot a {
+      color: var(--orange-deep);
+      font-weight: 700;
+    }
+
+    .cs-bell-foot a:hover {
+      color: var(--orange);
+    }
+
+    .cs-user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 6px 5px 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .12);
+      transition: background .15s ease;
+    }
+
+    .cs-user-chip:hover {
+      background: rgba(255, 255, 255, .12);
+    }
+
+    .cs-user-chip-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffb347 0%, var(--orange) 55%, #d96500 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, .25);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
+    }
+
+    /* ══════════════════ SIDEBAR ══════════════════ */
+    .cs-side {
+      width: 100%;
+    }
+
+    .cs-side-card {
+      position: relative;
+      background: linear-gradient(160deg, #ffffff 0%, #fff7ec 45%, #ffe7cf 100%);
+      border: 1px solid rgba(241, 123, 13, .18);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 18px 42px rgba(255, 146, 4, .18), 0 4px 14px rgba(4, 70, 53, .05);
+      padding: 18px 14px 14px;
+      animation: csSlideIn .45s cubic-bezier(.2, .8, .2, 1) both;
+      overflow: hidden;
+    }
+
+    .cs-side-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(4, 70, 53, .04) 0%, transparent 220px),
+        radial-gradient(360px 180px at 100% 0%, rgba(241, 123, 13, .10), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cs-side-card::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .cs-side-card::-webkit-scrollbar-thumb {
+      background: rgba(241, 123, 13, .25);
+      border-radius: 4px;
+    }
+
+    @keyframes csSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .cs-side-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green) 0%, var(--green-mid) 100%);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 14px rgba(4, 70, 53, .25), inset 0 1px 0 rgba(255, 255, 255, .18);
+      flex-shrink: 0;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .cs-side-avatar::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: conic-gradient(from 220deg, var(--orange) 0deg, var(--orange-soft) 90deg, transparent 200deg);
+      opacity: .55;
+      z-index: -1;
+      filter: blur(6px);
+    }
+
+    .cs-points-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: #f0f9f4;
+      border: 1px solid #cfeee3;
+      color: #044635;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .cs-points-chip i {
+      color: var(--orange);
+      font-size: 11px;
+    }
+
+    .cs-nav-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #94a3b8;
+      padding: 16px 6px 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cs-nav-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #e5e7eb, transparent);
+    }
+
+    .cs-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cs-nav a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      font-size: 13.5px;
+      color: #475569;
+      font-weight: 500;
+      border-radius: 10px;
+      transition: background .15s ease, color .15s ease;
+      position: relative;
+    }
+
+    .cs-nav a:hover {
+      background: #f8fafc;
+      color: #044635;
+    }
+
+    .cs-nav a.active {
+      background: #044635;
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(4, 70, 53, .18);
+    }
+
+    .cs-nav a.active i {
+      color: #ffb35c;
+    }
+
+    .cs-nav a.active .cs-nav-arrow {
+      color: rgba(255, 255, 255, .75);
+    }
+
+    .cs-nav-arrow {
+      color: #cbd5e1;
+      font-size: 12px;
+      transition: transform .15s ease;
+    }
+
+    .cs-nav a:hover .cs-nav-arrow {
+      transform: translateX(2px);
+      color: #94a3b8;
+    }
+
+    .cs-danger-zone {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .cs-danger-btn {
+      width: 100%;
+      text-align: left;
+      padding: 9px 12px;
+      border-radius: 10px;
+      color: #dc2626;
+      font-size: 13px;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background .15s ease, color .15s ease;
+    }
+
+    .cs-danger-btn:hover {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .cs-danger-btn i {
+      width: 18px;
+      text-align: center;
+    }
+
+    /* ══════════════════ FOOTER — matches storefront one-line style ══════════════════ */
+    .cs-footer {
+      background: linear-gradient(105deg, var(--green-deep), var(--green) 55%, var(--green-mid));
+      color: rgba(255, 255, 255, .65);
+      margin-top: 36px;
+      padding: 26px 18px;
+      font-size: 12px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cs-footer::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(800px 200px at 50% -50%, rgba(241, 123, 13, .25), transparent 60%);
+      pointer-events: none;
+    }
+
+    .cs-footer-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cs-footer-title {
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      font-size: 14px;
+    }
+
+    .cs-footer-line {
+      color: rgba(255, 255, 255, .65);
+    }
+
+    .cs-footer-line b {
+      color: var(--orange-soft);
+      font-weight: 700;
+    }
+
+    .cs-footer-tag {
+      color: var(--orange-soft);
+      font-weight: 700;
+    }
+
+    /* ══════════════════ UTILITY ══════════════════ */
+    .cs-link-emerald {
+      color: var(--green);
+      font-weight: 600;
+      transition: color .15s ease;
+    }
+
+    .cs-link-emerald:hover {
+      color: var(--orange);
+    }
+
+    /* gentle entrance for the content area */
+    .cs-content {
+      animation: csFadeUp .5s cubic-bezier(.2, .8, .2, 1) .05s both;
+    }
+
+    @keyframes csFadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ══════════════════ GLOBAL TOAST (used by every customer page) ══════════════════ */
+    .cs-toast-stack {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 10px;
+      z-index: 2147483647;
+      max-width: 360px;
+      width: calc(100% - 40px);
+      pointer-events: none;
+    }
+
+    .cs-toast {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+      background: #fff;
+      color: var(--dark);
+      box-shadow: 0 18px 38px rgba(4, 70, 53, .20), 0 2px 6px rgba(0, 0, 0, .08);
+      border-left: 4px solid var(--orange);
+      pointer-events: auto;
+      animation: csToastIn .35s cubic-bezier(.2, .8, .2, 1) both;
+    }
+
+    @keyframes csToastIn {
+      from {
+        opacity: 0;
+        transform: translateX(120%);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .cs-toast.cs-hiding {
+      animation: csToastOut .3s ease both;
+    }
+
+    @keyframes csToastOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(120%);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cs-toast {
+        animation: none !important;
+      }
+
+      .cs-toast.cs-hiding {
+        animation: none !important;
+        opacity: 0;
+      }
+    }
+
+    .cs-toast i {
+      font-size: 16px;
+      flex-shrink: 0;
+      color: var(--orange);
+    }
+
+    .cs-toast-ok {
+      border-left-color: #10b981;
+    }
+
+    .cs-toast-ok i {
+      color: #10b981;
+    }
+
+    .cs-toast-err {
+      border-left-color: #ef4444;
+    }
+
+    .cs-toast-err i {
+      color: #ef4444;
+    }
+
+    .cs-toast-warn {
+      border-left-color: #f59e0b;
+    }
+
+    .cs-toast-warn i {
+      color: #f59e0b;
+    }
+
+    .cs-toast-text {
+      flex: 1;
+      word-break: break-word;
+    }
+
+    .cs-toast-close {
+      width: 26px;
+      height: 26px;
+      border: none;
+      background: transparent;
+      color: inherit;
+      opacity: .55;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      transition: .15s;
+      flex-shrink: 0;
+    }
+
+    .cs-toast-close:hover {
+      opacity: 1;
+      background: rgba(0, 0, 0, .06);
+    }
+
+    .cs-toast::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      background: currentColor;
+      opacity: .25;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      transform-origin: left;
+      animation: csToastProgress 4s linear forwards;
+    }
+
+    @keyframes csToastProgress {
+      from {
+        transform: scaleX(1);
+      }
+
+      to {
+        transform: scaleX(0);
+      }
+    }
+
+    @keyframes csCartPulse {
+      0% {
+        transform: scale(1);
+      }
+
+      40% {
+        transform: scale(1.35);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .cs-cart-badge.pulse {
+      animation: csCartPulse .45s ease;
+    }
+
+    /* ══════════════════ Confirm modal ══════════════════ */
+    .cs-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 70, 53, .35);
+      backdrop-filter: blur(2px);
+      z-index: 9998;
+      animation: csModalFade .18s ease both;
+    }
+
+    @keyframes csModalFade {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .cs-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(420px, calc(100% - 32px));
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, .25);
+      z-index: 9999;
+      padding: 28px 26px 22px;
+      animation: csModalPop .22s cubic-bezier(.2, .9, .3, 1.3) both;
+      text-align: center;
+      font-family: inherit;
+    }
+
+    @keyframes csModalPop {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -42%) scale(.92);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .cs-modal.hiding {
+      animation: csModalOut .16s ease both;
+    }
+
+    @keyframes csModalOut {
+      to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(.96);
+      }
+    }
+
+    .cs-modal-x {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background .15s ease, color .15s ease;
+    }
+
+    .cs-modal-x:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .cs-modal-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #fef3e6, #fde2cf);
+      color: #F17B0D;
+      font-size: 26px;
+    }
+
+    .cs-modal-icon.is-danger {
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      color: #dc2626;
+    }
+
+    .cs-modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #1f2937;
+      margin: 0 0 6px;
+    }
+
+    .cs-modal-msg {
+      font-size: 13.5px;
+      color: #6b7280;
+      line-height: 1.5;
+      margin: 0 0 18px;
+    }
+
+    .cs-modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .cs-modal-btn {
+      border: none;
+      cursor: pointer;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: transform .12s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .cs-modal-btn:active {
+      transform: translateY(1px);
+    }
+
+    .cs-modal-btn-cancel {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .cs-modal-btn-cancel:hover {
+      background: #e5e7eb;
+    }
+
+    .cs-modal-btn-confirm {
+      background: #044635;
+      color: #fff;
+      box-shadow: 0 6px 14px -4px rgba(4, 70, 53, .45);
+    }
+
+    .cs-modal-btn-confirm:hover {
+      background: #033828;
+    }
+
+    .cs-modal-btn-confirm.is-danger {
+      background: #dc2626;
+      box-shadow: 0 6px 14px -4px rgba(220, 38, 38, .45);
+    }
+
+    .cs-modal-btn-confirm.is-danger:hover {
+      background: #b91c1c;
+    }
+
+    body.cs-modal-locked {
+      overflow: hidden;
+    }
+
+    /* ══════════════════ Password-prompt modal extras ══════════════════ */
+    .cs-modal.cs-modal-wide {
+      width: min(440px, calc(100% - 32px));
+      text-align: left;
+    }
+
+    .cs-modal-field {
+      margin: 0 0 16px;
+    }
+
+    .cs-modal-field .cs-pwd-err {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 2px 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: #dc2626;
+    }
+
+    .cs-pwd-err i {
+      color: #dc2626;
+      font-size: 12px;
+    }
+
+    .cs-pwd-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .cs-pwd-input {
+      width: 100%;
+      padding: 11px 42px 11px 14px;
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--dark);
+      background: #f9fafb;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 11px;
+      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+
+    .cs-pwd-input::placeholder {
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    .cs-pwd-input:focus {
+      outline: none;
+      border-color: var(--green-mid);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(10, 107, 79, .12);
+    }
+
+    .cs-pwd-input.is-invalid {
+      border-color: #dc2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, .10);
+    }
+
+    .cs-pwd-toggle {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: #94a3b8;
+      border-radius: 8px;
+      transition: background .15s ease, color .15s ease;
+    }
+
+    .cs-pwd-toggle:hover {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .cs-pwd-toggle i {
+      font-size: 14px;
+    }
+
+    /* ══════════════════ LOGOUT CONFIRM MODAL (base.html) ══════════════════
            Shared overlay reused via class .cs-confirm-overlay; the modal is
            inserted once at end of body by csConfirmLogout(). Buttons inside
            .cs-confirm-modal are wired to "Cancel" (.cs-confirm-cancel) and
            "Yes, log out" (.cs-confirm-ok). Closed by ESC or backdrop click. */
-        .cs-confirm-overlay{
-            position:fixed;inset:0;
-            background:rgba(2,36,27,.55);
-            backdrop-filter:blur(4px);
-            z-index:9999;
-            display:none;
-            align-items:center;justify-content:center;
-            padding:16px;
-            animation:csConfirmFade .18s ease-out;
-        }
-        .cs-confirm-overlay[open]{ display:flex; }
-        @keyframes csConfirmFade{ from{opacity:0;} to{opacity:1;} }
-        .cs-confirm-modal{
-            background:#fff;
-            border-radius:18px;
-            max-width:420px;width:100%;
-            box-shadow:0 30px 80px rgba(2,36,27,.45);
-            padding:28px 26px 22px;
-            text-align:center;
-            animation:csConfirmPop .22s cubic-bezier(.2,.9,.3,1.2);
-        }
-        @keyframes csConfirmPop{
-            from{opacity:0; transform:translateY(12px) scale(.96);}
-            to  {opacity:1; transform:translateY(0) scale(1);}
-        }
-        .cs-confirm-icon{
-            width:60px;height:60px;border-radius:50%;
-            background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%);
-            color:#b91c1c;
-            display:inline-flex;align-items:center;justify-content:center;
-            font-size:26px;
-            margin:0 auto 16px;
-            box-shadow:0 8px 18px rgba(185,28,28,.18);
-        }
-        .cs-confirm-title{
-            font-size:18px;font-weight:800;color:#0f172a;
-            margin:0 0 6px;
-        }
-        .cs-confirm-msg{
-            font-size:14px;color:#475569;line-height:1.5;
-            margin:0 0 20px;
-        }
-        .cs-confirm-actions{
-            display:flex;gap:10px;justify-content:center;
-        }
-        .cs-confirm-btn{
-            flex:1;min-width:0;
-            padding:10px 16px;border-radius:10px;
-            font-size:14px;font-weight:700;
-            cursor:pointer;border:1px solid transparent;
-            font-family:inherit;
-            transition:transform .12s ease, box-shadow .12s ease,
-                       background .12s ease, color .12s ease;
-        }
-        .cs-confirm-btn:hover{ transform:translateY(-1px); }
-        .cs-confirm-cancel{
-            background:#fff;border-color:#e2e8f0;color:#475569;
-        }
-        .cs-confirm-cancel:hover{ background:#f1f5f9; color:#0f172a; }
-        .cs-confirm-ok{
-            background:linear-gradient(135deg,#f17b0d 0%,#c2410c 100%);
-            color:#fff;
-            box-shadow:0 6px 16px rgba(241,123,13,.35);
-        }
-        .cs-confirm-ok:hover{ box-shadow:0 10px 22px rgba(241,123,13,.5); }
-        .cs-confirm-ok:focus-visible,
-        .cs-confirm-cancel:focus-visible{
-            outline:none;
-            box-shadow:0 0 0 3px rgba(241,123,13,.35);
-        }
-        body.cs-no-scroll{ overflow:hidden; }
+    .cs-confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 36, 27, .55);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: csConfirmFade .18s ease-out;
+    }
 
-        /* Customer name in user chip — clickable affordance. Wrapped in
+    .cs-confirm-overlay[open] {
+      display: flex;
+    }
+
+    @keyframes csConfirmFade {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .cs-confirm-modal {
+      background: #fff;
+      border-radius: 18px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 30px 80px rgba(2, 36, 27, .45);
+      padding: 28px 26px 22px;
+      text-align: center;
+      animation: csConfirmPop .22s cubic-bezier(.2, .9, .3, 1.2);
+    }
+
+    @keyframes csConfirmPop {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .cs-confirm-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #b91c1c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 18px rgba(185, 28, 28, .18);
+    }
+
+    .cs-confirm-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px;
+    }
+
+    .cs-confirm-msg {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.5;
+      margin: 0 0 20px;
+    }
+
+    .cs-confirm-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .cs-confirm-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-family: inherit;
+      transition: transform .12s ease, box-shadow .12s ease,
+        background .12s ease, color .12s ease;
+    }
+
+    .cs-confirm-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .cs-confirm-cancel {
+      background: #fff;
+      border-color: #e2e8f0;
+      color: #475569;
+    }
+
+    .cs-confirm-cancel:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .cs-confirm-ok {
+      background: linear-gradient(135deg, #f17b0d 0%, #c2410c 100%);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(241, 123, 13, .35);
+    }
+
+    .cs-confirm-ok:hover {
+      box-shadow: 0 10px 22px rgba(241, 123, 13, .5);
+    }
+
+    .cs-confirm-ok:focus-visible,
+    .cs-confirm-cancel:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(241, 123, 13, .35);
+    }
+
+    body.cs-no-scroll {
+      overflow: hidden;
+    }
+
+    /* Customer name in user chip — clickable affordance. Wrapped in
            <a class="cs-name-link"> and points to /customer/profile. Only
            rendered for CUSTOMER role; ADMIN/EMPLOYEE keep the plain <p>. */
-        a.cs-name-link{
-            display:inline-block;
-            color:#fff;
-            text-decoration:none;
-            border-radius:6px;
-            padding:1px 4px;
-            margin:-1px -4px;
-            transition:background .15s ease, color .15s ease;
-        }
-        a.cs-name-link:hover{
-            background:rgba(255,255,255,.10);
-            color:#ffb35c;
-        }
-        a.cs-name-link:focus-visible{
-            outline:none;
-            box-shadow:0 0 0 2px rgba(255,179,92,.6);
-        }
-    </style>
+    a.cs-name-link {
+      display: inline-block;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      padding: 1px 4px;
+      margin: -1px -4px;
+      transition: background .15s ease, color .15s ease;
+    }
+
+    a.cs-name-link:hover {
+      background: rgba(255, 255, 255, .10);
+      color: #ffb35c;
+    }
+
+    a.cs-name-link:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(255, 179, 92, .6);
+    }
+  </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
 
-<!-- ANNOUNCEMENT MARQUEE (mirrors storefront) -->
-<div class="cs-announce" aria-label="Site announcements">
+  <!-- ANNOUNCEMENT MARQUEE (mirrors storefront) -->
+  <div class="cs-announce" aria-label="Site announcements">
     <div class="cs-announce-track">
-        <span><i class="fas fa-truck-fast"></i> Free delivery on orders above &#2547;500</span>
-        <span class="cs-sep">&#8226;</span>
-        <span><i class="fas fa-percent"></i> Use code <b>FRESH25</b> &amp; save &#2547;200 on first order</span>
-        <span class="cs-sep">&#8226;</span>
-        <span><i class="fas fa-store"></i> Now serving multiple branches across Bangladesh</span>
-        <span class="cs-sep">&#8226;</span>
-        <span><i class="fas fa-mobile-screen"></i> Pay with bKash &#183; Nagad &#183; Rocket &#183; Card &#183; Cash</span>
-        <span class="cs-sep">&#8226;</span>
-        <span><i class="fas fa-truck-fast"></i> Free delivery on orders above &#2547;500</span>
-        <span class="cs-sep">&#8226;</span>
-        <span><i class="fas fa-percent"></i> Use code <b>FRESH25</b> &amp; save &#2547;200 on first order</span>
-        <span class="cs-sep">&#8226;</span>
-        <span><i class="fas fa-store"></i> Now serving multiple branches across Bangladesh</span>
-        <span class="cs-sep">&#8226;</span>
-        <span><i class="fas fa-mobile-screen"></i> Pay with bKash &#183; Nagad &#183; Rocket &#183; Card &#183; Cash</span>
+      <span><i class="fas fa-truck-fast"></i> Free delivery on orders above &#2547;500</span>
+      <span class="cs-sep">&#8226;</span>
+      <span><i class="fas fa-percent"></i> Use code <b>FRESH25</b> &amp; save &#2547;200 on first order</span>
+      <span class="cs-sep">&#8226;</span>
+      <span><i class="fas fa-store"></i> Now serving multiple branches across Bangladesh</span>
+      <span class="cs-sep">&#8226;</span>
+      <span><i class="fas fa-mobile-screen"></i> Pay with bKash &#183; Nagad &#183; Rocket &#183; Card &#183;
+        Cash</span>
+      <span class="cs-sep">&#8226;</span>
+      <span><i class="fas fa-truck-fast"></i> Free delivery on orders above &#2547;500</span>
+      <span class="cs-sep">&#8226;</span>
+      <span><i class="fas fa-percent"></i> Use code <b>FRESH25</b> &amp; save &#2547;200 on first order</span>
+      <span class="cs-sep">&#8226;</span>
+      <span><i class="fas fa-store"></i> Now serving multiple branches across Bangladesh</span>
+      <span class="cs-sep">&#8226;</span>
+      <span><i class="fas fa-mobile-screen"></i> Pay with bKash &#183; Nagad &#183; Rocket &#183; Card &#183;
+        Cash</span>
     </div>
-</div>
+  </div>
 
-<!-- NAVBAR -->
-<nav class="cs-navbar">
-<div class="max-w-7xl mx-auto px-6">
-    <div class="flex justify-between items-center h-20">
+  <!-- NAVBAR -->
+  <nav class="cs-navbar">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex justify-between items-center h-20">
 
         <!-- Logo -->
         <a href="/" class="flex items-center gap-3">
-            <div class="cs-logo-badge">
-                <i class="fa-solid fa-bag-shopping"></i>
-            </div>
-            <div>
-                <h1 class="text-white text-xl font-extrabold tracking-tight">SuperShop <span class="text-[#ffb35c]">BD</span></h1>
-                <p class="text-green-200 text-[11px] tracking-wide uppercase">Bangladesh Retail Network</p>
-            </div>
+          <div class="cs-logo-badge">
+            <i class="fa-solid fa-bag-shopping"></i>
+          </div>
+          <div>
+            <h1 class="text-white text-xl font-extrabold tracking-tight">SuperShop <span
+                class="text-[#ffb35c]">BD</span></h1>
+            <p class="text-green-200 text-[11px] tracking-wide uppercase">Bangladesh Retail Network</p>
+          </div>
         </a>
 
         <!-- Right side -->
         <div class="flex items-center gap-2 md:gap-3">
 
-            {% if role == "CUSTOMER" %}
-                {% set cart = request.session.get('cart', {}) %}
-                {# Cart entries may be legacy {pid: qty} or new {pid: {qty, branch_id}};
-                   sum qtys only, ignoring dict-shaped entries so the badge stays an int. #}
-                {% set cart_count = cart | sum_cart_qty if cart else 0 %}
-                <a href="/customer/cart" title="Cart" class="cs-cart-btn">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    {# Always render the badge slot so JS/AJAX can update
-                       it in place. Hide via [hidden] when truly empty so
-                       non-zero cart counts are always visible. #}
-                    <span class="cs-cart-badge"{% if cart_count == 0 %} hidden{% endif %}>{{ cart_count }}</span>
-                </a>
+          {% if role == "CUSTOMER" %}
+          {% set cart = request.session.get('cart', {}) %}
+          {# Cart entries may be legacy {pid: qty} or new {pid: {qty, branch_id}};
+          sum qtys only, ignoring dict-shaped entries so the badge stays an int. #}
+          {% set cart_count = cart | sum_cart_qty if cart else 0 %}
+          <a href="/customer/cart" title="Cart" class="cs-cart-btn">
+            <i class="fa-solid fa-cart-shopping"></i>
+            {# Always render the badge slot so JS/AJAX can update
+            it in place. Hide via [hidden] when truly empty so
+            non-zero cart counts are always visible. #}
+            <span class="cs-cart-badge" {% if cart_count==0 %} hidden{% endif %}>{{ cart_count }}</span>
+          </a>
 
-                {# ── Customer notification bell ───────────────────────────
-                   Polls GET /customer/notifications every 30s; clicking
-                   an item marks it read via POST .../{id}/read and
-                   navigates to the notification's link_url (or dashboard
-                   fallback). Gated to CUSTOMER role only. #}
-                <div class="cs-bell-wrap" id="csBellDropdown">
-                    <button type="button"
-                            class="cs-bell-btn"
-                            id="csBellBtn"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                            title="Notifications">
-                        <i class="fa-solid fa-bell"></i>
-                    </button>
-                    <span class="cs-bell-count" id="csNotifBadge" hidden>0</span>
-                    <div class="cs-bell-menu" role="menu" aria-labelledby="csBellBtn">
-                        <div class="cs-bell-head">
-                            <span><i class="fa-solid fa-bell mr-1"></i>Notifications</span>
-                            <div class="flex items-center gap-2">
-                                <span class="cs-bell-badge" id="csNotifCount" hidden>0 new</span>
-                                <button type="button"
-                                        class="cs-bell-markall"
-                                        id="csNotifMarkAll"
-                                        disabled
-                                        title="Mark all notifications as read">
-                                    <i class="fa-solid fa-check-double mr-1"></i>Mark all read
-                                </button>
-                            </div>
-                        </div>
-                        <div class="cs-bell-list" id="csNotifList">
-                            <div class="cs-bell-empty">
-                                <i class="fa-regular fa-bell-slash"></i>
-                                Loading…
-                            </div>
-                        </div>
-                        <div class="cs-bell-foot">
-                            <a href="/customer/dashboard">Go to dashboard →</a>
-                        </div>
-                    </div>
+          {# ── Customer notification bell ───────────────────────────
+          Polls GET /customer/notifications every 30s; clicking
+          an item marks it read via POST .../{id}/read and
+          navigates to the notification's link_url (or dashboard
+          fallback). Gated to CUSTOMER role only. #}
+          <div class="cs-bell-wrap" id="csBellDropdown">
+            <button type="button" class="cs-bell-btn" id="csBellBtn" aria-haspopup="true" aria-expanded="false"
+              title="Notifications">
+              <i class="fa-solid fa-bell"></i>
+            </button>
+            <span class="cs-bell-count" id="csNotifBadge" hidden>0</span>
+            <div class="cs-bell-menu" role="menu" aria-labelledby="csBellBtn">
+              <div class="cs-bell-head">
+                <span><i class="fa-solid fa-bell mr-1"></i>Notifications</span>
+                <div class="flex items-center gap-2">
+                  <span class="cs-bell-badge" id="csNotifCount" hidden>0 new</span>
+                  <button type="button" class="cs-bell-markall" id="csNotifMarkAll" disabled
+                    title="Mark all notifications as read">
+                    <i class="fa-solid fa-check-double mr-1"></i>Mark all read
+                  </button>
                 </div>
-
-            {% elif role == "EMPLOYEE" %}
-                <a href="/products" class="cs-nav-link hidden md:inline-block">Products</a>
-                <a href="/sales" class="cs-nav-link hidden md:inline-block">Sales</a>
-                <a href="/inventory" class="cs-nav-link hidden md:inline-block">Inventory</a>
-
-            {% elif role == "ADMIN" %}
-                <a href="/admin/dashboard" class="cs-nav-link hidden md:inline-block">Dashboard</a>
-                <a href="/admin/dashboard/products" class="cs-nav-link hidden md:inline-block">Products</a>
-                <a href="/admin/dashboard/sales" class="cs-nav-link hidden md:inline-block">Sales</a>
-                <a href="/admin/dashboard/inventory" class="cs-nav-link hidden md:inline-block">Inventory</a>
-                <a href="/admin/dashboard/branches" class="cs-nav-link hidden md:inline-block">Branches</a>
-            {% endif %}
-
-            {% if role %}
-            <div class="cs-user-chip ml-2">
-                <div class="cs-user-chip-avatar">
-                    {{ (user_name or "U")[0] | upper }}
+              </div>
+              <div class="cs-bell-list" id="csNotifList">
+                <div class="cs-bell-empty">
+                  <i class="fa-regular fa-bell-slash"></i>
+                  Loading…
                 </div>
-                <div class="text-right pr-2 hidden sm:block">
-                    {% if role == "CUSTOMER" %}
-                        <a href="/customer/profile" class="cs-name-link" title="View my profile">
-                            <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
-                        </a>
-                    {% else %}
-                        <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
-                    {% endif %}
-                    <p class="text-green-200 text-[10px] uppercase tracking-wider">{{ role }}</p>
-                </div>
-                <a href="/auth/logout"
-                   class="cs-btn-orange ml-1 cs-logout-link"
-                   data-confirm="Are you sure you want to log out?"
-                   aria-label="Log out">Logout</a>
+              </div>
+              <div class="cs-bell-foot">
+                <a href="/customer/dashboard">Go to dashboard →</a>
+              </div>
             </div>
-            {% else %}
-            <a href="/auth/login" class="cs-btn-orange">Login</a>
-            {% endif %}
+          </div>
+
+          {% elif role == "EMPLOYEE" %}
+          <a href="/products" class="cs-nav-link hidden md:inline-block">Products</a>
+          <a href="/sales" class="cs-nav-link hidden md:inline-block">Sales</a>
+          <a href="/inventory" class="cs-nav-link hidden md:inline-block">Inventory</a>
+
+          {% elif role == "ADMIN" %}
+          <a href="/admin/dashboard" class="cs-nav-link hidden md:inline-block">Dashboard</a>
+          <a href="/admin/dashboard/products" class="cs-nav-link hidden md:inline-block">Products</a>
+          <a href="/admin/dashboard/sales" class="cs-nav-link hidden md:inline-block">Sales</a>
+          <a href="/admin/dashboard/inventory" class="cs-nav-link hidden md:inline-block">Inventory</a>
+          <a href="/admin/dashboard/branches" class="cs-nav-link hidden md:inline-block">Branches</a>
+          {% endif %}
+
+          {% if role %}
+          <div class="cs-user-chip ml-2">
+            <a href="/customer/profile" class="cs-name-link" title="View my profile">
+              <div class="cs-user-chip-avatar">
+                {{ (user_name or "U")[0] | upper }}
+              </div>
+           
+            <div class="text-right pr-2 hidden sm:block">
+              {% if role == "CUSTOMER" %}
+              <a href="/customer/profile" class="cs-name-link" title="View my profile">
+                <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
+              </a>
+              {% else %}
+              <p class="text-white text-[13px] font-bold leading-tight">{{ user_name or "User" }}</p>
+              {% endif %}
+              <p class="text-green-200 text-[10px] uppercase tracking-wider">{{ role }}</p>
+            </div>
+            <a href="/auth/logout" class="cs-btn-orange ml-1 cs-logout-link"
+              data-confirm="Are you sure you want to log out?" aria-label="Log out">Logout</a>
+
+            </a>
+          </div>
+          {% else %}
+          <a href="/auth/login" class="cs-btn-orange">Login</a>
+          {% endif %}
 
         </div>
+      </div>
     </div>
-</div>
-</nav>
+  </nav>
 
-<!-- PAGE BODY -->
-<main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
-<div class="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full">
+  <!-- PAGE BODY -->
+  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full">
 
-    {% if role == "CUSTOMER" %}
-    <!-- ══ PERSISTENT CUSTOMER SIDEBAR ══ -->
-    <aside class="cs-side lg:w-72 lg:flex-shrink-0">
+      {% if role == "CUSTOMER" %}
+      <!-- ══ PERSISTENT CUSTOMER SIDEBAR ══ -->
+      <aside class="cs-side lg:w-72 lg:flex-shrink-0">
         <div class="cs-side-card lg:sticky lg:top-24">
 
-            <!-- Profile -->
-            <div class="flex items-center gap-3 mb-2 relative z-[1]">
-                <div class="cs-side-avatar">
-                    {{ (user_name or "U")[0] | upper }}
-                </div>
-                <div class="min-w-0">
-                    <p class="font-bold text-gray-800 truncate text-[15px]">{{ user_name or "Customer" }}</p>
-                    <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">{{ membership or "REGULAR" }} member</p>
-                </div>
+          <!-- Profile -->
+          <div class="flex items-center gap-3 mb-2 relative z-[1]">
+            <div class="cs-side-avatar">
+              {{ (user_name or "U")[0] | upper }}
             </div>
-            <div class="mb-5 pl-1 relative z-[1]">
-                <span class="cs-points-chip">
-                    <i class="fas fa-coins"></i> {{ loyalty_points or 0 }} loyalty points
-                </span>
+            <div class="min-w-0">
+              <p class="font-bold text-gray-800 truncate text-[15px]">{{ user_name or "Customer" }}</p>
+              <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">{{ membership or "REGULAR" }}
+                member</p>
             </div>
+          </div>
+          <div class="mb-5 pl-1 relative z-[1]">
+            <span class="cs-points-chip">
+              <i class="fas fa-coins"></i> {{ loyalty_points or 0 }} loyalty points
+            </span>
+          </div>
 
-            <!-- Nav, active state driven by the real URL -->
-            {% set path = request.url.path %}
-            {% set nav_items = [
-                ('/customer/dashboard', 'fa-house-chimney', 'My Account'),
-                ('/customer/profile',   'fa-id-card',      'Profile'),
-                ('/customer/shop',      'fa-bag-shopping', 'Shop'),
-                ('/customer/cart',      'fa-cart-shopping','Cart'),
-                ('/customer/branches',  'fa-location-dot', 'Branches'),
-            ] %}
-            <div class="cs-nav-label">Navigation</div>
-            <nav class="cs-nav">
-                {% for href, icon, label in nav_items %}
-                {% set is_active = path.startswith(href) %}
-                <a href="{{ href }}" class="{{ 'active' if is_active }}">
-                    <span class="flex items-center gap-3">
-                        <i class="fa-solid {{ icon }}" style="width:18px;text-align:center"></i>
-                        <span>{{ label }}</span>
-                    </span>
-                    <span class="cs-nav-arrow">›</span>
-                </a>
-                {% endfor %}
-            </nav>
+          <!-- Nav, active state driven by the real URL -->
+          {% set path = request.url.path %}
+          {% set nav_items = [
+          ('/customer/dashboard', 'fa-house-chimney', 'My Account'),
+          ('/customer/profile', 'fa-id-card', 'Profile'),
+          ('/customer/shop', 'fa-bag-shopping', 'Shop'),
+          ('/customer/cart', 'fa-cart-shopping','Cart'),
+          ('/customer/branches', 'fa-location-dot', 'Branches'),
+          ] %}
+          <div class="cs-nav-label">Navigation</div>
+          <nav class="cs-nav">
+            {% for href, icon, label in nav_items %}
+            {% set is_active = path.startswith(href) %}
+            <a href="{{ href }}" class="{{ 'active' if is_active }}">
+              <span class="flex items-center gap-3">
+                <i class="fa-solid {{ icon }}" style="width:18px;text-align:center"></i>
+                <span>{{ label }}</span>
+              </span>
+              <span class="cs-nav-arrow">›</span>
+            </a>
+            {% endfor %}
+          </nav>
 
-            <!-- Danger zone -->
-            <div class="cs-danger-zone">
-                <form action="/customer/delete-account" method="post" id="csDeleteAccountForm">
-                    <button type="button" class="cs-danger-btn" id="csDeleteAccountBtn">
-                        <i class="fa-solid fa-trash-can"></i> Delete account
-                    </button>
-                </form>
-            </div>
+          <!-- Danger zone -->
+          <div class="cs-danger-zone">
+            <form action="/customer/delete-account" method="post" id="csDeleteAccountForm">
+              <button type="button" class="cs-danger-btn" id="csDeleteAccountBtn">
+                <i class="fa-solid fa-trash-can"></i> Delete account
+              </button>
+            </form>
+          </div>
         </div>
-    </aside>
-    {% endif %}
+      </aside>
+      {% endif %}
 
-    <!-- ══ PAGE-SPECIFIC CONTENT ══ -->
-    <div class="flex-1 min-w-0 w-full cs-content">
+      <!-- ══ PAGE-SPECIFIC CONTENT ══ -->
+      <div class="flex-1 min-w-0 w-full cs-content">
         {% block content %}{% endblock %}
+      </div>
+
     </div>
+  </main>
 
-</div>
-</main>
-
-<!-- FOOTER -->
-<footer class="cs-footer">
-<div class="cs-footer-inner">
-    <div class="cs-footer-title">SuperShop Bangladesh</div>
-    <div class="cs-footer-line">
+  <!-- FOOTER -->
+  <footer class="cs-footer">
+    <div class="cs-footer-inner">
+      <div class="cs-footer-title">SuperShop Bangladesh</div>
+      <div class="cs-footer-line">
         CSE-2201 &nbsp;&#183;&nbsp; University of Dhaka 2025 &nbsp;&#183;&nbsp;
         <span class="cs-footer-tag">Powered by FastAPI + PostgreSQL</span>
+      </div>
     </div>
-</div>
-</footer>
+  </footer>
 
-<!-- Global toast container — any page can call window.csToast(msg, type) -->
-<div class="cs-toast-stack" id="csToastStack" aria-live="polite" aria-atomic="true"></div>
+  <!-- Global toast container — any page can call window.csToast(msg, type) -->
+  <div class="cs-toast-stack" id="csToastStack" aria-live="polite" aria-atomic="true"></div>
 
-<!-- ══════════════════ Global confirm modal ══════════════════
+  <!-- ══════════════════ Global confirm modal ══════════════════
      window.csConfirm({ title, message, confirmLabel, cancelLabel, danger })
        → Promise<boolean>  (true = confirm pressed)
 
      Styled to match the cart page (same green/orange palette)
      instead of the OS-level confirm() which breaks the flow and
      isn't themable.  Mounted lazily on first use. -->
-<template id="csConfirmTpl">
-  <div class="cs-modal-backdrop" data-cs-modal-bd></div>
-  <div class="cs-modal" role="dialog" aria-modal="true" aria-labelledby="csConfirmTitle" data-cs-modal>
-    <button type="button" class="cs-modal-x" aria-label="Close" data-cs-modal-x>
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-    <div class="cs-modal-icon" data-cs-modal-icon>
-      <i class="fa-solid fa-trash-can"></i>
+  <template id="csConfirmTpl">
+    <div class="cs-modal-backdrop" data-cs-modal-bd></div>
+    <div class="cs-modal" role="dialog" aria-modal="true" aria-labelledby="csConfirmTitle" data-cs-modal>
+      <button type="button" class="cs-modal-x" aria-label="Close" data-cs-modal-x>
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="cs-modal-icon" data-cs-modal-icon>
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 id="csConfirmTitle" class="cs-modal-title" data-cs-modal-title>Are you sure?</h3>
+      <p class="cs-modal-msg" data-cs-modal-msg>This action cannot be undone.</p>
+      <div class="cs-modal-actions">
+        <button type="button" class="cs-modal-btn cs-modal-btn-cancel" data-cs-modal-cancel>Cancel</button>
+        <button type="button" class="cs-modal-btn cs-modal-btn-confirm" data-cs-modal-confirm>Confirm</button>
+      </div>
     </div>
-    <h3 id="csConfirmTitle" class="cs-modal-title" data-cs-modal-title>Are you sure?</h3>
-    <p class="cs-modal-msg" data-cs-modal-msg>This action cannot be undone.</p>
-    <div class="cs-modal-actions">
-      <button type="button" class="cs-modal-btn cs-modal-btn-cancel" data-cs-modal-cancel>Cancel</button>
-      <button type="button" class="cs-modal-btn cs-modal-btn-confirm" data-cs-modal-confirm>Confirm</button>
-    </div>
-  </div>
-</template>
+  </template>
 
-<!-- ══════════════════ Global password prompt ══════════════════
+  <!-- ══════════════════ Global password prompt ══════════════════
      window.csPromptPassword({ title, message, confirmLabel })
        → Promise<string|null>  (string = password, null = cancelled)
 
      Used for sensitive actions (delete account, future admin ops)
      where we need to re-confirm the user's identity with their
      password before the destructive call is sent. -->
-<template id="csPwdPromptTpl">
-  <div class="cs-modal-backdrop" data-cs-pwd-bd></div>
-  <div class="cs-modal cs-modal-wide" role="dialog" aria-modal="true"
-       aria-labelledby="csPwdPromptTitle" data-cs-pwd>
-    <button type="button" class="cs-modal-x" aria-label="Close" data-cs-pwd-x>
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-    <div class="cs-modal-icon" data-cs-pwd-icon>
-      <i class="fa-solid fa-shield-halved"></i>
-    </div>
-    <h3 id="csPwdPromptTitle" class="cs-modal-title" data-cs-pwd-title>Confirm your password</h3>
-    <p class="cs-modal-msg" data-cs-pwd-msg>For your security, please re-enter your password to continue.</p>
-    <div class="cs-modal-field">
-      <div class="cs-pwd-wrap">
-        <input type="password" class="cs-pwd-input" data-cs-pwd-input
-               autocomplete="current-password" placeholder="••••••••">
-        <button type="button" class="cs-pwd-toggle" data-cs-pwd-toggle aria-label="Show password">
-          <i class="fa-regular fa-eye"></i>
-        </button>
+  <template id="csPwdPromptTpl">
+    <div class="cs-modal-backdrop" data-cs-pwd-bd></div>
+    <div class="cs-modal cs-modal-wide" role="dialog" aria-modal="true" aria-labelledby="csPwdPromptTitle" data-cs-pwd>
+      <button type="button" class="cs-modal-x" aria-label="Close" data-cs-pwd-x>
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="cs-modal-icon" data-cs-pwd-icon>
+        <i class="fa-solid fa-shield-halved"></i>
       </div>
-      <p class="cs-pwd-err" data-cs-pwd-err style="display:none">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <span>Password is required.</span>
-      </p>
+      <h3 id="csPwdPromptTitle" class="cs-modal-title" data-cs-pwd-title>Confirm your password</h3>
+      <p class="cs-modal-msg" data-cs-pwd-msg>For your security, please re-enter your password to continue.</p>
+      <div class="cs-modal-field">
+        <div class="cs-pwd-wrap">
+          <input type="password" class="cs-pwd-input" data-cs-pwd-input autocomplete="current-password"
+            placeholder="••••••••">
+          <button type="button" class="cs-pwd-toggle" data-cs-pwd-toggle aria-label="Show password">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <p class="cs-pwd-err" data-cs-pwd-err style="display:none">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Password is required.</span>
+        </p>
+      </div>
+      <div class="cs-modal-actions">
+        <button type="button" class="cs-modal-btn cs-modal-btn-cancel" data-cs-pwd-cancel>Cancel</button>
+        <button type="button" class="cs-modal-btn cs-modal-btn-confirm" data-cs-pwd-confirm>Continue</button>
+      </div>
     </div>
-    <div class="cs-modal-actions">
-      <button type="button" class="cs-modal-btn cs-modal-btn-cancel" data-cs-pwd-cancel>Cancel</button>
-      <button type="button" class="cs-modal-btn cs-modal-btn-confirm" data-cs-pwd-confirm>Continue</button>
-    </div>
-  </div>
-</template>
+  </template>
 
-<script>
-  // If the page is restored from the browser's bfcache (e.g. after
-  // logging out and pressing Back), force a fresh server request.
-  // The session is already gone, so the server will redirect to login.
-  window.addEventListener('pageshow', function (e) {
-    if (e.persisted) { window.location.reload(); }
-  });
+  <script>
+    // If the page is restored from the browser's bfcache (e.g. after
+    // logging out and pressing Back), force a fresh server request.
+    // The session is already gone, so the server will redirect to login.
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) { window.location.reload(); }
+    });
 
-  // ══════════════════ Global toast helper ══════════════════
-  // Usage: window.csToast('Item added to cart', 'ok')
-  //        types: 'ok' | 'err' | 'warn'
-  (function () {
-    function getStack() {
-      let s = document.getElementById('csToastStack');
-      if (!s) {
-        s = document.createElement('div');
-        s.id = 'csToastStack';
-        s.className = 'cs-toast-stack';
-        s.setAttribute('aria-live', 'polite');
-        s.setAttribute('aria-atomic', 'true');
-        document.body.appendChild(s);
+    // ══════════════════ Global toast helper ══════════════════
+    // Usage: window.csToast('Item added to cart', 'ok')
+    //        types: 'ok' | 'err' | 'warn'
+    (function () {
+      function getStack() {
+        let s = document.getElementById('csToastStack');
+        if (!s) {
+          s = document.createElement('div');
+          s.id = 'csToastStack';
+          s.className = 'cs-toast-stack';
+          s.setAttribute('aria-live', 'polite');
+          s.setAttribute('aria-atomic', 'true');
+          document.body.appendChild(s);
+        }
+        return s;
       }
-      return s;
-    }
-    function dismiss(t) {
-      if (!t || t.classList.contains('cs-hiding')) return;
-      t.classList.add('cs-hiding');
-      t.addEventListener('animationend', () => t.remove(), { once: true });
-    }
-    window.csToast = function (message, type) {
-      type = type || 'ok';
-      const t = document.createElement('div');
-      t.className = 'cs-toast cs-toast-' + type;
-      const icon = type === 'err'  ? 'fa-exclamation-circle'
-                 : type === 'warn' ? 'fa-exclamation-triangle'
-                 :                   'fa-check-circle';
-      t.innerHTML =
-        '<i class="fas ' + icon + '"></i>' +
-        '<span class="cs-toast-text"></span>' +
-        '<button class="cs-toast-close" type="button" aria-label="Dismiss">' +
+      function dismiss(t) {
+        if (!t || t.classList.contains('cs-hiding')) return;
+        t.classList.add('cs-hiding');
+        t.addEventListener('animationend', () => t.remove(), { once: true });
+      }
+      window.csToast = function (message, type) {
+        type = type || 'ok';
+        const t = document.createElement('div');
+        t.className = 'cs-toast cs-toast-' + type;
+        const icon = type === 'err' ? 'fa-exclamation-circle'
+          : type === 'warn' ? 'fa-exclamation-triangle'
+            : 'fa-check-circle';
+        t.innerHTML =
+          '<i class="fas ' + icon + '"></i>' +
+          '<span class="cs-toast-text"></span>' +
+          '<button class="cs-toast-close" type="button" aria-label="Dismiss">' +
           '<i class="fas fa-times"></i>' +
-        '</button>';
-      t.querySelector('.cs-toast-text').textContent = message;
-      t.querySelector('.cs-toast-close').addEventListener('click', () => dismiss(t));
-      getStack().appendChild(t);
-      setTimeout(() => dismiss(t), 4000);
-    };
+          '</button>';
+        t.querySelector('.cs-toast-text').textContent = message;
+        t.querySelector('.cs-toast-close').addEventListener('click', () => dismiss(t));
+        getStack().appendChild(t);
+        setTimeout(() => dismiss(t), 4000);
+      };
 
-    // Convenience: also expose updateCartBadge to keep navbar in sync after AJAX add
-    window.csUpdateCartBadge = function (count) {
-      const badge = document.querySelector('.cs-cart-badge');
-      if (!badge) return;
-      badge.textContent = count;
-      if (count > 0) {
-        badge.hidden = false;
-        badge.classList.remove('pulse');
-        void badge.offsetWidth;
-        badge.classList.add('pulse');
-      } else {
-        badge.hidden = true;
-        badge.classList.remove('pulse');
-      }
-    };
-  })();
-
-  // ══════════════════ Global confirm helper ══════════════════
-  // Usage:  const ok = await window.csConfirm({
-  //           title: 'Remove this item?',
-  //           message: 'It will be removed from your cart.',
-  //           confirmLabel: 'Remove',
-  //           danger: true
-  //         });
-  //
-  // Returns Promise<boolean>. Resolves false on cancel / Esc / backdrop.
-  // If the user's browser blocks JS or this helper fails, the calling
-  // site should still degrade gracefully (e.g. show a toast).
-  (function () {
-    window.csConfirm = function (opts) {
-      opts = opts || {};
-      return new Promise(function (resolve) {
-        const tpl = document.getElementById('csConfirmTpl');
-        if (!tpl) { resolve(window.confirm(opts.message || opts.title || 'Are you sure?')); return; }
-
-        const bd  = tpl.content.querySelector('[data-cs-modal-bd]').cloneNode(true);
-        const box = tpl.content.querySelector('[data-cs-modal]').cloneNode(true);
-
-        // populate
-        box.querySelector('[data-cs-modal-title]').textContent =
-          opts.title || 'Are you sure?';
-        box.querySelector('[data-cs-modal-msg]').textContent =
-          opts.message || 'This action cannot be undone.';
-
-        const icon = box.querySelector('[data-cs-modal-icon]');
-        const iconHTML = opts.danger
-          ? '<i class="fa-solid fa-trash-can"></i>'
-          : (opts.iconHTML || '<i class="fa-solid fa-circle-question"></i>');
-        icon.innerHTML = iconHTML;
-        if (opts.danger) icon.classList.add('is-danger');
-
-        const confirmBtn = box.querySelector('[data-cs-modal-confirm]');
-        confirmBtn.textContent = opts.confirmLabel || 'Confirm';
-        if (opts.danger) confirmBtn.classList.add('is-danger');
-
-        const cancelBtn  = box.querySelector('[data-cs-modal-cancel]');
-        if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
-
-        // mount
-        document.body.appendChild(bd);
-        document.body.appendChild(box);
-        document.body.classList.add('cs-modal-locked');
-        // focus the cancel button by default — safer for destructive ops
-        setTimeout(() => (opts.danger ? cancelBtn : confirmBtn).focus(), 0);
-
-        let settled = false;
-        function settle(result) {
-          if (settled) return;
-          settled = true;
-          document.body.classList.remove('cs-modal-locked');
-          box.classList.add('hiding');
-          bd.remove();
-          setTimeout(() => { box.remove(); resolve(result); }, 160);
+      // Convenience: also expose updateCartBadge to keep navbar in sync after AJAX add
+      window.csUpdateCartBadge = function (count) {
+        const badge = document.querySelector('.cs-cart-badge');
+        if (!badge) return;
+        badge.textContent = count;
+        if (count > 0) {
+          badge.hidden = false;
+          badge.classList.remove('pulse');
+          void badge.offsetWidth;
+          badge.classList.add('pulse');
+        } else {
+          badge.hidden = true;
+          badge.classList.remove('pulse');
         }
+      };
+    })();
 
-        confirmBtn.addEventListener('click', () => settle(true));
-        cancelBtn .addEventListener('click', () => settle(false));
-        bd        .addEventListener('click', () => settle(false));
-        box.querySelector('[data-cs-modal-x]').addEventListener('click', () => settle(false));
+    // ══════════════════ Global confirm helper ══════════════════
+    // Usage:  const ok = await window.csConfirm({
+    //           title: 'Remove this item?',
+    //           message: 'It will be removed from your cart.',
+    //           confirmLabel: 'Remove',
+    //           danger: true
+    //         });
+    //
+    // Returns Promise<boolean>. Resolves false on cancel / Esc / backdrop.
+    // If the user's browser blocks JS or this helper fails, the calling
+    // site should still degrade gracefully (e.g. show a toast).
+    (function () {
+      window.csConfirm = function (opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+          const tpl = document.getElementById('csConfirmTpl');
+          if (!tpl) { resolve(window.confirm(opts.message || opts.title || 'Are you sure?')); return; }
 
-        function key(ev) {
-          if (ev.key === 'Escape')      { settle(false); }
-          else if (ev.key === 'Enter')  { settle(true);  }
-        }
-        document.addEventListener('keydown', key);
-        // remember to drop the listener when we finish
-        const _settle = settle;
-        settle = function (r) { document.removeEventListener('keydown', key); _settle(r); };
-      });
-    };
-  })();
+          const bd = tpl.content.querySelector('[data-cs-modal-bd]').cloneNode(true);
+          const box = tpl.content.querySelector('[data-cs-modal]').cloneNode(true);
 
-  // ══════════════════ Global password prompt ══════════════════
-  // Usage:  const pwd = await window.csPromptPassword({
-  //           title: 'Delete your account?',
-  //           message: 'Enter your password to confirm.',
-  //           confirmLabel: 'Delete',
-  //           danger: true
-  //         });
-  //   → string password on success, null if cancelled / closed.
-  //
-  // Includes show/hide toggle, ESC-to-cancel, Enter-to-confirm,
-  // and a "Password is required" inline error.
-  (function () {
-    window.csPromptPassword = function (opts) {
-      opts = opts || {};
-      return new Promise(function (resolve) {
-        const tpl = document.getElementById('csPwdPromptTpl');
-        if (!tpl) { resolve(window.prompt(opts.message || 'Enter your password')); return; }
+          // populate
+          box.querySelector('[data-cs-modal-title]').textContent =
+            opts.title || 'Are you sure?';
+          box.querySelector('[data-cs-modal-msg]').textContent =
+            opts.message || 'This action cannot be undone.';
 
-        const bd   = tpl.content.querySelector('[data-cs-pwd-bd]').cloneNode(true);
-        const box  = tpl.content.querySelector('[data-cs-pwd]').cloneNode(true);
-        const inp  = box.querySelector('[data-cs-pwd-input]');
-        const err  = box.querySelector('[data-cs-pwd-err]');
-        const tog  = box.querySelector('[data-cs-pwd-toggle]');
-        const togI = tog.querySelector('i');
+          const icon = box.querySelector('[data-cs-modal-icon]');
+          const iconHTML = opts.danger
+            ? '<i class="fa-solid fa-trash-can"></i>'
+            : (opts.iconHTML || '<i class="fa-solid fa-circle-question"></i>');
+          icon.innerHTML = iconHTML;
+          if (opts.danger) icon.classList.add('is-danger');
 
-        box.querySelector('[data-cs-pwd-title]').textContent =
-          opts.title   || 'Confirm your password';
-        box.querySelector('[data-cs-pwd-msg]').textContent =
-          opts.message || 'For your security, please re-enter your password to continue.';
+          const confirmBtn = box.querySelector('[data-cs-modal-confirm]');
+          confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+          if (opts.danger) confirmBtn.classList.add('is-danger');
 
-        const icon = box.querySelector('[data-cs-pwd-icon]');
-        const iconHTML = opts.danger
-          ? '<i class="fa-solid fa-triangle-exclamation"></i>'
-          : '<i class="fa-solid fa-shield-halved"></i>';
-        icon.innerHTML = iconHTML;
-        if (opts.danger) icon.classList.add('is-danger');
+          const cancelBtn = box.querySelector('[data-cs-modal-cancel]');
+          if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
 
-        const confirmBtn = box.querySelector('[data-cs-pwd-confirm]');
-        confirmBtn.textContent = opts.confirmLabel || 'Continue';
-        if (opts.danger) confirmBtn.classList.add('is-danger');
+          // mount
+          document.body.appendChild(bd);
+          document.body.appendChild(box);
+          document.body.classList.add('cs-modal-locked');
+          // focus the cancel button by default — safer for destructive ops
+          setTimeout(() => (opts.danger ? cancelBtn : confirmBtn).focus(), 0);
 
-        const cancelBtn = box.querySelector('[data-cs-pwd-cancel]');
-        if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
-
-        // mount
-        document.body.appendChild(bd);
-        document.body.appendChild(box);
-        document.body.classList.add('cs-modal-locked');
-        inp.value = '';
-        err.style.display = 'none';
-        inp.classList.remove('is-invalid');
-        setTimeout(() => inp.focus(), 0);
-
-        let settled = false;
-        function dismiss(result) {
-          if (settled) return;
-          settled = true;
-          document.body.classList.remove('cs-modal-locked');
-          box.classList.add('hiding');
-          bd.remove();
-          document.removeEventListener('keydown', onKey);
-          setTimeout(() => { box.remove(); resolve(result); }, 160);
-        }
-        function onKey(ev) {
-          if (ev.key === 'Escape') dismiss(null);
-          else if (ev.key === 'Enter') submit();
-        }
-        function submit() {
-          const v = inp.value;
-          if (!v) {
-            inp.classList.add('is-invalid');
-            err.style.display = 'flex';
-            inp.focus();
-            return;
+          let settled = false;
+          function settle(result) {
+            if (settled) return;
+            settled = true;
+            document.body.classList.remove('cs-modal-locked');
+            box.classList.add('hiding');
+            bd.remove();
+            setTimeout(() => { box.remove(); resolve(result); }, 160);
           }
-          dismiss(v);
+
+          confirmBtn.addEventListener('click', () => settle(true));
+          cancelBtn.addEventListener('click', () => settle(false));
+          bd.addEventListener('click', () => settle(false));
+          box.querySelector('[data-cs-modal-x]').addEventListener('click', () => settle(false));
+
+          function key(ev) {
+            if (ev.key === 'Escape') { settle(false); }
+            else if (ev.key === 'Enter') { settle(true); }
+          }
+          document.addEventListener('keydown', key);
+          // remember to drop the listener when we finish
+          const _settle = settle;
+          settle = function (r) { document.removeEventListener('keydown', key); _settle(r); };
+        });
+      };
+    })();
+
+    // ══════════════════ Global password prompt ══════════════════
+    // Usage:  const pwd = await window.csPromptPassword({
+    //           title: 'Delete your account?',
+    //           message: 'Enter your password to confirm.',
+    //           confirmLabel: 'Delete',
+    //           danger: true
+    //         });
+    //   → string password on success, null if cancelled / closed.
+    //
+    // Includes show/hide toggle, ESC-to-cancel, Enter-to-confirm,
+    // and a "Password is required" inline error.
+    (function () {
+      window.csPromptPassword = function (opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+          const tpl = document.getElementById('csPwdPromptTpl');
+          if (!tpl) { resolve(window.prompt(opts.message || 'Enter your password')); return; }
+
+          const bd = tpl.content.querySelector('[data-cs-pwd-bd]').cloneNode(true);
+          const box = tpl.content.querySelector('[data-cs-pwd]').cloneNode(true);
+          const inp = box.querySelector('[data-cs-pwd-input]');
+          const err = box.querySelector('[data-cs-pwd-err]');
+          const tog = box.querySelector('[data-cs-pwd-toggle]');
+          const togI = tog.querySelector('i');
+
+          box.querySelector('[data-cs-pwd-title]').textContent =
+            opts.title || 'Confirm your password';
+          box.querySelector('[data-cs-pwd-msg]').textContent =
+            opts.message || 'For your security, please re-enter your password to continue.';
+
+          const icon = box.querySelector('[data-cs-pwd-icon]');
+          const iconHTML = opts.danger
+            ? '<i class="fa-solid fa-triangle-exclamation"></i>'
+            : '<i class="fa-solid fa-shield-halved"></i>';
+          icon.innerHTML = iconHTML;
+          if (opts.danger) icon.classList.add('is-danger');
+
+          const confirmBtn = box.querySelector('[data-cs-pwd-confirm]');
+          confirmBtn.textContent = opts.confirmLabel || 'Continue';
+          if (opts.danger) confirmBtn.classList.add('is-danger');
+
+          const cancelBtn = box.querySelector('[data-cs-pwd-cancel]');
+          if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
+
+          // mount
+          document.body.appendChild(bd);
+          document.body.appendChild(box);
+          document.body.classList.add('cs-modal-locked');
+          inp.value = '';
+          err.style.display = 'none';
+          inp.classList.remove('is-invalid');
+          setTimeout(() => inp.focus(), 0);
+
+          let settled = false;
+          function dismiss(result) {
+            if (settled) return;
+            settled = true;
+            document.body.classList.remove('cs-modal-locked');
+            box.classList.add('hiding');
+            bd.remove();
+            document.removeEventListener('keydown', onKey);
+            setTimeout(() => { box.remove(); resolve(result); }, 160);
+          }
+          function onKey(ev) {
+            if (ev.key === 'Escape') dismiss(null);
+            else if (ev.key === 'Enter') submit();
+          }
+          function submit() {
+            const v = inp.value;
+            if (!v) {
+              inp.classList.add('is-invalid');
+              err.style.display = 'flex';
+              inp.focus();
+              return;
+            }
+            dismiss(v);
+          }
+
+          confirmBtn.addEventListener('click', submit);
+          cancelBtn.addEventListener('click', () => dismiss(null));
+          bd.addEventListener('click', () => dismiss(null));
+          box.querySelector('[data-cs-pwd-x]').addEventListener('click', () => dismiss(null));
+          tog.addEventListener('click', function () {
+            if (inp.type === 'password') { inp.type = 'text'; togI.className = 'fa-regular fa-eye-slash'; }
+            else { inp.type = 'password'; togI.className = 'fa-regular fa-eye'; }
+          });
+          inp.addEventListener('input', function () {
+            if (inp.value) {
+              inp.classList.remove('is-invalid');
+              err.style.display = 'none';
+            }
+          });
+          document.addEventListener('keydown', onKey);
+        });
+      };
+    })();
+
+    // ══════════════════ Sidebar: delete-account uses the themed modal ══════════════════
+    // Two-step flow:
+    //   1) csConfirm       — the user clicks "Delete" with a warning.
+    //   2) csPromptPassword — the user must re-enter their password.
+    // Only after both succeed do we POST /customer/delete-account.
+    // Falls back to native dialogs if either helper is unavailable, so
+    // the form is still operable in degraded environments.
+    (function () {
+      const btn = document.getElementById('csDeleteAccountBtn');
+      const form = document.getElementById('csDeleteAccountForm');
+      if (!btn || !form) return;
+
+      async function askAndSubmit() {
+        /* step 1: warning modal */
+        let ok = false;
+        if (window.csConfirm) {
+          ok = await window.csConfirm({
+            title: 'Delete your account?',
+            message: 'You will lose access to this login. Your order history and points stay safe if you sign up again with the same phone number.',
+            confirmLabel: 'Continue',
+            cancelLabel: 'Keep account',
+            danger: true,
+          });
+        } else {
+          ok = window.confirm('Delete your account? You will lose access to this login, but your order history and points stay safe if you sign up again with the same phone number.');
+        }
+        if (!ok) return;
+
+        /* step 2: password re-confirmation */
+        let pwd = null;
+        if (window.csPromptPassword) {
+          pwd = await window.csPromptPassword({
+            title: 'Enter your password',
+            message: 'For your security, re-enter your current password to delete your account.',
+            confirmLabel: 'Delete account',
+            cancelLabel: 'Cancel',
+            danger: true,
+          });
+        } else {
+          pwd = window.prompt('Re-enter your password to confirm deletion:');
+        }
+        if (!pwd) return;
+
+        /* inject password into the form and submit */
+        let hidden = form.querySelector('input[name="current_password"]');
+        if (!hidden) {
+          hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = 'current_password';
+          form.appendChild(hidden);
+        }
+        hidden.value = pwd;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting…';
+        form.submit();
+      }
+
+      btn.addEventListener('click', askAndSubmit);
+    })();
+
+    /* ══════════════ CUSTOMER NOTIFICATION BELL ══════════════
+       Polls GET /customer/notifications every 30s. Same data
+       source as the storefront bell — this just gives the bell
+       parity inside the customer dashboard shell. */
+    (function () {
+      const wrap = document.getElementById('csBellDropdown');
+      const btn = document.getElementById('csBellBtn');
+      const list = document.getElementById('csNotifList');
+      const badge = document.getElementById('csNotifBadge');
+      const count = document.getElementById('csNotifCount');
+      const markAll = document.getElementById('csNotifMarkAll');
+      if (!wrap || !btn || !list || !badge || !count) return;
+
+      const escapeHtml = (s) => String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+      function relTime(iso) {
+        if (!iso) return '';
+        const t = new Date(iso);
+        if (isNaN(t.getTime())) return '';
+        const diff = Math.floor((Date.now() - t.getTime()) / 1000);
+        if (diff < 5) return 'just now';
+        if (diff < 60) return diff + 's ago';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+      }
+
+      function render(notifications) {
+        const n = Array.isArray(notifications) ? notifications : [];
+        // is_read comes from the DB as 'Y' / 'N' — both are truthy strings,
+        // so `!x.is_read` always returns false and the badge would never
+        // show.  Match the storefront's explicit compare against 'N'.
+        const isUnread = (x) => x.is_read === 'N' || x.is_read === 'n' || x.is_read === false;
+        const unread = n.filter(isUnread).length;
+
+        // Top-right pill badge on the bell button
+        if (unread > 0) {
+          badge.textContent = unread > 99 ? '99+' : String(unread);
+          badge.hidden = false;
+        } else {
+          badge.hidden = true;
+        }
+        // Header label inside the dropdown
+        if (unread > 0) {
+          count.textContent = unread + ' new';
+          count.hidden = false;
+        } else {
+          count.hidden = true;
+        }
+        // Mark-all-read button only useful when there are unread items
+        if (markAll) {
+          markAll.disabled = unread === 0 || n.length === 0;
         }
 
-        confirmBtn.addEventListener('click', submit);
-        cancelBtn .addEventListener('click', () => dismiss(null));
-        bd        .addEventListener('click', () => dismiss(null));
-        box.querySelector('[data-cs-pwd-x]').addEventListener('click', () => dismiss(null));
-        tog.addEventListener('click', function () {
-          if (inp.type === 'password') { inp.type = 'text';     togI.className = 'fa-regular fa-eye-slash'; }
-          else                          { inp.type = 'password'; togI.className = 'fa-regular fa-eye';       }
-        });
-        inp.addEventListener('input', function () {
-          if (inp.value) {
-            inp.classList.remove('is-invalid');
-            err.style.display = 'none';
-          }
-        });
-        document.addEventListener('keydown', onKey);
-      });
-    };
-  })();
-
-  // ══════════════════ Sidebar: delete-account uses the themed modal ══════════════════
-  // Two-step flow:
-  //   1) csConfirm       — the user clicks "Delete" with a warning.
-  //   2) csPromptPassword — the user must re-enter their password.
-  // Only after both succeed do we POST /customer/delete-account.
-  // Falls back to native dialogs if either helper is unavailable, so
-  // the form is still operable in degraded environments.
-  (function () {
-    const btn  = document.getElementById('csDeleteAccountBtn');
-    const form = document.getElementById('csDeleteAccountForm');
-    if (!btn || !form) return;
-
-    async function askAndSubmit() {
-      /* step 1: warning modal */
-      let ok = false;
-      if (window.csConfirm) {
-        ok = await window.csConfirm({
-          title: 'Delete your account?',
-          message: 'You will lose access to this login. Your order history and points stay safe if you sign up again with the same phone number.',
-          confirmLabel: 'Continue',
-          cancelLabel:  'Keep account',
-          danger: true,
-        });
-      } else {
-        ok = window.confirm('Delete your account? You will lose access to this login, but your order history and points stay safe if you sign up again with the same phone number.');
-      }
-      if (!ok) return;
-
-      /* step 2: password re-confirmation */
-      let pwd = null;
-      if (window.csPromptPassword) {
-        pwd = await window.csPromptPassword({
-          title: 'Enter your password',
-          message: 'For your security, re-enter your current password to delete your account.',
-          confirmLabel: 'Delete account',
-          cancelLabel:  'Cancel',
-          danger: true,
-        });
-      } else {
-        pwd = window.prompt('Re-enter your password to confirm deletion:');
-      }
-      if (!pwd) return;
-
-      /* inject password into the form and submit */
-      let hidden = form.querySelector('input[name="current_password"]');
-      if (!hidden) {
-        hidden = document.createElement('input');
-        hidden.type = 'hidden';
-        hidden.name = 'current_password';
-        form.appendChild(hidden);
-      }
-      hidden.value = pwd;
-
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting…';
-      form.submit();
-    }
-
-    btn.addEventListener('click', askAndSubmit);
-  })();
-
-  /* ══════════════ CUSTOMER NOTIFICATION BELL ══════════════
-     Polls GET /customer/notifications every 30s. Same data
-     source as the storefront bell — this just gives the bell
-     parity inside the customer dashboard shell. */
-  (function(){
-    const wrap    = document.getElementById('csBellDropdown');
-    const btn     = document.getElementById('csBellBtn');
-    const list    = document.getElementById('csNotifList');
-    const badge   = document.getElementById('csNotifBadge');
-    const count   = document.getElementById('csNotifCount');
-    const markAll = document.getElementById('csNotifMarkAll');
-    if (!wrap || !btn || !list || !badge || !count) return;
-
-    const escapeHtml = (s) => String(s == null ? '' : s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-
-    function relTime(iso){
-      if (!iso) return '';
-      const t = new Date(iso);
-      if (isNaN(t.getTime())) return '';
-      const diff = Math.floor((Date.now() - t.getTime()) / 1000);
-      if (diff < 5)    return 'just now';
-      if (diff < 60)   return diff + 's ago';
-      if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-      if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-      return Math.floor(diff/86400) + 'd ago';
-    }
-
-    function render(notifications){
-      const n = Array.isArray(notifications) ? notifications : [];
-      // is_read comes from the DB as 'Y' / 'N' — both are truthy strings,
-      // so `!x.is_read` always returns false and the badge would never
-      // show.  Match the storefront's explicit compare against 'N'.
-      const isUnread = (x) => x.is_read === 'N' || x.is_read === 'n' || x.is_read === false;
-      const unread   = n.filter(isUnread).length;
-
-      // Top-right pill badge on the bell button
-      if (unread > 0){
-        badge.textContent = unread > 99 ? '99+' : String(unread);
-        badge.hidden = false;
-      } else {
-        badge.hidden = true;
-      }
-      // Header label inside the dropdown
-      if (unread > 0){
-        count.textContent = unread + ' new';
-        count.hidden = false;
-      } else {
-        count.hidden = true;
-      }
-      // Mark-all-read button only useful when there are unread items
-      if (markAll){
-        markAll.disabled = unread === 0 || n.length === 0;
-      }
-
-      if (n.length === 0){
-        list.innerHTML =
-          '<div class="cs-bell-empty">' +
+        if (n.length === 0) {
+          list.innerHTML =
+            '<div class="cs-bell-empty">' +
             '<i class="fa-regular fa-bell-slash"></i>' +
             'No notifications yet' +
-          '</div>';
-        return;
-      }
+            '</div>';
+          return;
+        }
 
-      const items = n.map(n => {
-        const typeClass = escapeHtml(n.notif_type || 'general');
-        const unreadCls = isUnread(n) ? ' is-unread' : '';
-        return (
-          '<a class="cs-bell-item' + unreadCls + '"' +
-              ' data-id="' + escapeHtml(n.notif_id) + '"' +
-              ' href="' + escapeHtml(n.link_url || '/customer/dashboard') + '">' +
+        const items = n.map(n => {
+          const typeClass = escapeHtml(n.notif_type || 'general');
+          const unreadCls = isUnread(n) ? ' is-unread' : '';
+          return (
+            '<a class="cs-bell-item' + unreadCls + '"' +
+            ' data-id="' + escapeHtml(n.notif_id) + '"' +
+            ' href="' + escapeHtml(n.link_url || '/customer/dashboard') + '">' +
             '<div class="cs-bell-title">' +
-              '<span class="cs-bell-type ' + typeClass + '">' + escapeHtml(n.notif_type || '') + '</span>' +
-              escapeHtml(n.title || '') +
+            '<span class="cs-bell-type ' + typeClass + '">' + escapeHtml(n.notif_type || '') + '</span>' +
+            escapeHtml(n.title || '') +
             '</div>' +
             (n.message ? '<div class="cs-bell-msg">' + escapeHtml(n.message) + '</div>' : '') +
             '<div class="cs-bell-time">' + escapeHtml(relTime(n.created_at)) + '</div>' +
-          '</a>'
-        );
-      }).join('');
-      list.innerHTML = items;
-    }
+            '</a>'
+          );
+        }).join('');
+        list.innerHTML = items;
+      }
 
-    async function refresh(){
-      try {
-        const r = await fetch('/customer/notifications', { credentials: 'same-origin' });
-        if (!r.ok) return;
-        const data = await r.json();
-        render(data.notifications || []);
-      } catch(_) { /* network blip — try again next tick */ }
-    }
+      async function refresh() {
+        try {
+          const r = await fetch('/customer/notifications', { credentials: 'same-origin' });
+          if (!r.ok) return;
+          const data = await r.json();
+          render(data.notifications || []);
+        } catch (_) { /* network blip — try again next tick */ }
+      }
 
-    async function markRead(id){
-      try {
-        await fetch('/customer/notifications/' + encodeURIComponent(id) + '/read', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' }
-        });
-      } catch(_) {}
-    }
+      async function markRead(id) {
+        try {
+          await fetch('/customer/notifications/' + encodeURIComponent(id) + '/read', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (_) { }
+      }
 
-    async function markAllRead(){
-      try {
-        const r = await fetch('/customer/notifications/read-all', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (r.ok){
-          await refresh();   // immediately repaint — count drops to 0
-        }
-      } catch(_) {}
-    }
+      async function markAllRead() {
+        try {
+          const r = await fetch('/customer/notifications/read-all', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          if (r.ok) {
+            await refresh();   // immediately repaint — count drops to 0
+          }
+        } catch (_) { }
+      }
 
-    // Click-to-open / toggle
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isOpen = wrap.classList.toggle('open');
-      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      if (isOpen) refresh();
-    });
-
-    // Click on an item: mark read, then follow the link
-    list.addEventListener('click', (e) => {
-      const item = e.target.closest('.cs-bell-item');
-      if (!item) return;
-      const id = item.getAttribute('data-id');
-      if (id) markRead(id);
-      // let the <a href> handle navigation naturally
-    });
-
-    // "Mark all read" button
-    if (markAll){
-      markAll.addEventListener('click', (e) => {
+      // Click-to-open / toggle
+      btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (markAll.disabled) return;
-        markAll.disabled = true;
-        const original = markAll.innerHTML;
-        markAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Marking…';
-        markAllRead().finally(() => {
-          // refresh() inside markAllRead() will set the correct
-          // disabled state; only restore label if request failed
-          if (!document.getElementById('csBellDropdown').contains(markAll)) return;
-          markAll.innerHTML = original;
-        });
+        const isOpen = wrap.classList.toggle('open');
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (isOpen) refresh();
       });
-    }
 
-    // Close on outside click / ESC
-    document.addEventListener('click', (e) => {
-      if (!wrap.contains(e.target)){
-        wrap.classList.remove('open');
-        btn.setAttribute('aria-expanded', 'false');
+      // Click on an item: mark read, then follow the link
+      list.addEventListener('click', (e) => {
+        const item = e.target.closest('.cs-bell-item');
+        if (!item) return;
+        const id = item.getAttribute('data-id');
+        if (id) markRead(id);
+        // let the <a href> handle navigation naturally
+      });
+
+      // "Mark all read" button
+      if (markAll) {
+        markAll.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (markAll.disabled) return;
+          markAll.disabled = true;
+          const original = markAll.innerHTML;
+          markAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Marking…';
+          markAllRead().finally(() => {
+            // refresh() inside markAllRead() will set the correct
+            // disabled state; only restore label if request failed
+            if (!document.getElementById('csBellDropdown').contains(markAll)) return;
+            markAll.innerHTML = original;
+          });
+        });
       }
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape'){
-        wrap.classList.remove('open');
-        btn.setAttribute('aria-expanded', 'false');
-      }
-    });
 
-    // Initial fetch + 30s polling. Use visibilitychange to pause
-    // when the tab is hidden so we're not hammering Supabase while
-    // the customer has the page in the background.
-    refresh();
-    setInterval(() => {
-      if (!document.hidden) refresh();
-    }, 30000);
-  })();
-
-  /* ══════════════ LOGOUT CONFIRMATION MODAL ══════════════
-     Intercepts any element with [data-confirm] (e.g. .cs-logout-link).
-     Renders a single shared overlay element on demand, traps focus on
-     the primary action, closes on ESC/backdrop, then navigates to
-     the original href on confirmation. */
-  (function(){
-    const links = document.querySelectorAll('[data-confirm]');
-    if (!links.length) return;
-
-    let overlay = null;
-    let lastFocus = null;
-
-    function close(){
-      if (!overlay) return;
-      overlay.removeAttribute('open');
-      document.body.classList.remove('cs-no-scroll');
-      // Re-trigger animation by removing from DOM after fade-out
-      setTimeout(() => {
-        if (overlay && !overlay.hasAttribute('open')){
-          overlay.remove();
-          overlay = null;
+      // Close on outside click / ESC
+      document.addEventListener('click', (e) => {
+        if (!wrap.contains(e.target)) {
+          wrap.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
         }
-      }, 220);
-      if (lastFocus && typeof lastFocus.focus === 'function'){
-        lastFocus.focus();
-      }
-    }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          wrap.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+      });
 
-    function open(message, okHref){
-      lastFocus = document.activeElement;
-      overlay = document.createElement('div');
-      overlay.className = 'cs-confirm-overlay';
-      overlay.setAttribute('role','dialog');
-      overlay.setAttribute('aria-modal','true');
-      overlay.setAttribute('aria-labelledby','csConfirmTitle');
-      overlay.innerHTML =
-        '<div class="cs-confirm-modal">' +
+      // Initial fetch + 30s polling. Use visibilitychange to pause
+      // when the tab is hidden so we're not hammering Supabase while
+      // the customer has the page in the background.
+      refresh();
+      setInterval(() => {
+        if (!document.hidden) refresh();
+      }, 30000);
+    })();
+
+    /* ══════════════ LOGOUT CONFIRMATION MODAL ══════════════
+       Intercepts any element with [data-confirm] (e.g. .cs-logout-link).
+       Renders a single shared overlay element on demand, traps focus on
+       the primary action, closes on ESC/backdrop, then navigates to
+       the original href on confirmation. */
+    (function () {
+      const links = document.querySelectorAll('[data-confirm]');
+      if (!links.length) return;
+
+      let overlay = null;
+      let lastFocus = null;
+
+      function close() {
+        if (!overlay) return;
+        overlay.removeAttribute('open');
+        document.body.classList.remove('cs-no-scroll');
+        // Re-trigger animation by removing from DOM after fade-out
+        setTimeout(() => {
+          if (overlay && !overlay.hasAttribute('open')) {
+            overlay.remove();
+            overlay = null;
+          }
+        }, 220);
+        if (lastFocus && typeof lastFocus.focus === 'function') {
+          lastFocus.focus();
+        }
+      }
+
+      function open(message, okHref) {
+        lastFocus = document.activeElement;
+        overlay = document.createElement('div');
+        overlay.className = 'cs-confirm-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'csConfirmTitle');
+        overlay.innerHTML =
+          '<div class="cs-confirm-modal">' +
           '<div class="cs-confirm-icon"><i class="fa-solid fa-right-from-bracket"></i></div>' +
           '<h3 class="cs-confirm-title" id="csConfirmTitle">Confirm log out</h3>' +
           '<p class="cs-confirm-msg">' + (message || 'Are you sure?') + '</p>' +
           '<div class="cs-confirm-actions">' +
-            '<button type="button" class="cs-confirm-btn cs-confirm-cancel">Cancel</button>' +
-            '<button type="button" class="cs-confirm-btn cs-confirm-ok">Yes, log out</button>' +
+          '<button type="button" class="cs-confirm-btn cs-confirm-cancel">Cancel</button>' +
+          '<button type="button" class="cs-confirm-btn cs-confirm-ok">Yes, log out</button>' +
           '</div>' +
-        '</div>';
-      document.body.appendChild(overlay);
-      // Force layout, then animate in
-      void overlay.offsetWidth;
-      overlay.setAttribute('open','');
-      document.body.classList.add('cs-no-scroll');
+          '</div>';
+        document.body.appendChild(overlay);
+        // Force layout, then animate in
+        void overlay.offsetWidth;
+        overlay.setAttribute('open', '');
+        document.body.classList.add('cs-no-scroll');
 
-      const cancel = overlay.querySelector('.cs-confirm-cancel');
-      const ok     = overlay.querySelector('.cs-confirm-ok');
-      cancel.addEventListener('click', close);
-      ok.addEventListener('click', () => { window.location.href = okHref; });
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) close();
+        const cancel = overlay.querySelector('.cs-confirm-cancel');
+        const ok = overlay.querySelector('.cs-confirm-ok');
+        cancel.addEventListener('click', close);
+        ok.addEventListener('click', () => { window.location.href = okHref; });
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) close();
+        });
+
+        // ESC closes
+        const onKey = (e) => {
+          if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
+          else if (e.key === 'Tab') {
+            // simple focus trap between cancel and ok
+            if (e.shiftKey && document.activeElement === cancel) { e.preventDefault(); ok.focus(); }
+            else if (!e.shiftKey && document.activeElement === ok) { e.preventDefault(); cancel.focus(); }
+          }
+        };
+        document.addEventListener('keydown', onKey);
+        cancel.focus();
+      }
+
+      links.forEach((a) => {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          const href = a.getAttribute('href') || '/auth/logout';
+          open(a.dataset.confirm, href);
+        });
       });
-
-      // ESC closes
-      const onKey = (e) => {
-        if (e.key === 'Escape'){ close(); document.removeEventListener('keydown', onKey); }
-        else if (e.key === 'Tab'){
-          // simple focus trap between cancel and ok
-          if (e.shiftKey && document.activeElement === cancel){ e.preventDefault(); ok.focus(); }
-          else if (!e.shiftKey && document.activeElement === ok){ e.preventDefault(); cancel.focus(); }
-        }
-      };
-      document.addEventListener('keydown', onKey);
-      cancel.focus();
-    }
-
-    links.forEach((a) => {
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const href = a.getAttribute('href') || '/auth/logout';
-        open(a.dataset.confirm, href);
-      });
-    });
-  })();
-</script>
+    })();
+  </script>
 
 </body>
+
 </html>

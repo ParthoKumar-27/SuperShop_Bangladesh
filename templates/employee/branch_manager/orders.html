@@ -47,6 +47,7 @@
           <th style="text-align:right;">Total</th>
           <th>Status</th>
           <th>Delivery</th>
+          <th style="text-align:center;">Receipt</th>
         </tr>
       </thead>
       <tbody>
@@ -104,6 +105,17 @@
               <span style="font-size:11px;color:var(--mid);">—</span>
             {% endif %}
           </td>
+          <td style="text-align:center;">
+            {% if o.sale_id %}
+              <button type="button" class="bm-bill-btn" onclick="showOrderBill('{{ o.order_id }}')" title="View receipt for {{ o.order_id }}">
+                <i class="fas fa-receipt"></i> Bill
+              </button>
+            {% else %}
+              <span style="font-size:10px;color:var(--mid);" title="Invoice not generated yet">
+                <i class="fas fa-clock"></i> Pending
+              </span>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -153,6 +165,15 @@
         </div>
       </form>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ORDER RECEIPT MODAL (mirrors cashier bill)
+══════════════════════════════════════ -->
+<div class="bm-receipt-overlay" id="bmReceiptOverlay" onclick="bmCloseOnOverlay(event)">
+  <div class="bm-receipt-modal" id="bmReceiptModal">
+    <!-- content injected by showOrderBill() -->
   </div>
 </div>
 
@@ -311,6 +332,137 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
   .toast.toast-error .toast-icon { background: rgba(255, 255, 255, 0.16); }
+
+  /* ══════════════════ ORDER RECEIPT MODAL (bm- prefix) ══════════════════
+     Same look & feel as cashier/sales.html receipt modal but renamed
+     to `bm-*` so it can sit alongside this page's existing
+     .modal-backdrop / .modal-* styles without clashing. */
+  .bm-receipt-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 600; display: none; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .bm-receipt-overlay.open { display: flex; }
+
+  .bm-receipt-modal {
+    background: #fff; border-radius: 14px;
+    width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+    animation: bmPopIn .18s ease;
+  }
+  @keyframes bmPopIn {
+    from { transform: scale(.95) translateY(8px); opacity: 0; }
+    to   { transform: scale(1)   translateY(0);   opacity: 1; }
+  }
+
+  .bm-receipt-head {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .bm-receipt-logo { font-size: 16px; font-weight: 800; color: var(--green); }
+  .bm-receipt-logo span { color: var(--orange); }
+  .bm-receipt-close {
+    width: 28px; height: 28px; border-radius: 7px; background: #f3f4f6;
+    border: none; cursor: pointer; font-size: 14px; color: var(--mid);
+    display: flex; align-items: center; justify-content: center; transition: background .12s;
+  }
+  .bm-receipt-close:hover { background: #e5e7eb; }
+
+  .bm-receipt-body { padding: 20px 22px; }
+
+  .bm-receipt-meta {
+    font-size: 12px; color: var(--mid); line-height: 1.9;
+    background: #f9fafb; border-radius: 9px; padding: 10px 14px;
+    margin-bottom: 16px;
+  }
+  .bm-receipt-meta strong { color: var(--dark); }
+
+  .bm-receipt-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+  .bm-receipt-table th {
+    border-bottom: 1px solid var(--border); padding: 6px 8px;
+    text-align: left; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--mid); background: #f9fafb;
+  }
+  .bm-receipt-table td { padding: 8px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+  .bm-receipt-table tbody tr:last-child td { border-bottom: none; }
+  .bm-receipt-table td:nth-child(2),
+  .bm-receipt-table td:nth-child(3),
+  .bm-receipt-table td:nth-child(4) { text-align: right; }
+  .bm-receipt-table th:nth-child(2),
+  .bm-receipt-table th:nth-child(3),
+  .bm-receipt-table th:nth-child(4) { text-align: right; }
+
+  .bm-receipt-totals { border-top: 1px dashed var(--border); padding-top: 10px; }
+  .bm-receipt-total-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; padding: 3px 0; color: var(--dark);
+  }
+  .bm-receipt-total-row.grand {
+    font-weight: 800; font-size: 15px; color: var(--green);
+    border-top: 2px solid var(--border); margin-top: 8px; padding-top: 10px;
+  }
+  .bm-receipt-total-row.muted { color: var(--mid); }
+  .bm-receipt-total-row.delivery {
+    background: #fef3c7; border-radius: 6px; padding: 6px 8px;
+    margin: 4px -8px;
+  }
+
+  .bm-receipt-footer {
+    text-align: center; font-size: 11px; color: var(--mid);
+    margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border);
+    line-height: 1.8;
+  }
+
+  .bm-receipt-actions {
+    display: flex; gap: 8px; padding: 14px 22px;
+    border-top: 1px solid var(--border); background: #fafafa;
+    border-radius: 0 0 14px 14px;
+  }
+  .bm-receipt-btn {
+    flex: 1; padding: 10px; border: none; border-radius: 8px;
+    font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .13s;
+  }
+  .bm-receipt-btn-print { background: var(--green); color: #fff; }
+  .bm-receipt-btn-print:hover { background: #033828; }
+  .bm-receipt-btn-close { background: #f3f4f6; color: var(--dark); }
+  .bm-receipt-btn-close:hover { background: #e5e7eb; }
+
+  .bm-receipt-loading {
+    padding: 40px; text-align: center; color: var(--mid); font-size: 13px;
+  }
+  .bm-receipt-loading i { font-size: 24px; margin-bottom: 10px; display: block; animation: bmSpin 1s linear infinite; }
+  @keyframes bmSpin { to { transform: rotate(360deg); } }
+
+  /* Bill button in table — uses green tint matching the page palette */
+  .bm-bill-btn {
+    padding: 5px 12px; border: none; border-radius: 7px;
+    background: rgba(4,70,53,.1); color: var(--green);
+    font-family: "DM Sans", sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background .13s; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .bm-bill-btn:hover { background: rgba(4,70,53,.18); }
+
+  .bm-disc-tag {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    background: #dcfce7; color: #15803d; border-radius: 5px;
+    padding: 1px 5px; margin-left: 4px;
+  }
+
+  .bm-receipt-extras {
+    background: #fff7ed; border: 1px solid #fed7aa; border-radius: 9px;
+    padding: 10px 14px; margin-bottom: 14px;
+    font-size: 12px; color: var(--dark); line-height: 1.7;
+  }
+  .bm-receipt-extras strong { color: #9a3412; }
+
+  @media print {
+    body > *:not(.bm-receipt-overlay) { display: none !important; }
+    .bm-receipt-overlay { position: static !important; background: none !important; display: block !important; }
+    .bm-receipt-modal { box-shadow: none !important; max-height: none !important; }
+    .bm-receipt-actions, .bm-receipt-close { display: none !important; }
+  }
 </style>
 
 {% endif %}
@@ -413,5 +565,190 @@
       bootFlash();
     }
   })();
+
+  /* ══════════════ ORDER RECEIPT MODAL ══════════════
+     Mirror of the cashier Sales History Bill modal — fetches
+     /employee/branch/order-bill/{order_id} and renders the same
+     receipt layout, with two order-specific extras: the delivery
+     address block and the delivery charge line item. */
+  const bmReceiptOverlay = document.getElementById('bmReceiptOverlay');
+  const bmReceiptModal   = document.getElementById('bmReceiptModal');
+
+  function bmLoadingHtml(){
+    return `
+      <div class="bm-receipt-head">
+        <div class="bm-receipt-logo">SuperShop<span> BD</span></div>
+        <button class="bm-receipt-close" onclick="bmCloseBill()">✕</button>
+      </div>
+      <div class="bm-receipt-loading">
+        <i class="fas fa-circle-notch"></i>
+        Loading receipt…
+      </div>`;
+  }
+  function bmErrorHtml(){
+    return `
+      <div class="bm-receipt-head">
+        <div class="bm-receipt-logo">SuperShop<span> BD</span></div>
+        <button class="bm-receipt-close" onclick="bmCloseBill()">✕</button>
+      </div>
+      <div class="bm-receipt-loading" style="color:#dc2626;">
+        <i class="fas fa-exclamation-circle" style="animation:none;color:#dc2626;"></i>
+        Failed to load receipt.
+      </div>`;
+  }
+
+  function showOrderBill(orderId){
+    bmReceiptModal.innerHTML = bmLoadingHtml();
+    bmReceiptOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    fetch(`/employee/branch/order-bill/${orderId}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.error){
+          bmReceiptModal.innerHTML = `
+            <div class="bm-receipt-head">
+              <div class="bm-receipt-logo">SuperShop<span> BD</span></div>
+              <button class="bm-receipt-close" onclick="bmCloseBill()">✕</button>
+            </div>
+            <div class="bm-receipt-loading" style="color:#dc2626;">
+              <i class="fas fa-exclamation-circle" style="animation:none;color:#dc2626;"></i>
+              ${d.error}
+            </div>`;
+          return;
+        }
+        bmRenderBill(d);
+      })
+      .catch(() => {
+        bmReceiptModal.innerHTML = bmErrorHtml();
+      });
+  }
+
+  function bmRenderBill(d){
+    const itemRows = (d.items || []).map(i => {
+      const discBadge = i.discount_name
+        ? `<span class="bm-disc-tag">−${i.disc_display}</span>` : '';
+      const qty = parseFloat(i.quantity);
+      const qtyStr = qty % 1 === 0 ? parseInt(qty) : qty;
+      // Per-item "you saved" line — only when this row carried a discount
+      const saved = (i.unit_price != null && i.discounted_line != null)
+        ? (parseFloat(i.unit_price) * qty - parseFloat(i.discounted_line))
+        : 0;
+      const saveRow = (saved > 0.005)
+        ? `<div style="font-size:10px;color:#15803d;margin-top:2px;">Saved ৳ ${saved.toFixed(2)} on this item</div>`
+        : '';
+      const finalLine = (i.discounted_line != null) ? i.discounted_line : i.line_total;
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:600;">${i.product_name}</div>
+            <div style="font-size:10px;color:var(--mid);">${i.unit}</div>
+            ${discBadge}
+            ${saveRow}
+          </td>
+          <td>${qtyStr}</td>
+          <td>৳ ${parseFloat(i.unit_price).toFixed(2)}</td>
+          <td style="font-weight:700;color:var(--green);">৳ ${parseFloat(finalLine).toFixed(2)}</td>
+        </tr>`;
+    }).join('');
+
+    const statusColors = { PAID: '#16a34a', PENDING: '#b45309', CANCELLED: '#dc2626' };
+    const statusColor  = statusColors[d.payment_status] || 'var(--mid)';
+    const payBadge = d.payment_method
+      ? `<span style="background:#f3f4f6;border-radius:6px;padding:1px 7px;font-size:11px;">${d.payment_method}</span>` : '—';
+
+    const deliveryCharge = parseFloat(d.delivery_charge || 0);
+    const extrasHtml = (d.delivery_address || d.rider_name || d.expected_delivery) ? `
+      <div class="bm-receipt-extras">
+        ${d.delivery_address ? `<div><strong>📍 Delivery to:</strong> ${d.delivery_address}</div>` : ''}
+        ${d.expected_delivery ? `<div><strong>🕒 Expected:</strong> ${d.expected_delivery}</div>` : ''}
+        ${d.rider_name ? `<div><strong>🛵 Rider:</strong> ${d.rider_name}${d.delivery_status ? ' (' + d.delivery_status.replace(/_/g,' ').toLowerCase() + ')' : ''}</div>` : ''}
+        ${d.order_id ? `<div><strong>📋 Order:</strong> ${d.order_id}</div>` : ''}
+      </div>` : '';
+
+    bmReceiptModal.innerHTML = `
+      <div class="bm-receipt-head">
+        <div class="bm-receipt-logo">SuperShop<span> BD</span></div>
+        <button class="bm-receipt-close" onclick="bmCloseBill()">✕</button>
+      </div>
+      <div class="bm-receipt-body">
+        <div class="bm-receipt-meta">
+          <div><strong>Sale ID:</strong> ${d.sale_id}</div>
+          <div><strong>Date:</strong> ${d.sale_date}</div>
+          <div><strong>Branch:</strong> ${d.branch_name}</div>
+          <div><strong>Customer:</strong> ${d.customer} ${d.membership ? `<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:5px;padding:1px 6px;">${d.membership}</span>` : ''}</div>
+          <div><strong>Cashier:</strong> ${d.cashier}</div>
+          <div><strong>Type:</strong> Online Delivery</div>
+          <div><strong>Status:</strong> <span style="color:${statusColor};font-weight:700;">${d.payment_status}</span> ${payBadge}</div>
+        </div>
+
+        ${extrasHtml}
+
+        <table class="bm-receipt-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Unit ৳</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows || '<tr><td colspan="4" style="text-align:center;color:var(--mid);padding:14px;">No items</td></tr>'}</tbody>
+        </table>
+
+        <div class="bm-receipt-totals">
+          <div class="bm-receipt-total-row muted">
+            <span>Subtotal</span>
+            <span>৳ ${parseFloat(d.subtotal || 0).toFixed(2)}</span>
+          </div>
+          <div class="bm-receipt-total-row muted">
+            <span>Discount</span>
+            <span>− ৳ ${parseFloat(d.discount_amt || 0).toFixed(2)}</span>
+          </div>
+          <div class="bm-receipt-total-row muted">
+            <span>Tax</span>
+            <span>৳ ${parseFloat(d.tax_amt || 0).toFixed(2)}</span>
+          </div>
+          ${deliveryCharge > 0 ? `
+          <div class="bm-receipt-total-row delivery">
+            <span>🛵 Delivery charge</span>
+            <span>৳ ${deliveryCharge.toFixed(2)}</span>
+          </div>` : ''}
+          <div class="bm-receipt-total-row grand">
+            <span>Total Paid</span>
+            <span>৳ ${parseFloat(d.total_amt || 0).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div class="bm-receipt-footer">
+          Thank you for shopping at SuperShop BD!<br/>
+          ${d.branch_name} · ${d.sale_date}
+          ${d.loyalty_earned ? `<br/><span style="color:var(--orange);font-weight:600;">+${d.loyalty_earned} loyalty points earned</span>` : ''}
+        </div>
+      </div>
+      <div class="bm-receipt-actions">
+        <button class="bm-receipt-btn bm-receipt-btn-print" onclick="window.print()">
+          <i class="fas fa-print"></i> Print
+        </button>
+        <button class="bm-receipt-btn bm-receipt-btn-close" onclick="bmCloseBill()">
+          Close
+        </button>
+      </div>`;
+  }
+
+  function bmCloseBill(){
+    bmReceiptOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function bmCloseOnOverlay(e){
+    if (e.target === bmReceiptOverlay) bmCloseBill();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && bmReceiptOverlay.classList.contains('open')) {
+      bmCloseBill();
+    }
+  });
 </script>
 {% endblock %}

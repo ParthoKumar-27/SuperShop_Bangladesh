@@ -386,7 +386,7 @@ def branch_orders(request: Request, session=Depends(require_branch_manager)):
                o.delivery_charge,
                TO_CHAR(o.order_date, 'DD Mon YYYY HH24:MI')        AS order_date,
                TO_CHAR(o.expected_delivery, 'DD Mon YYYY HH24:MI') AS expected_delivery,
-               s.total_amt,
+               s.sale_id, s.total_amt,
                d.delivery_id, d.rider_id, d.delivery_status AS rider_delivery_status,
                e.emp_name AS rider_name
         FROM   online_order o
@@ -1346,25 +1346,74 @@ def get_bill(
 
     for item in items:
         disc_display = ""
+        qty            = float(item["quantity"])
+        line_total     = float(item["line_total"])
+        unit_price_now = float(item["unit_price"])
 
-        if item["discount_name"]:
+        has_discount = bool(item["discount_name"]) and item["discount_value"] is not None
+        disc_value   = float(item["discount_value"]) if has_discount else 0.0
+
+        # The two sale-creation paths write sale_item differently:
+        #   • IN_STORE (cashier POS): unit_price = ORIGINAL price, line_total = post-discount line
+        #   • ONLINE  (customer checkout): unit_price = POST-DISCOUNT price, line_total = disc unit × qty
+        # The cheaper `qty × unit_price` is, the more likely unit_price already
+        # carries the original.  When qty × unit > line, treat unit_price as
+        # original.  When qty × unit ≈ line, treat unit_price as the post-
+        # discount unit and recover the original.
+        pre_line = round(qty * unit_price_now, 2)
+        unit_already_original = round(pre_line - line_total, 2) > 0.005  # discount actually applied
+
+        if has_discount and not unit_already_original and disc_value < 100:
+            # unit_price_now is the discounted unit — recover the original
             if item["discount_type"] == "PERCENT":
-                disc_display = f"{item['discount_value']}%"
+                original_unit = unit_price_now / (1 - disc_value / 100)
             else:
-                disc_display = f"৳{float(item['discount_value']):.2f}"
+                original_unit = unit_price_now + disc_value
+            original_line = original_unit * qty
+        else:
+            # unit_price_now is either the original (in-store) or there is no
+            # discount — trust it as the original unit price.
+            original_unit = unit_price_now
+            original_line = pre_line
+
+        if has_discount:
+            if item["discount_type"] == "PERCENT":
+                disc_display = f"{disc_value:g}%"
+            else:
+                disc_display = f"৳{disc_value:.2f}"
 
         formatted_items.append({
-            "product_name": item["product_name"],
-            "unit": item["unit"],
-            "quantity": float(item["quantity"]),
-            "unit_price": float(item["unit_price"]),
-            "line_total": float(item["line_total"]),
-            "discount_name": item["discount_name"],
-            "disc_display": disc_display
+            "product_name":    item["product_name"],
+            "unit":            item["unit"],
+            "quantity":        qty,
+            "unit_price":      round(original_unit, 2),
+            "line_total":      round(original_line, 2),
+            "discount_name":   item["discount_name"],
+            "discount_value":  disc_value if has_discount else None,
+            "discount_type":   item["discount_type"],
+            "discounted_unit": unit_price_now,
+            "discounted_line": line_total,
+            "disc_display":    disc_display,
         })
 
-    # ── Loyalty points earned ──────────────────────────────────────────
-    loyalty_earned = int(float(sale["total_amt"]) // 10)
+    # ── Recompute totals from the live sale_item rows ─────────────────
+    # The `sale` header can drift from the items (partial cancellations,
+    # manual edits, etc.).  The receipt the customer sees must reflect
+    # what's actually in the items table — so derive subtotal and
+    # discount_amt from `formatted_items` rather than trusting sale.*.
+    live_subtotal   = round(sum(i["line_total"]  for i in formatted_items), 2)
+    live_discount   = round(sum(
+        (i["line_total"] - i["discounted_line"]) for i in formatted_items
+        if i.get("discount_name")
+    ), 2)
+    # Tax rate observed from the stored header so we don't hard-code 4%.
+    tax_base = float(sale["subtotal"] or 0) - float(sale["discount_amt"] or 0)
+    tax_rate = (float(sale["tax_amt"]) / tax_base) if tax_base > 0 else 0.04
+    live_tax    = round((live_subtotal - live_discount) * tax_rate, 2)
+    live_total  = round(live_subtotal - live_discount + live_tax, 2)
+
+    # ── Loyalty points earned (1 pt per 10 BDT of the LIVE total) ────
+    loyalty_earned = int(live_total // 10)
 
     return JSONResponse({
         "sale_id": sale["sale_id"],
@@ -1377,14 +1426,226 @@ def get_bill(
         "payment_status": sale["payment_status"],
         "payment_method": sale["payment_method"],
 
-        "subtotal": float(sale["subtotal"] or 0),
-        "discount_amt": float(sale["discount_amt"] or 0),
-        "tax_amt": float(sale["tax_amt"] or 0),
-        "total_amt": float(sale["total_amt"] or 0),
+        "subtotal":     live_subtotal,
+        "discount_amt": live_discount,
+        "tax_amt":      live_tax,
+        "total_amt":    live_total,
 
         "loyalty_earned": loyalty_earned,
 
         "items": formatted_items
+    })
+
+
+# ════════════════════════════════════════════════════════════════════════
+# GET /employee/branch/order-bill/{order_id}
+# Same JSON shape as the cashier bill endpoint, but resolved via
+# online_order so a branch manager can pull up the receipt of any
+# delivery order at their branch. Scoped to the manager's branch.
+# Adds `delivery_charge` and `expected_delivery` on top of the
+# standard receipt payload; `order_id` echoes the input.
+# ════════════════════════════════════════════════════════════════════════
+
+@employee_router.get("/branch/order-bill/{order_id}")
+def get_order_bill(
+    order_id: str,
+    request:  Request,
+    session=Depends(require_branch_manager),
+):
+    branch_id = session.get("branch_id")
+
+    if not branch_id:
+        return JSONResponse({"error": "No branch assigned"}, status_code=403)
+
+    # ── Order header (with sale + customer + branch + rider) ─────────
+    order = query("""
+        SELECT
+            o.order_id,
+            TO_CHAR(o.order_date,       'DD Mon YYYY HH24:MI') AS order_date,
+            TO_CHAR(o.expected_delivery,'DD Mon YYYY HH24:MI') AS expected_delivery,
+            o.delivery_address,
+            o.delivery_charge,
+            o.special_note,
+
+            s.sale_id,
+            TO_CHAR(s.sale_date,'DD Mon YYYY HH24:MI') AS sale_date,
+            s.order_type,
+            s.subtotal,
+            s.discount_amt,
+            s.tax_amt,
+            s.total_amt,
+            s.payment_status,
+
+            b.branch_name,
+
+            COALESCE(c.cust_name, 'Walk-in') AS customer,
+            c.phone,
+            c.membership_type,
+
+            e.emp_name AS cashier,
+
+            py.method   AS payment_method,
+            py.status   AS payment_status_detailed,
+
+            dl.delivery_status  AS delivery_status,
+            re.emp_name         AS rider_name
+
+        FROM   online_order o
+
+        JOIN   branch   b ON o.branch_id = b.branch_id
+        JOIN   employee e ON o.branch_id = b.branch_id
+
+        LEFT JOIN sale     s  ON o.sale_id = s.sale_id
+        LEFT JOIN customer c  ON o.cust_id = c.cust_id
+        LEFT JOIN employee ec ON s.emp_id  = ec.emp_id
+        LEFT JOIN payment  py ON s.sale_id = py.sale_id
+        LEFT JOIN delivery dl ON o.order_id = dl.order_id
+        LEFT JOIN employee re ON dl.rider_id = re.emp_id
+
+        WHERE  o.order_id = %s
+          AND  o.branch_id = %s
+    """, (order_id, branch_id))
+
+    if not order:
+        return JSONResponse(
+            {"error": "Order not found for your branch"},
+            status_code=404,
+        )
+
+    row = order[0]
+
+    # Sale may not exist yet (e.g. order just placed, not yet invoiced).
+    if not row.get("sale_id"):
+        return JSONResponse(
+            {"error": "No invoice generated yet for this order"},
+            status_code=409,
+        )
+
+    sale_id = row["sale_id"]
+
+    # ── Items — reuse the same JOIN shape as the cashier endpoint ───
+    items = query("""
+        SELECT
+            p.product_name,
+            p.unit,
+            si.quantity,
+            si.unit_price,
+            si.line_total,
+            d.discount_name,
+            d.discount_type,
+            d.discount_value
+        FROM   sale_item si
+        JOIN   product   p  ON si.product_id   = p.product_id
+        LEFT JOIN discount d ON si.discount_id = d.discount_id
+        WHERE  si.sale_id = %s
+        ORDER  BY p.product_name
+    """, (sale_id,))
+
+    formatted_items = []
+    for item in items:
+        disc_display = ""
+        qty            = float(item["quantity"])
+        line_total     = float(item["line_total"])
+        unit_price_now = float(item["unit_price"])
+
+        has_discount = bool(item["discount_name"]) and item["discount_value"] is not None
+        disc_value   = float(item["discount_value"]) if has_discount else 0.0
+
+        # Mirror the cashier endpoint's heuristic:
+        #   • IN_STORE rows have unit_price = ORIGINAL price, line_total = discounted line
+        #   • ONLINE  rows have unit_price = POST-DISCOUNT price, line_total = disc unit × qty
+        # When qty × unit_price is greater than line_total, the stored unit
+        # price is already the original — trust it.  When they're equal
+        # within rounding, unit_price is the discounted unit and we recover
+        # the original via the discount rate.
+        pre_line = round(qty * unit_price_now, 2)
+        unit_already_original = round(pre_line - line_total, 2) > 0.005
+
+        if has_discount and not unit_already_original and disc_value < 100:
+            if item["discount_type"] == "PERCENT":
+                original_unit = unit_price_now / (1 - disc_value / 100)
+            else:
+                original_unit = unit_price_now + disc_value
+            original_line = original_unit * qty
+        else:
+            original_unit = unit_price_now
+            original_line = pre_line
+
+        if has_discount:
+            if item["discount_type"] == "PERCENT":
+                disc_display = f"{disc_value:g}%"
+            else:
+                disc_display = f"৳{disc_value:.2f}"
+
+        formatted_items.append({
+            "product_name":    item["product_name"],
+            "unit":            item["unit"],
+            "quantity":        qty,
+            "unit_price":      round(original_unit, 2),  # pre-discount price
+            "line_total":      round(original_line, 2),  # pre-discount line total
+            "discount_name":   item["discount_name"],
+            "discount_value":  float(item["discount_value"]) if item["discount_value"] is not None else None,
+            "discount_type":   item["discount_type"],
+            "discounted_unit": unit_price_now,
+            "discounted_line": line_total,
+            "disc_display":    disc_display,
+        })
+
+    # ── Live totals from the items table (ignores stale sale.* fields) ─
+    # sale.subtotal/discount_amt/tax_amt can drift from sale_item when a
+    # customer removes a line post-checkout.  Recompute everything from
+    # the items we just rendered so the receipt matches row-by-row.
+    delivery_charge = float(row["delivery_charge"] or 0)
+    live_subtotal   = round(sum(i["line_total"] for i in formatted_items), 2)
+    live_discount   = round(sum(
+        (i["line_total"] - i["discounted_line"]) for i in formatted_items
+        if i.get("discount_name")
+    ), 2)
+    # Tax rate inferred from the stored header so we honour the same 4 %
+    # rule the checkout used (and don't hard-code a number here).
+    tax_base_hdr = float(row["subtotal"] or 0) - float(row["discount_amt"] or 0)
+    tax_rate = (float(row["tax_amt"] or 0) / tax_base_hdr) if tax_base_hdr > 0 else 0.04
+    live_tax       = round((live_subtotal - live_discount) * tax_rate, 2)
+    # Grand total EXCLUDES delivery_charge — that field on online_order is
+    # only a routing/fee record for the rider flow.  It must NEVER be folded
+    # into the customer's bill, otherwise assigning a rider (or any later
+    # update that touches online_order.delivery_charge) silently re-prices
+    # the already-issued receipt.  The UI may still render `delivery_charge`
+    # as a separate line, but `total_amt` stays Subtotal − Discount + Tax.
+    live_total     = round(live_subtotal - live_discount + live_tax, 2)
+
+    # ── Loyalty points earned (1 pt per 10 BDT of the LIVE grand total)
+    loyalty_earned = int(live_total // 10)
+
+    return JSONResponse({
+        # ── Receipt identity (use order_id for cashier = sale_id parity)
+        "sale_id":        row["sale_id"],
+        "sale_date":      row["sale_date"],
+        "branch_name":    row["branch_name"],
+        "customer":       row["customer"],
+        "membership":     row["membership_type"],
+        "cashier":        row["cashier"],
+        "order_type":     row["order_type"],
+        "payment_status": row["payment_status"],
+        "payment_method": row["payment_method"],
+
+        # ── Totals (live-recomputed; delivery_charge added into total_amt)
+        "subtotal":      live_subtotal,
+        "discount_amt":  live_discount,
+        "tax_amt":       live_tax,
+        "total_amt":     live_total,
+        "loyalty_earned": loyalty_earned,
+
+        # ── Online-order specific extras (UI may or may not render these)
+        "order_id":           row["order_id"],
+        "expected_delivery":  row["expected_delivery"],
+        "delivery_address":   row["delivery_address"],
+        "delivery_charge":    delivery_charge,
+        "delivery_status":    row["delivery_status"],
+        "rider_name":         row["rider_name"],
+        "special_note":       row["special_note"],
+
+        "items": formatted_items,
     })
 # ══════════════════════════════════════════════════════════════════════════════
 #  EMPLOYEE PROFILE — replace the existing employee_profile() with this version,

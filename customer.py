@@ -410,14 +410,25 @@ def place_order(
         qty = _cart_qty(cart, pid)
         if not qty:
             continue
-        
+
         disc_price, _ = _apply_discount(p["unit_price"], pid, p["cat_id"], by_product, by_cat)
-        original_line = float(p["unit_price"]) * qty
+        original_unit = float(p["unit_price"])
+        original_line = original_unit * qty
         disc_line = disc_price * qty
-        
+
+        # Mirror the cashier POS data shape so both receipt renderers
+        # (cashier bill and branch-manager order bill) see the same fields:
+        #   unit_price  = ORIGINAL catalog unit price
+        #   line_total  = discounted line total the customer actually pays
+        # The `discount_id` column gets the active deal (if any) so the
+        # JOIN to `discount` in the bill endpoint can render the badge
+        # and recompute the original price when needed.
+        disc = by_product.get(pid) or by_cat.get(p["cat_id"])
+        disc_id = disc["discount_id"] if disc else None
+
         subtotal += original_line
         discount_amt += original_line - disc_line
-        items.append((pid, qty, disc_price, disc_line))
+        items.append((pid, qty, original_unit, disc_line, disc_id))
 
     if not items:
         return RedirectResponse("/customer/shop", status_code=302)
@@ -448,11 +459,12 @@ def place_order(
         VALUES (%s, %s, %s, %s, 'ONLINE', %s, %s, %s, %s, %s)
     """, (sale_id, branch_id, cust_id, emp_id, subtotal, discount_amt, tax_amt, total_amt, payment_status))
 
-    for pid, qty, unit_price, line_total in items:
+    for pid, qty, unit_price, line_total, disc_id in items:
         execute("""
-            INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (sale_id, pid, qty, unit_price, line_total))
+            INSERT INTO sale_item
+                (sale_id, product_id, quantity, unit_price, line_total, discount_id)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (sale_id, pid, qty, round(unit_price, 2), round(line_total, 2), disc_id))
 
         # NEW — online orders never touched stock before
         execute("""
