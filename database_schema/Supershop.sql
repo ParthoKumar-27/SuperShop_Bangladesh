@@ -1,27 +1,11 @@
 -- ============================================================
 --  SUPERSHOP  BANGLADESH
 --  Database : Multi-City, Multi-Branch Retail + Online Orders
---  Tables   : 17
+--  Tables   : 21
 --  DBMS     : PostgreSQL 16 / Oracle 21c XE
 --  Course   : CSE-2201  Database Management System
 --  Semester : 2nd Year 2nd Semester 2025
 --  University of Dhaka — Department of CSE
--- ============================================================
-
-
---  CHANGES vs previous version:
---  FIX 1 : branch — removed manager_id column entirely
---  FIX 2 : branch — removed ALTER TABLE branch_manager_fk
---  FIX 3 : customer — removed stray ALTER TABLE DROP COLUMN city_id
---           (city_id was already absent from the CREATE TABLE body)
---  NEW   : branch_manager table added (TABLE 6) to enforce that
---           only BRANCH_MANAGER employees can manage a branch,
---           enforced via a trigger
---  ORDER : city → branch → membership → customer →
---           department → employee → branch_manager (+ trigger) →
---           category → supplier → product →
---           branch_inventory → discount →
---           sale → sale_item → online_order → payment → delivery
 -- ============================================================
 
 
@@ -163,26 +147,6 @@ CREATE TABLE branch_manager (
     CONSTRAINT  bm_emp_fk       FOREIGN KEY (emp_id) REFERENCES employee(emp_id)
                                 ON DELETE RESTRICT
 );
-
--- ── Trigger: reject INSERT/UPDATE if employee is not BRANCH_MANAGER ──────────
--- CREATE OR REPLACE FUNCTION fn_check_branch_manager_role()
--- RETURNS TRIGGER AS $$
--- BEGIN
---     IF (SELECT position FROM employee WHERE emp_id = NEW.emp_id)
---        != 'BRANCH_MANAGER' THEN
---         RAISE EXCEPTION
---             'Employee % cannot manage a branch — position is %, not BRANCH_MANAGER.',
---             NEW.emp_id,
---             (SELECT position FROM employee WHERE emp_id = NEW.emp_id);
---     END IF;
---     RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql;
--- 
--- CREATE TRIGGER trg_branch_manager_role
--- BEFORE INSERT OR UPDATE ON branch_manager
--- FOR EACH ROW EXECUTE FUNCTION fn_check_branch_manager_role();
-
 
 -- ============================================================
 --  TABLE 8: CATEGORY  (self-referencing)
@@ -496,37 +460,6 @@ CREATE TABLE admin_account (
     CONSTRAINT  adm_active  CHECK (is_active IN ('Y', 'N'))
 );
 
--- ============================================================
---  END OF DDL — SuperShop Bangladesh
---  Total tables : 17
---
---  CREATION ORDER (dependency-safe):
---    city → branch → membership → customer →
---    department → employee → branch_manager (+ trigger) →
---    category → supplier → product →
---    branch_inventory → discount →
---    sale → sale_item → online_order → payment → delivery
---
---  BILL RECEIPT QUERY (sale + sale_item):
---    SELECT
---        s.sale_id, s.sale_date, s.order_type,
---        b.branch_name,
---        c.cust_name, c.membership_type,
---        p.product_name, si.quantity, si.unit_price,
---        d.discount_name, d.discount_type, d.discount_value,
---        si.line_total,
---        s.subtotal, s.discount_amt, s.tax_amt, s.total_amt,
---        py.method AS payment_method, py.status AS payment_status
---    FROM sale s
---    JOIN branch b        ON s.branch_id  = b.branch_id
---    LEFT JOIN customer c ON s.cust_id    = c.cust_id
---    JOIN sale_item si    ON s.sale_id    = si.sale_id
---    JOIN product p       ON si.product_id= p.product_id
---    LEFT JOIN discount d ON si.discount_id = d.discount_id
---    LEFT JOIN payment py ON s.sale_id    = py.sale_id
---    WHERE s.sale_id = 'S-IS001'
---    ORDER BY p.product_name;
--- ============================================================
 
 -- ============================================================
 --  TABLE 20: NOTIFICATION
@@ -591,21 +524,8 @@ CREATE TABLE action_log (
 -- CREATE INDEX idx_log_actor        ON action_log (actor_type, actor_id);
 -- CREATE INDEX idx_log_created      ON action_log (created_at DESC);
 
-CREATE TABLE customer_message (
-    msg_id       VARCHAR(10)  NOT NULL,
-    cust_id      VARCHAR(10)  NOT NULL,
-    branch_id    VARCHAR(10)  NOT NULL,
-    sender_role  VARCHAR(10)  NOT NULL,   -- 'CUSTOMER' | 'MANAGER'
-    message      VARCHAR(500) NOT NULL,
-    is_read      CHAR(1)      DEFAULT 'N',
-    created_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT msg_pk           PRIMARY KEY (msg_id),
-    CONSTRAINT check_msg_id     CHECK (msg_id LIKE 'MSG-%'),
-    CONSTRAINT msg_sender_role  CHECK (sender_role IN ('CUSTOMER','MANAGER')),
-    CONSTRAINT msg_is_read      CHECK (is_read IN ('Y','N')),
-    CONSTRAINT msg_cust_fk      FOREIGN KEY (cust_id)   REFERENCES customer(cust_id)
-                                ON DELETE CASCADE,
-    CONSTRAINT msg_branch_fk    FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
-                                ON DELETE CASCADE
-);
+-- ============================================================
+--  END OF DDL — SuperShop Bangladesh
+--  Total tables : 21
+-- ============================================================

@@ -1,6 +1,6 @@
 -- ============================================================
---  SUPERSHOP BANGLADESH — Sample Data v2.0
---  Tables  : 16  |  Total rows : 226
+--  SUPERSHOP BANGLADESH — Sample Data
+--  Tables  : 21  
 --  DBMS    : PostgreSQL 16 / Oracle 21c XE
 --  Course  : CSE-2201  |  University of Dhaka
 -- ============================================================
@@ -90,50 +90,7 @@ DELETE FROM customer;
 DELETE FROM membership;
 DELETE FROM branch;
 DELETE FROM city;
--- ============================================================
---  SUPERSHOP BANGLADESH — Sample Data 
---  Tables  : 17  |  Total rows : 246
---  DBMS    : PostgreSQL 16 / Oracle 21c XE
---  Course  : CSE-2201  |  University of Dhaka
--- ============================================================
 
--- ============================================================
---  COLUMN ORDER:
---  city            : city_id, city_name, division
---  branch          : branch_id, branch_name, city_id, address,
---                    phone, open_time, close_time, is_active
---  membership      : membership_type, discount_pct, min_points, benefits
---  customer        : cust_id, cust_name, email, phone, address,
---                    dob, gender, join_date, loyalty_points, membership_type
---  department      : dept_id, dept_name
---  employee        : emp_id, emp_name, email, phone, branch_id,
---                    dept_id, position, salary, hire_date, gender, is_active
---  branch_manager  : branch_id, emp_id, assigned_on
---  category        : cat_id, cat_name, parent_cat_id, description
---  supplier        : supplier_id, supplier_name, contact_name,
---                    email, phone, address, city, country, rating
---  product         : product_id, product_name, brand, cat_id,
---                    supplier_id, unit_price, cost_price, unit,
---                    expiry_days, is_active
---  branch_inventory: inv_id, branch_id, product_id, quantity,
---                    reorder_level, last_restocked, shelf_location
---  discount        : discount_id, discount_name, discount_type,
---                    discount_value, start_date, end_date, product_id, cat_id
---  sale            : sale_id, branch_id, cust_id, emp_id, order_type,
---                    sale_date, subtotal, discount_amt, tax_amt,
---                    total_amt, payment_status
---  sale_item       : sale_id, product_id, quantity, unit_price,
---                    discount_id, line_total
---  online_order    : order_id, cust_id, branch_id, sale_id,
---                    order_date, expected_delivery, actual_delivery,
---                    order_status, delivery_address, delivery_charge,
---                    special_note
---  payment         : payment_id, sale_id, payment_date, amount,
---                    method, reference_no, status
---  delivery        : delivery_id, order_id, rider_id, assigned_at,
---                    picked_up_at, delivered_at, delivery_status,
---                    distance_km, delivery_fee, rating, note
--- ============================================================
 
 -- ============================================================
 --  1. CITY  (6 rows)
@@ -1074,27 +1031,7 @@ INSERT INTO delivery VALUES ('DEL-006', 'O-00006', 'E-R003', '2025-05-04 09:00:0
 INSERT INTO delivery VALUES ('DEL-007','O-00007','E-R002', '2025-05-06 08:00:00','2025-05-06 08:45:00', '2025-05-06 11:50:00', 'DELIVERED',5.30,60.00,5.0,'Perfect service');
 INSERT INTO delivery VALUES ('DEL-008','O-00008','E-R005', '2025-05-08 10:00:00','2025-05-08 11:00:00', NULL, 'ON_THE_WAY',15.60,80.00,NULL,'In transit');
 
--- ============================================================
---  END OF DATA — SuperShop Bangladesh
---  Total rows : 246
---  city             :  6
---  branch           :  8
---  membership       :  4
---  customer         : 15
---  department       :  6
---  employee         : 20
---  branch_manager   :  8  ← NEW
---  category         : 10
---  supplier         :  8
---  product          : 20
---  branch_inventory : 30
---  discount         :  8
---  sale             : 20
---  sale_item        : 55  
---  online_order     : 10
---  payment          : 18
---  delivery         :  8
--- ============================================================
+
 
 -- ============================================================
 --  SEED: admin_account  (1 super-admin)
@@ -1117,7 +1054,6 @@ INSERT INTO admin_account VALUES (
 -- ============================================================
 --  SEED: app_user for EMPLOYEES  (20 rows)
 --  Password for all: employee123  (replace hash in production)
---
 --  Each row links to an emp_id from the employee table.
 --  The phone here MUST match employee.phone exactly.
 -- ============================================================
@@ -1148,21 +1084,21 @@ INSERT INTO app_user VALUES ('U-000038','01812-200005', '$2b$12$6X5S.jTi1rkVeaBm
 --  SEED: app_user for CUSTOMERS  (15 rows)
 --  Password for all sample customers: customer123
 -- ============================================================
-INSERT INTO app_user VALUES ('U-000021', '01711-000001', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00001', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000022', '01812-000002', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00002', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000023', '01911-000003', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00003', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000024', '01611-000004', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00004', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000026', '01812-000006', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00006', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000025', '01711-000005', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00005', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000027', '01911-000007', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00007', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000028', '01611-000008', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00008', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000029', '01711-000009', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00009', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000030', '01812-000010', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00010', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000031', '01911-000011', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00011', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000032', '01611-000012', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00012', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000033', '01711-000013', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00013', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000034', '01812-000014', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00014', 'Y', CURRENT_TIMESTAMP);
-INSERT INTO app_user VALUES ('U-000035', '01911-000015', '$2b$12$PHWcyxLINm22a4/uNYqysOG8tugMdTcqL/LVlZZoqFuB0GHHebu9S', 'CUSTOMER', 'C-00015', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000021', '01711-000001', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00001', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000022', '01812-000002', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00002', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000023', '01911-000003', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00003', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000024', '01611-000004', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00004', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000026', '01812-000006', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00006', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000025', '01711-000005', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00005', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000027', '01911-000007', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00007', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000028', '01611-000008', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00008', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000029', '01711-000009', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00009', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000030', '01812-000010', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00010', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000031', '01911-000011', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00011', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000032', '01611-000012', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00012', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000033', '01711-000013', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00013', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000034', '01812-000014', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00014', 'Y', CURRENT_TIMESTAMP);
+INSERT INTO app_user VALUES ('U-000035', '01911-000015', '$2b$12$CAgR3eAkMIRRz4rEE4C2jeOcf4F0yDw40vxgvbLGNxfP0QDRASDA6', 'CUSTOMER', 'C-00015', 'Y', CURRENT_TIMESTAMP);
 
 -- ============================================================
 --  HOW TO GENERATE REAL HASHES FOR SEED DATA
