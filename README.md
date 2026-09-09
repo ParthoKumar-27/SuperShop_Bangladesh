@@ -73,8 +73,8 @@ The platform serves **two distinct shopping paths** plus the staff that keeps th
 
 ## 📎 Project Documents
 
-- 📄 [**Project Report**](./SuperShop_Bangladesh_Project_Report.pdf) — full requirement analysis, ER/relational design, normalization, and lab queries.
-- 🎞️ [**Presentation Slides**](./SuperShop_Bangladesh_Project_Presentation.pdf) — system walkthrough, schema overview, and demo flow.
+- 📄 [**Project Report**](./SuperShop_Bangladesh_Project_Report.pdf?raw=true) — full requirement analysis, ER/relational design, normalization, and lab queries.
+- 🎞️ [**Presentation Slides**](./SuperShop_Bangladesh_Project_Presentation.pdf?raw=true) — system walkthrough, schema overview, and demo flow.
 
 ---
 
@@ -267,7 +267,7 @@ DBMS_Project-1/
 │
 ├── static/
 │   └── js/
-│       └── utils.js             # Shared frontend utilities (cart badge, toasts, etc.)
+│       └── utils.js             
 │
 ├── SuperShop_Bangladesh_Project_Report.pdf        # 📄 Project report
 ├── SuperShop_Bangladesh_Project_Presentation.pdf  # 🎞️ Presentation slides
@@ -280,24 +280,6 @@ DBMS_Project-1/
 
 ---
 
-## 🗺 Feature Map
-
-| Feature | Code |
-|---|---|
-| Public storefront & search | `storefront_routes.py` + `templates/storefront.html` |
-| Auth (all three roles) | `auth.py` |
-| Customer shop / cart / checkout | `customer.py` + `templates/customer/*` |
-| Branch-locked cart logic | `customer.py::_cart_locked_branch` |
-| Cashier POS | `employee.py::/employee/cashier/sale/submit` |
-| Rider status updates | `employee.py::/employee/rider/update-status` |
-| Branch manager orders & rider assignment | `employee.py::/employee/branch/orders/*` |
-| Admin image upload | `admin.py` + `supabase_client.py::upload_product_image` |
-| Discount CRUD | `admin.py::/admin/dashboard/discounts/*` |
-| Audit log | `admin.py::/admin/dashboard/logs` + `action_logger.py` |
-| 21-table DDL | `database_schema/Supershop.sql` |
-| Lab queries | `database_schema/Fixed_Supershop_Query.sql` |
-
----
 
 ## 🛠 Troubleshooting
 
